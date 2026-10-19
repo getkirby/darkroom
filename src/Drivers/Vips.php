@@ -490,16 +490,15 @@ final class Vips extends Driver
 
 			$target = Target::newToFile($file);
 
-			// JPEG with chroma at half resolution both ways (4:2:0),
-			// which libvips writes whole from quality 90 on, and with
-			// Huffman tables fitted to the image, as ImageMagick writes them
+			// chroma at half resolution both ways (4:2:0), which libvips writes
+			// whole from quality 90 on, and JPEG's Huffman tables fitted to the image
 			$this->write($image, $target, $plan->output->format, [
 				'Q'               => $plan->output->quality,
 				'interlace'       => $plan->output->interlace,
 				'keep'            => $plan->output->icc === true ? ForeignKeep::ICC : ForeignKeep::NONE,
 				'optimize_coding' => true,
 				'page_height'     => $plan->size->height,
-				'subsample_mode'  => $plan->output->format === Format::Jpeg ? 'on' : 'auto',
+				'subsample_mode'  => 'on',
 			]);
 		} catch (VipsException $exception) {
 			throw new ProcessException(
