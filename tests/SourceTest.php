@@ -36,6 +36,7 @@ class SourceTest extends TestCase
 			new Source($dir),
 			new Source($empty),
 			new Source($svg),
+			new Source(''),
 		];
 	}
 

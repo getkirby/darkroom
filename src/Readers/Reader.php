@@ -157,7 +157,8 @@ abstract class Reader
 	 */
 	public static function open(string $file, Closure $call): mixed
 	{
-		$handle = @fopen($file, 'rb');
+		// fopen() throws for an empty path
+		$handle = $file === '' ? false : @fopen($file, 'rb');
 
 		if ($handle === false) {
 			return null;
