@@ -187,7 +187,7 @@ final class Vips extends Driver
 		}
 
 		if ($plan->thumb->blur !== null) {
-			$image = $image->gaussblur($plan->thumb->blur);
+			$image = $image->gaussblur($plan->thumb->blur, ['min_ampl' => 0.05]);
 		}
 
 		if ($plan->thumb->sharpen !== null) {
