@@ -35,6 +35,13 @@
 		<PossiblyUnusedProperty errorLevel="suppress" />
 		<PossiblyUnusedReturnValue errorLevel="suppress" />
 		<UnusedClass errorLevel="suppress" />
+
+		<!-- php-vips calls libvips' functions over FFI, which Psalm can't know -->
+		<UndefinedMethod>
+			<errorLevel type="suppress">
+				<file name="src/Drivers/Vips.php" />
+			</errorLevel>
+		</UndefinedMethod>
 	</issueHandlers>
 
 	<projectFiles>
