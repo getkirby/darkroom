@@ -1,0 +1,11 @@
+{
+	"runner.annotations": false,
+	"runner.bootstrap": "vendor/autoload.php",
+	"runner.file_pattern": "*Bench.php",
+	"runner.path": "bench",
+	"runner.php_config": {
+		"auto_prepend_file": "",
+		"xdebug.mode": "off"
+	},
+	"storage.xml_storage_path": ".phpbench"
+}
