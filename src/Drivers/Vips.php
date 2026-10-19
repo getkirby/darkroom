@@ -10,6 +10,7 @@ use Darkroom\Format;
 use Darkroom\Orientation;
 use Darkroom\Plan;
 use Darkroom\Source;
+use Darkroom\Tools\Sharpen;
 use Jcupitt\Vips\Config;
 use Jcupitt\Vips\Exception as VipsException;
 use Jcupitt\Vips\FFI;
@@ -190,9 +191,7 @@ final class Vips extends Driver
 		}
 
 		if ($plan->thumb->sharpen !== null) {
-			$image = $image->sharpen([
-				'sigma' => $plan->thumb->sharpen / 100
-			]);
+			$image = static::sharpen($image, $plan->thumb->sharpen);
 		}
 
 		return $image;
@@ -530,6 +529,30 @@ final class Vips extends Driver
 		$pixel = static::pixel();
 
 		return $pixel->writeToBuffer('.' . $format->extension());
+	}
+
+	/**
+	 * The color bands convolved with the sharpening kernel; alpha is kept
+	 */
+	private static function sharpen(Image $image, int $amount): Image
+	{
+		[$kernel, $divisor] = Sharpen::kernel($amount);
+
+		$bands = $image->hasAlpha() === true ? $image->bands - 1 : $image->bands;
+
+		// the offset rounds, as casting truncates
+		$mask  = Image::newFromArray($kernel, $divisor, 0.5);
+		$color = $image->extract_band(0, ['n' => $bands]);
+		$sharp = $color->conv($mask, ['precision' => 'float']);
+		$sharp = $sharp->cast($image->format);
+
+		if ($bands === $image->bands) {
+			return $sharp;
+		}
+
+		$alpha = $image->extract_band($bands);
+
+		return $sharp->bandjoin($alpha);
 	}
 
 	/**

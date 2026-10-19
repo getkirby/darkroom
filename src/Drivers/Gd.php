@@ -12,6 +12,7 @@ use Darkroom\Rect;
 use Darkroom\Size;
 use Darkroom\Source;
 use Darkroom\Tools\Icc;
+use Darkroom\Tools\Sharpen;
 use ErrorException;
 use GdImage;
 use ValueError;
@@ -483,24 +484,12 @@ final class Gd extends Driver
 		return $resized;
 	}
 
-	/**
-	 * A gaussian sharpen with a sigma of the amount in
-	 * hundredths, as a 3×3 kernel: the pixel twice, less its blur
-	 */
 	private static function sharpen(GdImage $image, int $amount): void
 	{
-		$sigma  = (float)$amount / 100.0;
-		$edge   = exp(-0.5 / ($sigma * $sigma));
-		$corner = $edge * $edge;
-		$sum    = 1.0 + 4.0 * ($edge + $corner);
-		$kernel = [
-			[-$corner, -$edge, -$corner],
-			[-$edge, 2.0 * $sum, -$edge],
-			[-$corner, -$edge, -$corner],
-		];
+		[$kernel, $divisor] = Sharpen::kernel($amount);
 
 		// the offset rounds rather than truncates
-		imageconvolution($image, $kernel, $sum + 1.0, 0.5);
+		imageconvolution($image, $kernel, $divisor, 0.5);
 	}
 
 	/**
