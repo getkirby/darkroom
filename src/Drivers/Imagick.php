@@ -173,10 +173,11 @@ final class Imagick extends Driver
 		Plan $plan,
 		string $file
 	): void {
-		// GIF stores only what changes,
-		// other encoders need whole frames
+		// GIF stores only what changes, other encoders need whole frames;
+		// unchanged pixels turn transparent, so their dithering doesn't shimmer
 		if ($plan->frames === true && $plan->output->format === Format::Gif) {
 			$image = $image->optimizeImageLayers();
+			$image->optimizeImageTransparency();
 		}
 
 		$interlace = $plan->output->interlace === true ? Image::INTERLACE_PLANE : Image::INTERLACE_NO;
