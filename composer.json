@@ -1,6 +1,6 @@
 {
 	"name": "getkirby/darkroom",
-	"description": "Resized, cropped, oriented and filtered images with GD, Imagick or libvips, fast and with bounded memory",
+	"description": "Resize, crop, orient and filter images with GD, Imagick or libvips",
 	"license": "MIT",
 	"type": "library",
 	"keywords": ["image", "thumbnail", "resize", "crop", "gd", "imagick", "vips"],
