@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<psalm
+	errorLevel="1"
+	findUnusedPsalmSuppress="true"
+	resolveFromConfigFile="true"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="https://getpsalm.org/schema/config"
+	xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+>
+	<!-- no shell or other programs, no debug output -->
+	<forbiddenFunctions>
+		<function name="eval" />
+		<function name="exec" />
+		<function name="mail" />
+		<function name="passthru" />
+		<function name="pcntl_exec" />
+		<function name="phpinfo" />
+		<function name="popen" />
+		<function name="print_r" />
+		<function name="proc_open" />
+		<function name="shell_exec" />
+		<function name="system" />
+		<function name="var_dump" />
+	</forbiddenFunctions>
+
+	<issueHandlers>
+		<!-- storing a mixed value is harmless; using one is still reported -->
+		<MixedAssignment errorLevel="suppress" />
+
+		<MissingOverrideAttribute errorLevel="suppress" />
+
+		<!-- public API looks unused to Psalm -->
+		<PossiblyUnusedMethod errorLevel="suppress" />
+		<PossiblyUnusedParam errorLevel="suppress" />
+		<PossiblyUnusedProperty errorLevel="suppress" />
+		<PossiblyUnusedReturnValue errorLevel="suppress" />
+		<UnusedClass errorLevel="suppress" />
+	</issueHandlers>
+
+	<projectFiles>
+		<directory name="src" />
+		<ignoreFiles>
+			<directory name="vendor" />
+		</ignoreFiles>
+	</projectFiles>
+</psalm>

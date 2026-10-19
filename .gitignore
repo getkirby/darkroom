@@ -1,0 +1,9 @@
+.DS_Store
+/.php-cs-fixer.cache
+/.phpbench
+/.phpunit.cache
+/bench/images
+/composer.lock
+/phpunit.xml
+/playground/cache
+/vendor
