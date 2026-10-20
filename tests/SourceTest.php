@@ -366,6 +366,8 @@ class SourceTest extends TestCase
 			'portrait 8'  => ['orientation/Portrait_8.jpg', 120, 180, Orientation::Rotate270],
 
 			'gif'                 => ['gif/still.gif', 30, 20, Orientation::None],
+			'jp2'                 => ['jp2/plain.jp2', 30, 20, Orientation::None],
+			'jp2, codestream'     => ['jp2/plain.j2k', 30, 20, Orientation::None],
 			'gif, animated'       => ['gif/animated.gif', 30, 20, Orientation::None],
 			'png'                 => ['png/plain.png', 30, 20, Orientation::None],
 			'png, exif'           => ['png/exif-6.png', 20, 30, Orientation::Rotate90],

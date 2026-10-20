@@ -13,6 +13,7 @@ enum Format
 	case Avif;
 	case Gif;
 	case Heic;
+	case Jp2;
 	case Jpeg;
 	case Jxl;
 	case Png;
@@ -56,6 +57,8 @@ enum Format
 			array_intersect($brands, ['mif1', 'msf1', 'heic', 'heix', 'hevc', 'hevx']) !== [] => self::Heic,
 			str_starts_with($bytes, "\xFF\x0A"),
 			str_starts_with($bytes, "\0\0\0\x0CJXL \r\n\x87\n") => self::Jxl,
+			str_starts_with($bytes, "\xFF\x4F\xFF\x51"),
+			str_starts_with($bytes, "\0\0\0\x0CjP  \r\n\x87\n") => self::Jp2,
 			default => null
 		};
 	}
@@ -74,6 +77,7 @@ enum Format
 			self::Avif => ['avif'],
 			self::Gif  => ['gif'],
 			self::Heic => ['heic', 'heif'],
+			self::Jp2  => ['jp2', 'j2k', 'jpf', 'jpx'],
 			self::Jpeg => ['jpg', 'jpeg', 'jpe'],
 			self::Jxl  => ['jxl'],
 			self::Png  => ['png', 'apng'],
@@ -126,6 +130,7 @@ enum Format
 			self::Avif => ['image/avif'],
 			self::Gif  => ['image/gif'],
 			self::Heic => ['image/heic', 'image/heif'],
+			self::Jp2  => ['image/jp2', 'image/jpx'],
 			self::Jpeg => ['image/jpeg', 'image/pjpeg'],
 			self::Jxl  => ['image/jxl'],
 			self::Png  => ['image/png', 'image/apng'],

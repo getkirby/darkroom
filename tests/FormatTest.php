@@ -22,6 +22,8 @@ class FormatTest extends TestCase
 			'heic, major only' => [self::ftyp('heic'), Format::Heic],
 			'heic, sequence'   => [self::ftyp('msf1', 'msf1', 'hevc'), Format::Heic],
 			'heif'             => [self::ftyp('mif1', 'mif1'), Format::Heic],
+			'jp2'              => ["\0\0\0\x0CjP  \r\n\x87\n\0\0\0\x14ftypjp2 ", Format::Jp2],
+			'jp2, codestream'  => ["\xFF\x4F\xFF\x51\0\x2F", Format::Jp2],
 			'jpeg'             => ["\xFF\xD8\xFF\xE0", Format::Jpeg],
 			'jxl'              => ["\xFF\x0A\xFA\x1F", Format::Jxl],
 			'jxl, container'   => ["\0\0\0\x0CJXL \r\n\x87\n\0\0\0\x14ftypjxl ", Format::Jxl],
@@ -50,6 +52,7 @@ class FormatTest extends TestCase
 		$this->assertSame('gif', Format::Gif->extension());
 		$this->assertSame('heic', Format::Heic->extension());
 		$this->assertSame('jpg', Format::Jpeg->extension());
+		$this->assertSame('jp2', Format::Jp2->extension());
 		$this->assertSame('jxl', Format::Jxl->extension());
 		$this->assertSame('png', Format::Png->extension());
 		$this->assertSame('webp', Format::Webp->extension());
@@ -71,6 +74,9 @@ class FormatTest extends TestCase
 			'jpe'         => ['jpe', Format::Jpeg],
 			'image/jpeg'  => ['image/jpeg', Format::Jpeg],
 			'image/pjpeg' => ['image/pjpeg', Format::Jpeg],
+			'jp2'         => ['jp2', Format::Jp2],
+			'j2k'         => ['j2k', Format::Jp2],
+			'image/jp2'   => ['image/jp2', Format::Jp2],
 			'jxl'         => ['jxl', Format::Jxl],
 			'image/jxl'   => ['image/jxl', Format::Jxl],
 			'png'         => ['png', Format::Png],
@@ -96,7 +102,6 @@ class FormatTest extends TestCase
 			'empty'    => [''],
 			'dot'      => ['.jpg'],
 			'bmp'      => ['bmp'],
-			'jp2'      => ['jp2'],
 			'tif'      => ['tif'],
 			'svg'      => ['svg'],
 			'svg type' => ['image/svg+xml'],
@@ -126,6 +131,7 @@ class FormatTest extends TestCase
 		$this->assertSame('image/gif', Format::Gif->mime());
 		$this->assertSame('image/heic', Format::Heic->mime());
 		$this->assertSame('image/jpeg', Format::Jpeg->mime());
+		$this->assertSame('image/jp2', Format::Jp2->mime());
 		$this->assertSame('image/jxl', Format::Jxl->mime());
 		$this->assertSame('image/png', Format::Png->mime());
 		$this->assertSame('image/webp', Format::Webp->mime());
@@ -138,7 +144,7 @@ class FormatTest extends TestCase
 			fn (Format $format): bool => in_array($format, Format::VIEWABLE, true) === false
 		);
 
-		$this->assertSame([Format::Heic, Format::Jxl], array_values($hidden));
+		$this->assertSame([Format::Heic, Format::Jp2, Format::Jxl], array_values($hidden));
 		$this->assertSame(Format::Webp, Format::VIEWABLE[0]);
 	}
 }
