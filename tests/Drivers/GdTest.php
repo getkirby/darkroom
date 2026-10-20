@@ -8,10 +8,10 @@ use Darkroom\Drivers\Gd;
 use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
 use Darkroom\Format;
+use Darkroom\Options;
 use Darkroom\Orientation;
 use Darkroom\Plan;
 use Darkroom\Source;
-use Darkroom\Thumb;
 use Darkroom\Tools\Icc;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -45,7 +45,7 @@ class GdTest extends DriverTestCase
 	private function peak(
 		string $source,
 		string $file,
-		array $thumb
+		array $options
 	): int {
 		$darkroom = new Darkroom([$this->driver]);
 
@@ -53,7 +53,7 @@ class GdTest extends DriverTestCase
 		memory_reset_peak_usage();
 
 		$memory = memory_get_usage();
-		$darkroom->process($source, $file, $thumb);
+		$darkroom->process($source, $file, $options);
 
 		return memory_get_peak_usage() - $memory;
 	}
@@ -239,13 +239,13 @@ class GdTest extends DriverTestCase
 
 	#[DataProvider('processMemoryProvider')]
 	#[RunInSeparateProcess]
-	public function testProcessMemory(array $thumb, Orientation $orientation): void
+	public function testProcessMemory(array $options, Orientation $orientation): void
 	{
 		$jpeg   = static::jpeg(6000, 4000, $orientation);
 		$source = $this->file('large.jpg', $jpeg);
 		$file   = $this->file('thumb.jpg');
 
-		$peak = $this->peak($source, $file, $thumb);
+		$peak = $this->peak($source, $file, $options);
 
 		// 24 MP decode to 96 MB
 		$this->assertLessThan(110_000_000, $peak);
@@ -285,7 +285,7 @@ class GdTest extends DriverTestCase
 	{
 		$file = $this->file('thumb.avif');
 
-		$this->process('metadata.jpg', $file, static::THUMB);
+		$this->process('metadata.jpg', $file, static::OPTIONS);
 
 		$output = new Source($file);
 
@@ -353,8 +353,8 @@ class GdTest extends DriverTestCase
 	public function testProcessUnwritable(): void
 	{
 		$source = new Source(static::FIXTURES . '/png/plain.png');
-		$thumb  = Thumb::from(['width' => 10]);
-		$plan   = Plan::for($source, $thumb, driver: $this->driver);
+		$options  = Options::from(['width' => 10]);
+		$plan   = Plan::for($source, $options, driver: $this->driver);
 		$file   = $this->file('directory');
 
 		mkdir($file);

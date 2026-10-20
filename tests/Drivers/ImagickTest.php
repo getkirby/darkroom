@@ -8,11 +8,11 @@ use Darkroom\Drivers\Imagick;
 use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
 use Darkroom\Format;
+use Darkroom\Options;
 use Darkroom\Orientation;
 use Darkroom\Plan;
 use Darkroom\Size;
 use Darkroom\Source;
-use Darkroom\Thumb;
 use Darkroom\Tools\Icc;
 use Imagick as Image;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -182,7 +182,7 @@ class ImagickTest extends DriverTestCase
 		$file     = $this->file('thumb.jpg');
 		$darkroom = new Darkroom([$this->driver]);
 
-		$darkroom->process($source, $file, static::THUMB);
+		$darkroom->process($source, $file, static::OPTIONS);
 
 		$image    = new Image($file);
 		$pixel    = $image->getImagePixelColor(20, 15);
@@ -202,15 +202,15 @@ class ImagickTest extends DriverTestCase
 		$file   = $this->file('thumb.gif');
 
 		// three frames of 30×20 pixels
-		$within = new Darkroom(['imagick'], limit: 1800);
-		$above  = new Darkroom(['imagick'], limit: 1799);
+		$within = new Darkroom(['imagick'], settings: ['limit' => 1800]);
+		$above  = new Darkroom(['imagick'], settings: ['limit' => 1799]);
 
-		$within->process($source, $file, static::THUMB);
+		$within->process($source, $file, static::OPTIONS);
 
 		$this->assertFileExists($file);
 		$this->expectException(LimitException::class);
 
-		$above->process($source, $file, static::THUMB);
+		$above->process($source, $file, static::OPTIONS);
 	}
 
 	public static function processFrameSizeProvider(): array
@@ -229,13 +229,13 @@ class ImagickTest extends DriverTestCase
 		$small    = substr_replace($gif, "\x02\0\x02\0", 6, 4);
 		$source   = $this->file('frame.gif', $small);
 		$file     = $this->file('thumb.gif');
-		$darkroom = new Darkroom(['imagick'], limit: $limit);
+		$darkroom = new Darkroom(['imagick'], settings: ['limit' => $limit]);
 
 		if ($throws === true) {
 			$this->expectException(ProcessException::class);
 		}
 
-		$darkroom->process($source, $file, static::THUMB);
+		$darkroom->process($source, $file, static::OPTIONS);
 
 		$this->assertFileExists($file);
 	}
@@ -262,9 +262,9 @@ class ImagickTest extends DriverTestCase
 		$size   = $source->size();
 		$thumbs = static::thumbs($size->width);
 
-		foreach ($thumbs as $options) {
-			$thumb = Thumb::from($options);
-			$plan  = Plan::for($source, $thumb, driver: $this->driver);
+		foreach ($thumbs as $values) {
+			$options = Options::from($values);
+			$plan  = Plan::for($source, $options, driver: $this->driver);
 			$hint  = $plan->hint();
 			$scale = $plan->scale();
 			$image = new Image();
@@ -277,7 +277,7 @@ class ImagickTest extends DriverTestCase
 				$image->getImageHeight()
 			);
 			$size    = $decoded->width . '×' . $decoded->height;
-			$message = json_encode($options) . ' decoded at ' . $size;
+			$message = json_encode($values) . ' decoded at ' . $size;
 
 			$this->assertGreaterThanOrEqual($scale->width, $decoded->width, $message);
 			$this->assertGreaterThanOrEqual($scale->height, $decoded->height, $message);
@@ -292,7 +292,7 @@ class ImagickTest extends DriverTestCase
 		$image = new Image();
 		$areas = [];
 
-		$plan = $this->process('gif/partial.gif', $file, static::THUMB);
+		$plan = $this->process('gif/partial.gif', $file, static::OPTIONS);
 
 		$image->pingImage($file);
 
@@ -316,7 +316,7 @@ class ImagickTest extends DriverTestCase
 		$darkroom = new Darkroom([$this->driver]);
 		$limits   = static::limits();
 
-		$this->process('gif/animated.gif', $gif, static::THUMB);
+		$this->process('gif/animated.gif', $gif, static::OPTIONS);
 
 		$this->assertSame($limits, static::limits());
 
@@ -361,7 +361,7 @@ class ImagickTest extends DriverTestCase
 
 		ini_set('max_execution_time', '100');
 
-		$this->process('orientation/Landscape_1.jpg', $file, static::THUMB);
+		$this->process('orientation/Landscape_1.jpg', $file, static::OPTIONS);
 
 		$limit = Image::getResourceLimit(Image::RESOURCETYPE_TIME);
 

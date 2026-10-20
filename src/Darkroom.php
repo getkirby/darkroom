@@ -13,9 +13,14 @@ use InvalidArgumentException;
 final class Darkroom
 {
 	/**
-	 * Quality, interlace and icc from the settings
+	 * For every thumb without its own
 	 */
-	private Defaults $defaults;
+	public readonly Defaults $defaults;
+
+	/**
+	 * For the darkroom and its drivers
+	 */
+	public readonly Settings $settings;
 
 	/**
 	 * @var array<Driver>
@@ -31,17 +36,16 @@ final class Darkroom
 
 	/**
 	 * @param array<string|class-string<Driver>|Driver> $drivers In order of preference
-	 * @param array<string, mixed> $settings `quality`, `interlace`, `icc` and each driver's own keys
-	 * @param $limit Pixel cap for the source and all its frames
 	 *
-	 * @throws InvalidArgumentException For an invalid setting or an unknown driver
+	 * @throws InvalidArgumentException For an invalid default or setting, or an unknown driver
 	 */
 	public function __construct(
 		public readonly array $drivers = ['imagick', 'gd', 'vips'],
-		public readonly array $settings = [],
-		public readonly int|null $limit = 200_000_000,
+		Defaults|array $defaults = [],
+		Settings|array $settings = [],
 	) {
-		$this->defaults  = Defaults::from($settings);
+		$this->defaults  = Defaults::from($defaults);
+		$this->settings  = Settings::from($settings);
 		$this->instances = array_map($this->instance(...), $drivers);
 	}
 
@@ -180,7 +184,7 @@ final class Darkroom
 			);
 		}
 
-		return new $class([...$this->settings, 'limit' => $this->limit]);
+		return new $class($this->settings->toArray());
 	}
 
 	/**
@@ -203,17 +207,15 @@ final class Darkroom
 	/**
 	 * For several thumbs of a file, pass the `Source` from `open()`
 	 */
-	public function plan(Source|string $source, Thumb|array $thumb): Plan
+	public function plan(Source|string $source, Options|array $options): Plan
 	{
 		if (is_string($source) === true) {
 			$source = $this->open($source);
 		}
 
-		if (is_array($thumb) === true) {
-			$thumb = Thumb::from($thumb);
-		}
+		$options = Options::from($options);
 
-		return Plan::for($source, $thumb, $this->defaults);
+		return Plan::for($source, $options, $this->defaults);
 	}
 
 	/**
@@ -221,25 +223,25 @@ final class Darkroom
 	 *
 	 * @throws UnsupportedException For an unreadable source or without a driver
 	 * @throws LimitException Above the pixel limit
-	 * @throws InvalidArgumentException For an invalid thumb or format, or a plan with options
+	 * @throws InvalidArgumentException For invalid options or format, or a plan with options
 	 */
 	public function process(
 		Plan|Source|string $src,
 		string $dst,
-		Thumb|array $thumb = []
+		Options|array $options = []
 	): Plan {
 		if ($src instanceof Plan) {
-			if ($thumb !== []) {
+			if ($options !== []) {
 				throw new InvalidArgumentException(
-					message: 'Either a plan or thumb options, not both'
+					message: 'Either a plan or options, not both'
 				);
 			}
 
-			$thumb = $src->thumb;
+			$options = $src->options;
 			$src   = $src->source;
 		}
 
-		$limit  = $this->limit ?? PHP_INT_MAX;
+		$limit  = $this->settings->limit ?? PHP_INT_MAX;
 		$source = $src instanceof Source ? $src : $this->open($src);
 		$input  = $source->format();
 		$pixels = $source->size()->pixels();
@@ -256,15 +258,13 @@ final class Darkroom
 			);
 		}
 
-		if (is_array($thumb) === true) {
-			$thumb = Thumb::from($thumb);
-		}
+		$options = Options::from($options);
 
 		$format = Format::from(pathinfo($dst, PATHINFO_EXTENSION));
 
-		if ($thumb->format !== null && $thumb->format !== $format) {
+		if ($options->format !== null && $options->format !== $format) {
 			throw new InvalidArgumentException(
-				message: 'Thumb format ' . $thumb->format->extension() . ' doesn\'t match: ' . $dst
+				message: 'Format ' . $options->format->extension() . ' doesn\'t match: ' . $dst
 			);
 		}
 
@@ -276,8 +276,8 @@ final class Darkroom
 			);
 		}
 
-		$thumb = Thumb::from([...$thumb->toArray(), 'format' => $format]);
-		$plan  = Plan::for($source, $thumb, $this->defaults, $driver);
+		$options = Options::from([...$options->toArray(), 'format' => $format]);
+		$plan  = Plan::for($source, $options, $this->defaults, $driver);
 
 		$this->write($driver, $plan, $dst);
 

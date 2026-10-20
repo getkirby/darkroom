@@ -71,12 +71,12 @@ abstract class DriverBench
 		];
 	}
 
-	private function process(string $file, array $thumb): void
+	private function process(string $file, array $options): void
 	{
 		$driver   = $this->driver();
 		$darkroom = new Darkroom([$driver]);
 		$target   = dirname($file) . '/thumbs/' . basename($file);
 
-		$darkroom->process($file, $target, $thumb);
+		$darkroom->process($file, $target, $options);
 	}
 }

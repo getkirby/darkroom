@@ -95,7 +95,7 @@ return [
 		'groups' => ['frames'],
 	],
 	'tiny.png' => [
-		'text'   => '12×8 pixels with colored corners, smaller than every thumb: never enlarged.',
+		'text'   => '12×8 pixels with colored corners, smaller than every options: never enlarged.',
 		'made'   => 'magick -size 12x8 xc:white, corner pixels in the edge colors, a black 2×2 center',
 		'groups' => $card,
 	],

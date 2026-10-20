@@ -3,6 +3,7 @@
 namespace Darkroom\Tests;
 
 use Darkroom\Darkroom;
+use Darkroom\Defaults;
 use Darkroom\Driver;
 use Darkroom\Drivers\Gd;
 use Darkroom\Drivers\Imagick;
@@ -11,9 +12,10 @@ use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
 use Darkroom\Exception\UnsupportedException;
 use Darkroom\Format;
+use Darkroom\Options;
+use Darkroom\Settings;
 use Darkroom\Size;
 use Darkroom\Source;
-use Darkroom\Thumb;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -41,8 +43,16 @@ class DarkroomTest extends TestCase
 		$darkroom = new Darkroom();
 
 		$this->assertSame(['imagick', 'gd', 'vips'], $darkroom->drivers);
-		$this->assertSame([], $darkroom->settings);
-		$this->assertSame(200_000_000, $darkroom->limit);
+		$this->assertEquals(new Defaults(), $darkroom->defaults);
+		$this->assertEquals(new Settings(), $darkroom->settings);
+	}
+
+	public function testConstructDefaults(): void
+	{
+		$defaults = new Defaults(quality: 80);
+		$darkroom = new Darkroom([], $defaults);
+
+		$this->assertSame($defaults, $darkroom->defaults);
 	}
 
 	public function testConstructDrivers(): void
@@ -58,6 +68,27 @@ class DarkroomTest extends TestCase
 		$this->assertInstanceOf(FakeDriver::class, $drivers[3]);
 		$this->assertNotSame($fake, $drivers[3]);
 		$this->assertSame($fake, $drivers[4]);
+	}
+
+	public static function constructInvalidDefaultsProvider(): array
+	{
+		return [
+			'quality'   => [['quality' => 'high'], 'Invalid quality: \'high\''],
+			'negative'  => [['quality' => -1], 'Invalid quality: -1'],
+			'interlace' => [['interlace' => 'flase'], 'Invalid interlace: \'flase\''],
+			'icc'       => [['icc' => 'flase'], 'Invalid icc: \'flase\''],
+			'icc 2'     => [['icc' => 2], 'Invalid icc: 2'],
+			'icc array' => [['icc' => []], 'Invalid icc: array'],
+		];
+	}
+
+	#[DataProvider('constructInvalidDefaultsProvider')]
+	public function testConstructInvalidDefaults(array $defaults, string $message): void
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage($message);
+
+		new Darkroom([], $defaults);
 	}
 
 	public static function constructInvalidDriverProvider(): array
@@ -78,52 +109,47 @@ class DarkroomTest extends TestCase
 		new Darkroom([$driver]);
 	}
 
-	public static function constructInvalidSettingsProvider(): array
-	{
-		return [
-			'quality'   => [['quality' => 'high'], 'Invalid quality: \'high\''],
-			'negative'  => [['quality' => -1], 'Invalid quality: -1'],
-			'interlace' => [['interlace' => 'flase'], 'Invalid interlace: \'flase\''],
-			'icc'       => [['icc' => 'flase'], 'Invalid icc: \'flase\''],
-			'icc 2'     => [['icc' => 2], 'Invalid icc: 2'],
-			'icc array' => [['icc' => []], 'Invalid icc: array'],
-		];
-	}
-
-	#[DataProvider('constructInvalidSettingsProvider')]
-	public function testConstructInvalidSettings(array $settings, string $message): void
+	public function testConstructInvalidLimit(): void
 	{
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage($message);
+		$this->expectExceptionMessage('Invalid limit: \'5\'');
 
-		new Darkroom([], $settings);
+		new Darkroom([], settings: ['limit' => '5']);
 	}
 
 	public function testConstructLimit(): void
 	{
-		$darkroom = new Darkroom([FakeDriver::class], ['limit' => 5], null);
-		$driver   = $darkroom->driver(Format::Jpeg, Format::Jpeg);
+		$none     = new Darkroom([FakeDriver::class], settings: ['limit' => null]);
+		$set      = new Darkroom([FakeDriver::class], settings: ['limit' => 5]);
+		$driver   = $none->driver(Format::Jpeg, Format::Jpeg);
 		$settings = $driver->settings();
 
-		// the limit, not a `limit` setting
+		$this->assertNull($none->settings->limit);
+		$this->assertSame(5, $set->settings->limit);
 		$this->assertNull($settings['limit']);
 	}
 
 	public function testConstructSettings(): void
 	{
-		$settings = [
+		$defaults = [
 			'quality'   => '80',
 			'interlace' => 'on',
 			'icc'       => 'no',
-			'threads'   => 4,
-			'other'     => [],
 		];
 
-		$darkroom = new Darkroom([FakeDriver::class], $settings, 1000);
+		$settings = [
+			'limit'   => 1000,
+			'threads' => 4,
+			'unknown' => [],
+		];
+
+		$darkroom = new Darkroom([FakeDriver::class], $defaults, $settings);
 		$driver   = $darkroom->driver(Format::Jpeg, Format::Jpeg);
 		$own      = $driver->settings();
 
-		$this->assertSame($settings, $darkroom->settings);
+		$this->assertSame(1000, $darkroom->settings->limit);
+		$this->assertSame(['threads' => 4, 'unknown' => []], $darkroom->settings->other);
+		$this->assertSame(80, $darkroom->defaults->quality);
 		$this->assertSame(4, $own['threads']);
 		$this->assertSame(1000, $own['limit']);
 		$this->assertArrayNotHasKey('quality', $own);
@@ -369,32 +395,32 @@ class DarkroomTest extends TestCase
 		$driver   = new FakeDriver();
 		$darkroom = new Darkroom([$driver]);
 		$source   = new Source(self::JPEG);
-		$thumb    = new Thumb(width: 90);
+		$options    = new Options(width: 90);
 
 		$plans = [
 			$darkroom->plan(self::JPEG, ['width' => 90]),
-			$darkroom->plan($source, $thumb),
+			$darkroom->plan($source, $options),
 		];
 
 		foreach ($plans as $plan) {
 			$this->assertEquals(new Size(90, 60), $plan->size);
-			$this->assertSame(Format::Jpeg, $plan->output->format);
-			$this->assertSame(90, $plan->output->quality);
+			$this->assertSame(Format::Jpeg, $plan->format);
+			$this->assertSame(90, $plan->quality);
 		}
 
 		$this->assertSame([], $driver->runs);
 	}
 
-	public function testPlanSettings(): void
+	public function testPlanDefaults(): void
 	{
-		$settings = ['quality' => '80', 'interlace' => 'on', 'icc' => 'off'];
-		$darkroom = new Darkroom([], $settings);
+		$defaults = ['quality' => '80', 'interlace' => 'on', 'icc' => 'off'];
+		$darkroom = new Darkroom([], $defaults);
 
 		$plan = $darkroom->plan(self::JPEG, []);
 
-		$this->assertSame(80, $plan->output->quality);
-		$this->assertTrue($plan->output->interlace);
-		$this->assertFalse($plan->output->icc);
+		$this->assertSame(80, $plan->quality);
+		$this->assertTrue($plan->interlace);
+		$this->assertFalse($plan->icc);
 	}
 
 	public function testProcess(): void
@@ -407,9 +433,9 @@ class DarkroomTest extends TestCase
 		$plan = $darkroom->process(self::GIF, $dst, ['width' => 90, 'interlace' => true]);
 
 		$this->assertSame([$plan], $driver->plans);
-		$this->assertSame(Format::Webp, $plan->output->format);
-		$this->assertSame(80, $plan->output->quality);
-		$this->assertTrue($plan->output->interlace);
+		$this->assertSame(Format::Webp, $plan->format);
+		$this->assertSame(80, $plan->quality);
+		$this->assertTrue($plan->interlace);
 		$this->assertTrue($plan->frames);
 
 		$this->assertSame('Webp', file_get_contents($dst));
@@ -508,16 +534,16 @@ class DarkroomTest extends TestCase
 	#[DataProvider('processFormatProvider')]
 	public function testProcessFormat(
 		string $dst,
-		array $thumb,
+		array $options,
 		Format $format
 	): void {
 		$driver   = new FakeDriver();
 		$darkroom = new Darkroom([$driver]);
 		$dst      = $this->file($dst);
 
-		$plan = $darkroom->process(self::JPEG, $dst, $thumb);
+		$plan = $darkroom->process(self::JPEG, $dst, $options);
 
-		$this->assertSame($format, $plan->output->format);
+		$this->assertSame($format, $plan->format);
 	}
 
 	public static function processInvalidFormatProvider(): array
@@ -528,7 +554,7 @@ class DarkroomTest extends TestCase
 			'other format' => [
 				'thumb.png',
 				['format' => 'webp'],
-				"Thumb format webp doesn't match: "
+				"Format webp doesn't match: "
 			],
 		];
 	}
@@ -536,7 +562,7 @@ class DarkroomTest extends TestCase
 	#[DataProvider('processInvalidFormatProvider')]
 	public function testProcessInvalidFormat(
 		string $dst,
-		array $thumb,
+		array $options,
 		string $message
 	): void {
 		$driver   = new FakeDriver();
@@ -546,13 +572,13 @@ class DarkroomTest extends TestCase
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage($message);
 
-		$darkroom->process(self::JPEG, $dst, $thumb);
+		$darkroom->process(self::JPEG, $dst, $options);
 	}
 
 	public function testProcessLimit(): void
 	{
 		$driver   = new FakeDriver();
-		$darkroom = new Darkroom([$driver], limit: 180 * 120);
+		$darkroom = new Darkroom([$driver], settings: ['limit' => 180 * 120]);
 		$dst      = $this->file('photo.jpg');
 
 		$plan = $darkroom->process(self::JPEG, $dst, []);
@@ -568,7 +594,7 @@ class DarkroomTest extends TestCase
 	public function testProcessLimitSource(): void
 	{
 		$driver   = new FakeDriver();
-		$darkroom = new Darkroom([$driver], limit: 180 * 120 - 1);
+		$darkroom = new Darkroom([$driver], settings: ['limit' => 180 * 120 - 1]);
 		$dst      = $this->file('photo.jpg');
 
 		$this->expectException(LimitException::class);
@@ -584,7 +610,7 @@ class DarkroomTest extends TestCase
 	public function testProcessNoLimit(): void
 	{
 		$driver   = new FakeDriver();
-		$darkroom = new Darkroom([$driver], limit: null);
+		$darkroom = new Darkroom([$driver], settings: ['limit' => null]);
 		$dst      = $this->file('photo.png');
 
 		// twice the default limit
@@ -594,6 +620,27 @@ class DarkroomTest extends TestCase
 		$plan = $darkroom->process($src, $dst, ['width' => 100]);
 
 		$this->assertEquals(new Size(100, 100), $plan->size);
+	}
+
+	public function testProcessOptions(): void
+	{
+		$driver   = new FakeDriver();
+		$darkroom = new Darkroom([$driver], ['interlace' => true]);
+		$dst      = $this->file('photo.png');
+		$options    = new Options(
+			width:     60,
+			crop:      'top left',
+			grayscale: true,
+			format:    Format::Png,
+			interlace: false
+		);
+
+		$plan = $darkroom->process(self::JPEG, $dst, $options);
+
+		$this->assertEquals(new Size(60, 60), $plan->size);
+		$this->assertTrue($plan->options->grayscale);
+		$this->assertFalse($plan->interlace);
+		$this->assertSame(Format::Png, $plan->format);
 	}
 
 	public function testProcessOverwrite(): void
@@ -630,7 +677,7 @@ class DarkroomTest extends TestCase
 		$dst      = $this->file('photo.png');
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage("Thumb format webp doesn't match: " . $dst);
+		$this->expectExceptionMessage("Format webp doesn't match: " . $dst);
 
 		$darkroom->process($plan, $dst);
 	}
@@ -639,12 +686,12 @@ class DarkroomTest extends TestCase
 	{
 		return [
 			'array' => [['width' => 60]],
-			'thumb' => [new Thumb(width: 60)],
+			'thumb' => [new Options(width: 60)],
 		];
 	}
 
 	#[DataProvider('processPlanOptionsProvider')]
-	public function testProcessPlanOptions(Thumb|array $thumb): void
+	public function testProcessPlanOptions(Options|array $options): void
 	{
 		$driver   = new FakeDriver();
 		$darkroom = new Darkroom([$driver]);
@@ -652,10 +699,10 @@ class DarkroomTest extends TestCase
 		$dst      = $this->file('photo.jpg');
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('Either a plan or thumb options, not both');
+		$this->expectExceptionMessage('Either a plan or options, not both');
 
 		try {
-			$darkroom->process($plan, $dst, $thumb);
+			$darkroom->process($plan, $dst, $options);
 		} finally {
 			$this->assertSame([], $driver->plans);
 		}
@@ -689,27 +736,6 @@ class DarkroomTest extends TestCase
 
 		$this->assertSame($source, $plan->source);
 		$this->assertEquals(new Size(90, 60), $plan->size);
-	}
-
-	public function testProcessThumb(): void
-	{
-		$driver   = new FakeDriver();
-		$darkroom = new Darkroom([$driver], ['interlace' => true]);
-		$dst      = $this->file('photo.png');
-		$thumb    = new Thumb(
-			width:     60,
-			crop:      'top left',
-			grayscale: true,
-			format:    Format::Png,
-			interlace: false
-		);
-
-		$plan = $darkroom->process(self::JPEG, $dst, $thumb);
-
-		$this->assertEquals(new Size(60, 60), $plan->size);
-		$this->assertTrue($plan->thumb->grayscale);
-		$this->assertFalse($plan->output->interlace);
-		$this->assertSame(Format::Png, $plan->output->format);
 	}
 
 	public function testProcessUnrecognised(): void

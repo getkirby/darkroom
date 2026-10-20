@@ -30,11 +30,11 @@ abstract class DriverTestCase extends TestCase
 	protected const string FIXTURES = __DIR__ . '/../fixtures';
 	protected const bool ICC = true;
 	protected const float MATCH = 0.05;
-	protected const string REFERENCES = __DIR__ . '/../references';
-	protected const array THUMB = [
+	protected const array OPTIONS = [
 		'width'  => 48,
 		'height' => 48
 	];
+	protected const string REFERENCES = __DIR__ . '/../references';
 
 	protected Driver $driver;
 
@@ -264,8 +264,8 @@ abstract class DriverTestCase extends TestCase
 	protected function process(
 		string $fixture,
 		string $file,
-		array $thumb,
-		array $settings = []
+		array $options,
+		array $defaults = []
 	): Plan {
 		$source = new Source(static::FIXTURES . '/' . $fixture);
 		$input  = $source->format();
@@ -283,10 +283,10 @@ abstract class DriverTestCase extends TestCase
 			$this->skip('Can\'t write ' . $output->extension(), $this->driver, $output);
 		}
 
-		$darkroom = new Darkroom([$this->driver], $settings);
+		$darkroom = new Darkroom([$this->driver], $defaults);
 		$hash     = md5_file($source->file);
 
-		$plan = $darkroom->process($source->file, $file, $thumb);
+		$plan = $darkroom->process($source->file, $file, $options);
 
 		$this->assertSame($hash, md5_file($source->file), 'Changed ' . $fixture);
 
@@ -383,7 +383,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process($fixture, $file, static::THUMB);
+		$this->process($fixture, $file, static::OPTIONS);
 
 		$this->assertReference($fixture, $file);
 	}
@@ -397,9 +397,9 @@ abstract class DriverTestCase extends TestCase
 		$crop = ['width' => 30, 'height' => 30, 'crop' => true];
 
 		return [
-			'gif to gif'         => ['gif/partial.gif', 'gif', static::THUMB, 'gif/partial.gif'],
+			'gif to gif'         => ['gif/partial.gif', 'gif', static::OPTIONS, 'gif/partial.gif'],
 			'webp to webp, crop' => ['webp/partial.webp', 'webp', $crop, 'crop/partial'],
-			'webp to gif'        => ['webp/partial.webp', 'gif', static::THUMB, 'webp/partial.webp'],
+			'webp to gif'        => ['webp/partial.webp', 'gif', static::OPTIONS, 'webp/partial.webp'],
 		];
 	}
 
@@ -407,12 +407,12 @@ abstract class DriverTestCase extends TestCase
 	public function testProcessAnimation(
 		string $fixture,
 		string $extension,
-		array $thumb,
+		array $options,
 		string $reference
 	): void {
 		$file = $this->file('thumb.' . $extension);
 
-		$plan = $this->process($fixture, $file, $thumb);
+		$plan = $this->process($fixture, $file, $options);
 
 		if ($plan->frames === false) {
 			$this->markTestSkipped('Keeps no frames of ' . $fixture);
@@ -448,7 +448,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.png');
 
-		$this->process($fixture, $file, static::THUMB);
+		$this->process($fixture, $file, static::OPTIONS);
 
 		$this->assertReference($fixture, $file);
 	}
@@ -470,10 +470,10 @@ abstract class DriverTestCase extends TestCase
 	): void {
 		$file     = $this->file('thumb.png');
 		$expected = $this->file('expected.png');
-		$thumb    = ['width' => $requested[0], 'height' => $requested[1], 'crop' => true];
+		$options    = ['width' => $requested[0], 'height' => $requested[1], 'crop' => true];
 		$fit      = ['width' => $size[0], 'height' => $size[1], 'crop' => true];
 
-		$this->process($fixture, $file, $thumb);
+		$this->process($fixture, $file, $options);
 		$this->process($fixture, $expected, $fit);
 
 		$output = new Source($file);
@@ -499,7 +499,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process($fixture, $file, static::THUMB);
+		$this->process($fixture, $file, static::OPTIONS);
 
 		$data = file_get_contents($file);
 
@@ -512,7 +512,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.jpg');
 
-		$this->process('cmyk.jpg', $file, static::THUMB);
+		$this->process('cmyk.jpg', $file, static::OPTIONS);
 
 		$info = getimagesize($file);
 
@@ -535,7 +535,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process('cmyk.jpg', $file, static::THUMB);
+		$this->process('cmyk.jpg', $file, static::OPTIONS);
 
 		$png = $this->strip($file);
 
@@ -567,7 +567,7 @@ abstract class DriverTestCase extends TestCase
 		$source = static::FIXTURES . '/' . $fixture;
 		$file   = $this->file('thumb.' . $extension);
 
-		$this->process($fixture, $file, static::THUMB);
+		$this->process($fixture, $file, static::OPTIONS);
 
 		$output = new Source($file);
 
@@ -585,7 +585,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.png');
 
-		$this->process('png/16-bit.png', $file, static::THUMB);
+		$this->process('png/16-bit.png', $file, static::OPTIONS);
 
 		$info = getimagesize($file);
 
@@ -616,10 +616,10 @@ abstract class DriverTestCase extends TestCase
 		$fixture = 'orientation/Landscape_1.jpg';
 		$plain   = $this->file('plain.png');
 		$file    = $this->file('thumb.png');
-		$thumb   = ['width' => 48, ...$filters];
+		$options   = ['width' => 48, ...$filters];
 
 		$this->process($fixture, $plain, ['width' => 48]);
-		$this->process($fixture, $file, $thumb);
+		$this->process($fixture, $file, $options);
 
 		$expected = $this->detail(static::REFERENCES . '/' . $reference . '.png');
 		$original = $this->detail(static::REFERENCES . '/' . $fixture . '.png');
@@ -641,9 +641,9 @@ abstract class DriverTestCase extends TestCase
 
 		$darkroom->process($source, $file, ['width' => 32]);
 
-		$thumb = $this->image($file);
-		$red   = imagecolorat($thumb, 8, 8);
-		$green = imagecolorat($thumb, 24, 8);
+		$options = $this->image($file);
+		$red   = imagecolorat($options, 8, 8);
+		$green = imagecolorat($options, 24, 8);
 
 		$this->assertEqualsWithDelta([255, 128, 128], static::rgb($red), 3);
 		$this->assertEqualsWithDelta([255, 255, 255], static::rgb($green), 3);
@@ -673,9 +673,9 @@ abstract class DriverTestCase extends TestCase
 		string $reference
 	): void {
 		$file  = $this->file('thumb.png');
-		$thumb = ['width' => 24, 'height' => 20, 'crop' => $crop];
+		$options = ['width' => 24, 'height' => 20, 'crop' => $crop];
 
-		$this->process('orientation/' . $fixture, $file, $thumb);
+		$this->process('orientation/' . $fixture, $file, $options);
 
 		$this->assertReference('crop/' . $reference, $file);
 	}
@@ -696,12 +696,12 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $format->extension());
 
-		$plan = $this->process('orientation/Landscape_1.jpg', $file, static::THUMB);
+		$plan = $this->process('orientation/Landscape_1.jpg', $file, static::OPTIONS);
 
 		$output = new Source($file);
 		$info   = getimagesize($file);
 
-		$this->assertSame($format, $plan->output->format);
+		$this->assertSame($format, $plan->format);
 		$this->assertSame($format, $output->format());
 		$this->assertEquals($plan->size, $output->size());
 
@@ -726,7 +726,7 @@ abstract class DriverTestCase extends TestCase
 		$extension = pathinfo($fixture, PATHINFO_EXTENSION);
 		$file      = $this->file('thumb.' . $extension);
 
-		$plan = $this->process($fixture, $file, static::THUMB);
+		$plan = $this->process($fixture, $file, static::OPTIONS);
 
 		$output = new Source($file);
 
@@ -750,8 +750,8 @@ abstract class DriverTestCase extends TestCase
 
 		$darkroom->process($source, $file, ['width' => 32]);
 
-		$thumb  = $this->image($file);
-		$alphas = array_map(fn (int $x): int => imagecolorat($thumb, $x, 8) >> 24, [8, 24]);
+		$options  = $this->image($file);
+		$alphas = array_map(fn (int $x): int => imagecolorat($options, $x, 8) >> 24, [8, 24]);
 
 		$this->assertSame([127, 0], $alphas);
 	}
@@ -764,8 +764,8 @@ abstract class DriverTestCase extends TestCase
 
 		$darkroom->process($source, $file, ['width' => 48, 'grayscale' => true]);
 
-		$thumb = $this->image($file);
-		$grays = array_map(fn (int $x): int => imagecolorat($thumb, $x, 8) & 0xFF, [8, 24, 40]);
+		$options = $this->image($file);
+		$grays = array_map(fn (int $x): int => imagecolorat($options, $x, 8) & 0xFF, [8, 24, 40]);
 
 		// Rec. 601 luma: 0.299 R + 0.587 G + 0.114 B
 		$this->assertEqualsWithDelta([76, 149, 29], $grays, 1);
@@ -814,7 +814,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$plan = $this->process($fixture, $file, [...static::THUMB, 'grayscale' => true]);
+		$plan = $this->process($fixture, $file, [...static::OPTIONS, 'grayscale' => true]);
 
 		$output = new Source($file);
 
@@ -838,7 +838,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process('heif/hdr.avif', $file, static::THUMB);
+		$this->process('heif/hdr.avif', $file, static::OPTIONS);
 
 		// BT.2020 primaries and matrix, PQ transfer
 		$cicp = static::cicp($file);
@@ -855,7 +855,7 @@ abstract class DriverTestCase extends TestCase
 
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process('heif/hdr.avif', $file, static::THUMB);
+		$this->process('heif/hdr.avif', $file, static::OPTIONS);
 
 		$this->assertSame([10, 10, 10], static::depth($file));
 	}
@@ -875,7 +875,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process('heif/hdr.avif', $file, static::THUMB);
+		$this->process('heif/hdr.avif', $file, static::OPTIONS);
 
 		if ($hdr === true && $this->hdr() === true) {
 			$this->markTestSkipped('Keeps HDR in ' . $extension);
@@ -900,9 +900,9 @@ abstract class DriverTestCase extends TestCase
 	public function testProcessInterlace(string $extension, bool $interlace): void
 	{
 		$file  = $this->file('thumb.' . $extension);
-		$thumb = [...static::THUMB, 'interlace' => $interlace];
+		$options = [...static::OPTIONS, 'interlace' => $interlace];
 
-		$this->process('orientation/Landscape_1.jpg', $file, $thumb);
+		$this->process('orientation/Landscape_1.jpg', $file, $options);
 
 		$this->assertSame($interlace, static::interlaced($file));
 	}
@@ -914,20 +914,20 @@ abstract class DriverTestCase extends TestCase
 
 		return [
 			'crop'        => ['orientation/Landscape_6.jpg', $crop],
-			'orientation' => ['orientation/Portrait_5.jpg', static::THUMB],
+			'orientation' => ['orientation/Portrait_5.jpg', static::OPTIONS],
 			'filters'     => ['orientation/Landscape_1.jpg', $filters],
 		];
 	}
 
 	#[DataProvider('processMatchProvider')]
-	public function testProcessMatch(string $fixture, array $thumb): void
+	public function testProcessMatch(string $fixture, array $options): void
 	{
 		$source = new Source(static::FIXTURES . '/' . $fixture);
 		$file   = $this->file('thumb.png');
 		$all    = new Darkroom();
 		$others = 0;
 
-		$this->process($fixture, $file, $thumb);
+		$this->process($fixture, $file, $options);
 
 		$image = $this->image($file);
 
@@ -941,7 +941,7 @@ abstract class DriverTestCase extends TestCase
 
 			$other = $this->file($name . '.png');
 
-			$darkroom->process($source->file, $other, $thumb);
+			$darkroom->process($source->file, $other, $options);
 
 			$theirs     = $this->image($other);
 			$difference = static::difference($image, $theirs);
@@ -977,7 +977,7 @@ abstract class DriverTestCase extends TestCase
 		$source = static::FIXTURES . '/metadata.jpg';
 		$file   = $this->file('thumb.' . $extension);
 
-		$this->process('metadata.jpg', $file, static::THUMB);
+		$this->process('metadata.jpg', $file, static::OPTIONS);
 
 		$data = file_get_contents($file);
 
@@ -1023,7 +1023,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.png');
 
-		$this->process($fixture, $file, static::THUMB);
+		$this->process($fixture, $file, static::OPTIONS);
 
 		$this->assertReference($fixture, $file);
 	}
@@ -1050,7 +1050,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$plan = $this->process($fixture, $file, static::THUMB);
+		$plan = $this->process($fixture, $file, static::OPTIONS);
 
 		$output = new Source($file);
 
@@ -1075,7 +1075,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process('icc.jpg', $file, static::THUMB, ['icc' => $icc]);
+		$this->process('icc.jpg', $file, static::OPTIONS, ['icc' => $icc]);
 
 		$this->assertSame($icc === true && static::ICC === true, static::profile($file));
 	}
@@ -1096,8 +1096,8 @@ abstract class DriverTestCase extends TestCase
 		$low     = $this->file('low.' . $extension);
 		$high    = $this->file('high.' . $extension);
 
-		$this->process($fixture, $low, [...static::THUMB, 'quality' => 20]);
-		$this->process($fixture, $high, [...static::THUMB, 'quality' => 90]);
+		$this->process($fixture, $low, [...static::OPTIONS, 'quality' => 20]);
+		$this->process($fixture, $high, [...static::OPTIONS, 'quality' => 90]);
 
 		$this->assertLessThan(filesize($high), filesize($low));
 	}
@@ -1119,9 +1119,9 @@ abstract class DriverTestCase extends TestCase
 	public function testProcessSampling(string $fixture): void
 	{
 		$file  = $this->file('thumb.jpg');
-		$thumb = [...static::THUMB, 'quality' => 90];
+		$options = [...static::OPTIONS, 'quality' => 90];
 
-		$this->process($fixture, $file, $thumb);
+		$this->process($fixture, $file, $options);
 
 		$this->assertSame('2x2,1x1,1x1', static::sampling($file));
 	}
@@ -1135,7 +1135,7 @@ abstract class DriverTestCase extends TestCase
 		$file   = $this->file('thumb.png');
 
 		// by class name, so that the driver gets the limit
-		$darkroom = new Darkroom([$this->driver::class], limit: 10_000);
+		$darkroom = new Darkroom([$this->driver::class], settings: ['limit' => 10_000]);
 
 		try {
 			$darkroom->process($source, $file, ['width' => 2]);
@@ -1173,11 +1173,11 @@ abstract class DriverTestCase extends TestCase
 	}
 
 	#[DataProvider('processSizeProvider')]
-	public function testProcessSize(string $fixture, array $thumb): void
+	public function testProcessSize(string $fixture, array $options): void
 	{
 		$file = $this->file('thumb.png');
 
-		$plan = $this->process($fixture, $file, $thumb);
+		$plan = $this->process($fixture, $file, $options);
 
 		$output = new Source($file);
 
@@ -1202,7 +1202,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.gif');
 
-		$plan = $this->process($fixture, $file, static::THUMB);
+		$plan = $this->process($fixture, $file, static::OPTIONS);
 
 		$this->assertFalse($plan->frames);
 		$this->assertSame(1, $this->frames($file));
@@ -1222,7 +1222,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process($fixture, $file, static::THUMB);
+		$this->process($fixture, $file, static::OPTIONS);
 
 		$this->assertReference($fixture, $file);
 	}

@@ -242,7 +242,7 @@ final class Cell
 	{
 		return [
 			'size'   => static::size($plan->size),
-			'format' => $plan->output->format->extension(),
+			'format' => $plan->format->extension(),
 			'frames' => $plan->frames,
 		];
 	}

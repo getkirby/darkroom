@@ -2,16 +2,16 @@
 
 namespace Darkroom\Bench;
 
+use Darkroom\Options;
 use Darkroom\Plan;
 use Darkroom\Source;
-use Darkroom\Thumb;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\ParamProviders;
 use PhpBench\Attributes\Revs;
 use PhpBench\Attributes\Warmup;
 
 /**
- * What a page runs per thumb: headers only, no decoding; on the
+ * What a page runs per options: headers only, no decoding; on the
  * fixtures, as a header costs the same at any image size
  */
 #[Iterations(10)]
@@ -25,9 +25,9 @@ final class PlanBench
 	public function benchCrop(array $params): void
 	{
 		$source = new Source($params['file']);
-		$thumb  = Thumb::from(['width' => 800, 'height' => 600, 'crop' => true]);
+		$options  = Options::from(['width' => 800, 'height' => 600, 'crop' => true]);
 
-		Plan::for($source, $thumb);
+		Plan::for($source, $options);
 	}
 
 	public function benchRead(array $params): void
@@ -40,9 +40,9 @@ final class PlanBench
 	public function benchResize(array $params): void
 	{
 		$source = new Source($params['file']);
-		$thumb  = Thumb::from(['width' => 800]);
+		$options  = Options::from(['width' => 800]);
 
-		Plan::for($source, $thumb);
+		Plan::for($source, $options);
 	}
 
 	/**

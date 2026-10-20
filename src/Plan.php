@@ -10,7 +10,7 @@ use Darkroom\Exception\UnsupportedException;
 final readonly class Plan
 {
 	/**
-	 * @param $thumb The request it was planned from
+	 * @param $options The request it was planned from
 	 * @param $crop The part of the source kept, as displayed
 	 * @param $size The thumb's size, as displayed
 	 * @param $orientation Turns the resized region into the thumb, as displayed
@@ -18,12 +18,15 @@ final readonly class Plan
 	 */
 	private function __construct(
 		public Source $source,
-		public Thumb $thumb,
+		public Options $options,
 		public Rect $crop,
 		public Size $size,
 		public Orientation $orientation,
 		public bool $frames,
-		public Output $output,
+		public Format $format,
+		public int $quality,
+		public bool $interlace,
+		public bool $icc,
 	) {
 	}
 
@@ -77,27 +80,27 @@ final readonly class Plan
 	 */
 	public static function for(
 		Source $source,
-		Thumb $thumb,
+		Options $options,
 		Defaults $defaults = new Defaults(),
 		Driver|null $driver = null
 	): static {
 		$input     = $source->format();
 		$displayed = $source->size();
-		$focus     = $thumb->focus();
+		$focus     = $options->focus();
 
 		if ($focus === null) {
-			$size = $displayed->fit($thumb->width, $thumb->height);
+			$size = $displayed->fit($options->width, $options->height);
 			$crop = new Rect(0, 0, $displayed->width, $displayed->height);
 		} else {
 			// a missing side takes the other's
 			$requested = new Size(
 				width:
-					$thumb->width ??
-					$thumb->height ??
+					$options->width ??
+					$options->height ??
 					$displayed->width,
 				height:
-					$thumb->height ??
-					$thumb->width ??
+					$options->height ??
+					$options->width ??
 					$displayed->height
 			);
 			$crop = static::crop($displayed, $requested, $focus);
@@ -106,7 +109,7 @@ final readonly class Plan
 			$size = $requested->fit($crop->width, $crop->height);
 		}
 
-		$format = $thumb->format ?? $input;
+		$format = $options->format ?? $defaults->format ?? $input;
 
 		// what the decoder leaves undone
 		$orientation = $driver?->orients($source) === true ? Orientation::None : $source->orientation();
@@ -116,21 +119,18 @@ final readonly class Plan
 			$driver?->canAnimate($format) === true &&
 			$source->isAnimated() === true;
 
-		$output = new Output(
-			format:    $format,
-			quality:   $thumb->quality ?? $defaults->quality,
-			interlace: $thumb->interlace ?? $defaults->interlace,
-			icc:       $defaults->icc
-		);
-
+		// the thumb's, else the darkroom's, else the library's
 		return new static(
 			source:      $source,
-			thumb:       $thumb,
+			options:     $options,
 			crop:        $crop,
 			size:        $size,
 			orientation: $orientation,
 			frames:      $frames,
-			output:      $output
+			format:      $format,
+			quality:     $options->quality ?? $defaults->quality ?? Defaults::QUALITY,
+			interlace:   $options->interlace ?? $defaults->interlace ?? Defaults::INTERLACE,
+			icc:         $options->icc ?? $defaults->icc ?? Defaults::ICC
 		);
 	}
 

@@ -80,7 +80,7 @@ final class FakeDriver extends Driver
 		$this->plans[] = $plan;
 		$this->files[] = $file;
 
-		file_put_contents($file, $plan->output->format->name);
+		file_put_contents($file, $plan->format->name);
 
 		if ($this->settings['fatal'] === true) {
 			str_repeat('x', PHP_INT_MAX);

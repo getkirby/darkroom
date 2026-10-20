@@ -238,7 +238,7 @@ class VipsTest extends DriverTestCase
 	{
 		$source   = static::FIXTURES . '/gif/animated.gif';
 		$file     = $this->file('thumb.gif');
-		$darkroom = new Darkroom(['vips'], limit: $limit);
+		$darkroom = new Darkroom(['vips'], settings: ['limit' => $limit]);
 
 		if ($throws === true) {
 			$this->expectException(LimitException::class);
@@ -298,21 +298,21 @@ class VipsTest extends DriverTestCase
 	{
 		$source  = static::FIXTURES . '/png/plain.png';
 		$file    = $this->file('thumb.png');
-		$thumb   = ['width' => 10];
+		$options   = ['width' => 10];
 		$default = new Darkroom([$this->driver]);
 		$set     = new Darkroom([new Vips(['threads' => 6])]);
 		$vips    = FFI::cdef('int vips_concurrency_get(void);');
 
 		Config::concurrencySet($cores);
-		$default->process($source, $file, $thumb);
+		$default->process($source, $file, $options);
 
 		$this->assertSame($expected, $vips->vips_concurrency_get());
 
-		$set->process($source, $file, $thumb);
+		$set->process($source, $file, $options);
 
 		$this->assertSame(6, $vips->vips_concurrency_get());
 
-		$default->process($source, $file, $thumb);
+		$default->process($source, $file, $options);
 
 		$this->assertSame($expected, $vips->vips_concurrency_get());
 	}

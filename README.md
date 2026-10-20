@@ -67,7 +67,7 @@ Images are never enlarged, not even by a crop: it is exactly `width` × `height`
 | `icc` | `true` | Keeps the source's color profile. |
 | `threads` | Imagick 1, vips libvips' choice up to 4 | Threads per thumb; each costs memory. |
 
-They go into `new Darkroom(drivers: […], settings: […], limit: …)`, where `limit` is the most pixels a source, or all frames of an animation together, may have: 200 million by default, `null` for no limit.
+`quality`, `interlace` and `icc` go into `new Darkroom(defaults: […])`, `threads` and `limit` into `settings: […]`, where `limit` is the most pixels a source, or all frames of an animation together, may have: 200 million by default, `null` for no limit.
 
 ## Drivers
 

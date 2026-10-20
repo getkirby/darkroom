@@ -2,30 +2,32 @@
 
 namespace Darkroom\Tests;
 
+use Darkroom\Defaults;
 use Darkroom\Focus;
 use Darkroom\Format;
 use Darkroom\Gravity;
-use Darkroom\Thumb;
+use Darkroom\Options;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
-#[CoversClass(Thumb::class)]
-class ThumbTest extends TestCase
+#[CoversClass(Options::class)]
+class OptionsTest extends TestCase
 {
 	public function testConstruct(): void
 	{
-		$thumb = new Thumb();
+		$options = new Options();
 
-		$this->assertNull($thumb->width);
-		$this->assertNull($thumb->height);
-		$this->assertNull($thumb->crop);
-		$this->assertNull($thumb->blur);
-		$this->assertFalse($thumb->grayscale);
-		$this->assertNull($thumb->sharpen);
-		$this->assertNull($thumb->quality);
-		$this->assertNull($thumb->format);
-		$this->assertNull($thumb->interlace);
+		$this->assertNull($options->width);
+		$this->assertNull($options->height);
+		$this->assertNull($options->crop);
+		$this->assertNull($options->blur);
+		$this->assertFalse($options->grayscale);
+		$this->assertNull($options->sharpen);
+		$this->assertNull($options->quality);
+		$this->assertNull($options->format);
+		$this->assertNull($options->interlace);
+		$this->assertNull($options->icc);
 	}
 
 	public static function focusProvider(): array
@@ -47,26 +49,26 @@ class ThumbTest extends TestCase
 		float $x,
 		float $y
 	): void {
-		$thumb = new Thumb(crop: $crop);
+		$options = new Options(crop: $crop);
 
-		$this->assertEquals(new Focus($x, $y), $thumb->focus());
+		$this->assertEquals(new Focus($x, $y), $options->focus());
 	}
 
 	public function testFocusInvalid(): void
 	{
-		$thumb = new Thumb(crop: 'middle');
+		$options = new Options(crop: 'middle');
 
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid focus: middle');
 
-		$thumb->focus();
+		$options->focus();
 	}
 
 	public function testFocusWithoutCrop(): void
 	{
-		$thumb = new Thumb(width: 300);
+		$options = new Options(width: 300);
 
-		$this->assertNull($thumb->focus());
+		$this->assertNull($options->focus());
 	}
 
 	public static function fromProvider(): array
@@ -222,14 +224,23 @@ class ThumbTest extends TestCase
 	}
 
 	#[DataProvider('fromProvider')]
-	public function testFrom(array $options, array $expected): void
+	public function testFrom(array $values, array $expected): void
 	{
-		$expected = new Thumb(...$expected);
+		$expected = new Options(...$expected);
 
-		$thumb = Thumb::from($options);
+		$options = Options::from($values);
 
 		// compared as arrays, so `false` and `null` differ
-		$this->assertSame((array)$expected, (array)$thumb);
+		$this->assertSame((array)$expected, (array)$options);
+	}
+
+	public function testFromDefaults(): void
+	{
+		$defaults = new Defaults(quality: 80, format: Format::Webp);
+		$options  = Options::from($defaults);
+
+		$this->assertInstanceOf(Options::class, $options);
+		$this->assertSame(['quality' => 80, 'format' => 'webp'], $options->toArray());
 	}
 
 	public static function fromInvalidProvider(): array
@@ -280,17 +291,24 @@ class ThumbTest extends TestCase
 	}
 
 	#[DataProvider('fromInvalidProvider')]
-	public function testFromInvalid(array $options, string $message): void
+	public function testFromInvalid(array $values, string $message): void
 	{
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage($message);
 
-		Thumb::from($options);
+		Options::from($values);
+	}
+
+	public function testFromOptions(): void
+	{
+		$options = new Options(width: 300);
+
+		$this->assertSame($options, Options::from($options));
 	}
 
 	public function testToArray(): void
 	{
-		$thumb = new Thumb(
+		$options = new Options(
 			width:     300,
 			height:    200,
 			crop:      'top left',
@@ -299,11 +317,12 @@ class ThumbTest extends TestCase
 			sharpen:   25,
 			quality:   80,
 			format:    Format::Jpeg,
-			interlace: false
+			interlace: false,
+			icc:       false
 		);
 
-		$array = $thumb->toArray();
-		$back  = Thumb::from($array);
+		$array = $options->toArray();
+		$back  = Options::from($array);
 
 		$this->assertSame([
 			'width'     => 300,
@@ -315,16 +334,17 @@ class ThumbTest extends TestCase
 			'quality'   => 80,
 			'format'    => 'jpg',
 			'interlace' => false,
+			'icc'       => false,
 		], $array);
 
-		$this->assertSame((array)$thumb, (array)$back);
+		$this->assertSame((array)$options, (array)$back);
 	}
 
 	public function testToArrayWithoutOptions(): void
 	{
-		$empty  = new Thumb();
-		$color  = new Thumb(grayscale: false);
-		$height = new Thumb(height: 200);
+		$empty  = new Options();
+		$color  = new Options(grayscale: false);
+		$height = new Options(height: 200);
 
 		$this->assertSame([], $empty->toArray());
 		$this->assertSame([], $color->toArray());

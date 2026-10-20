@@ -196,27 +196,27 @@ final class Gd extends Driver
 		// encoders without alpha would keep the colors under it; JPEG
 		// decodes opaque, and no step after decoding adds transparency
 		if (
-			$plan->output->format->isOpaque() === true &&
+			$plan->format->isOpaque() === true &&
 			$plan->source->format()->isOpaque() === false
 		) {
 			$image = static::flatten($image);
 		}
 
 		imagesavealpha($image, true);
-		imageinterlace($image, $plan->output->interlace);
+		imageinterlace($image, $plan->interlace);
 
 		// GIF knows one transparent color instead of alpha
-		if ($plan->output->format === Format::Gif) {
+		if ($plan->format === Format::Gif) {
 			static::threshold($image);
 
 			$image = static::palette($image);
 		}
 
-		$encoder = static::encoder($plan->output->format);
-		$options = match ($plan->output->format) {
+		$encoder = static::encoder($plan->format);
+		$options = match ($plan->format) {
 			Format::Avif,
 			Format::Jpeg,
-			Format::Webp => [$plan->output->quality],
+			Format::Webp => [$plan->quality],
 			default      => []
 		};
 
@@ -225,7 +225,7 @@ final class Gd extends Driver
 
 		if ($encoder($image, $stream, ...$options) !== true) {
 			throw new ProcessException(
-				message: 'GD can\'t encode ' . $plan->output->format->extension()
+				message: 'GD can\'t encode ' . $plan->format->extension()
 			);
 		}
 
@@ -263,16 +263,16 @@ final class Gd extends Driver
 	 */
 	private static function filter(GdImage $image, Plan $plan): GdImage
 	{
-		if ($plan->thumb->grayscale === true) {
+		if ($plan->options->grayscale === true) {
 			imagefilter($image, IMG_FILTER_GRAYSCALE);
 		}
 
-		if ($plan->thumb->blur !== null) {
-			$image = static::blur($image, $plan->thumb->blur);
+		if ($plan->options->blur !== null) {
+			$image = static::blur($image, $plan->options->blur);
 		}
 
-		if ($plan->thumb->sharpen !== null) {
-			static::sharpen($image, $plan->thumb->sharpen);
+		if ($plan->options->sharpen !== null) {
+			static::sharpen($image, $plan->options->sharpen);
 		}
 
 		return $image;
@@ -418,7 +418,7 @@ final class Gd extends Driver
 			$image = static::orient($image, $plan->orientation);
 			$image = static::filter($image, $plan);
 			$data  = static::encode($image, $plan);
-			$data  = Icc::embed($data, $plan->output->format, $profile);
+			$data  = Icc::embed($data, $plan->format, $profile);
 
 			static::write($file, $data);
 		} catch (ErrorException|ValueError $exception) {
@@ -437,7 +437,7 @@ final class Gd extends Driver
 	 */
 	private static function profile(Plan $plan): string
 	{
-		if ($plan->output->icc === false) {
+		if ($plan->icc === false) {
 			return '';
 		}
 

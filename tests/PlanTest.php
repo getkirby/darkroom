@@ -5,12 +5,12 @@ namespace Darkroom\Tests;
 use Darkroom\Defaults;
 use Darkroom\Exception\UnsupportedException;
 use Darkroom\Format;
+use Darkroom\Options;
 use Darkroom\Orientation;
 use Darkroom\Plan;
 use Darkroom\Rect;
 use Darkroom\Size;
 use Darkroom\Source;
-use Darkroom\Thumb;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Random\Engine\Mt19937;
@@ -79,14 +79,14 @@ class PlanTest extends TestCase
 	#[DataProvider('forCropProvider')]
 	public function testForCrop(
 		array $source,
-		array $thumb,
+		array $options,
 		array $size,
 		array $region
 	): void {
 		$source = $this->source(...$source);
-		$thumb  = new Thumb(width: $thumb[0], height: $thumb[1], crop: 'center');
+		$options  = new Options(width: $options[0], height: $options[1], crop: 'center');
 
-		$plan = Plan::for($source, $thumb);
+		$plan = Plan::for($source, $options);
 
 		$this->assertEquals(new Size(...$size), $plan->size);
 		$this->assertEquals(new Size(...$size), $plan->resample());
@@ -130,13 +130,13 @@ class PlanTest extends TestCase
 	): void {
 		$source    = $this->source(...$source);
 		$requested = new Size(...$requested);
-		$thumb     = new Thumb(
+		$options     = new Options(
 			width:  $requested->width,
 			height: $requested->height,
 			crop:   $crop
 		);
 
-		$plan      = Plan::for($source, $thumb);
+		$plan      = Plan::for($source, $options);
 		$deviation = static::deviation($plan->size, $requested);
 
 		$this->assertEquals(new Size(...$size), $plan->size);
@@ -173,9 +173,9 @@ class PlanTest extends TestCase
 		array $region
 	): void {
 		$source = $this->source(...$source);
-		$thumb  = new Thumb(width: $size[0], height: $size[1], crop: $crop);
+		$options  = new Options(width: $size[0], height: $size[1], crop: $crop);
 
-		$plan = Plan::for($source, $thumb);
+		$plan = Plan::for($source, $options);
 
 		$this->assertEquals(new Size(...$size), $plan->size);
 		$this->assertEquals(new Rect(...$region), $plan->region());
@@ -184,35 +184,38 @@ class PlanTest extends TestCase
 	public function testForDefaults(): void
 	{
 		$source   = $this->source(1200, 768);
-		$plain    = new Thumb();
-		$own      = new Thumb(quality: 30, interlace: false);
-		$defaults = new Defaults(quality: 20, interlace: true, icc: false);
+		$plain    = new Options();
+		$own      = new Options(quality: 30, format: Format::Png, interlace: false, icc: true);
+		$defaults = new Defaults(quality: 20, format: Format::Webp, interlace: true, icc: false);
 
 		$plan = Plan::for($source, $plain);
 
-		$this->assertSame(90, $plan->output->quality);
-		$this->assertFalse($plan->output->interlace);
-		$this->assertTrue($plan->output->icc);
+		$this->assertSame(Format::Jpeg, $plan->format);
+		$this->assertSame(90, $plan->quality);
+		$this->assertFalse($plan->interlace);
+		$this->assertTrue($plan->icc);
 
 		$plan = Plan::for($source, $plain, $defaults);
 
-		$this->assertSame(20, $plan->output->quality);
-		$this->assertTrue($plan->output->interlace);
-		$this->assertFalse($plan->output->icc);
+		$this->assertSame(Format::Webp, $plan->format);
+		$this->assertSame(20, $plan->quality);
+		$this->assertTrue($plan->interlace);
+		$this->assertFalse($plan->icc);
 
 		$plan = Plan::for($source, $own, $defaults);
 
-		$this->assertSame(30, $plan->output->quality);
-		$this->assertFalse($plan->output->interlace);
-		$this->assertFalse($plan->output->icc);
+		$this->assertSame(Format::Png, $plan->format);
+		$this->assertSame(30, $plan->quality);
+		$this->assertFalse($plan->interlace);
+		$this->assertTrue($plan->icc);
 	}
 
 	public function testForEmpty(): void
 	{
 		$file    = $this->file('empty.jpg', "\xFF\xD8\xFF\xE0");
 		$source  = new Source($file);
-		$resize  = new Thumb(width: 300);
-		$crop    = new Thumb(width: 300, height: 200, crop: 'center');
+		$resize  = new Options(width: 300);
+		$crop    = new Options(width: 300, height: 200, crop: 'center');
 		$decoded = new Size(300, 200);
 
 		$plan = Plan::for($source, $resize);
@@ -236,27 +239,27 @@ class PlanTest extends TestCase
 	public function testForFormat(): void
 	{
 		$source = $this->source(1200, 768);
-		$plain  = new Thumb();
-		$webp   = new Thumb(format: Format::Webp);
+		$plain  = new Options();
+		$webp   = new Options(format: Format::Webp);
 
 		$same  = Plan::for($source, $plain);
 		$other = Plan::for($source, $webp);
 
 		$this->assertSame($source, $same->source);
-		$this->assertSame(Format::Jpeg, $same->output->format);
-		$this->assertSame(Format::Webp, $other->output->format);
+		$this->assertSame(Format::Jpeg, $same->format);
+		$this->assertSame(Format::Webp, $other->format);
 	}
 
 	public function testForFrames(): void
 	{
 		$source    = $this->source(1200, 768);
-		$thumb     = new Thumb(format: Format::Webp);
+		$options     = new Options(format: Format::Webp);
 		$driver    = new FakeDriver();
 		$animating = new FakeDriver(['animate' => Format::cases()]);
 
-		$plain  = Plan::for($source, $thumb);
-		$asked  = Plan::for($source, $thumb, driver: $driver);
-		$single = Plan::for($source, $thumb, driver: $animating);
+		$plain  = Plan::for($source, $options);
+		$asked  = Plan::for($source, $options, driver: $driver);
+		$single = Plan::for($source, $options, driver: $animating);
 
 		$this->assertFalse($plain->frames);
 
@@ -264,6 +267,16 @@ class PlanTest extends TestCase
 		$this->assertSame(['animate:Webp'], $driver->runs);
 
 		$this->assertFalse($single->frames);
+	}
+
+	public function testForOptions(): void
+	{
+		$source = $this->source(1200, 768);
+		$options  = new Options(blur: 10, grayscale: true, sharpen: 50);
+
+		$plan = Plan::for($source, $options);
+
+		$this->assertSame($options, $plan->options);
 	}
 
 	public static function forOrientationProvider(): array
@@ -303,7 +316,7 @@ class PlanTest extends TestCase
 		array $scaled
 	): void {
 		$source    = new Source(self::FIXTURES . '/orientation/' . $file);
-		$thumb     = new Thumb(width: 30, height: 40, crop: 'top left');
+		$options     = new Options(width: 30, height: 40, crop: 'top left');
 		$size      = new Size(30, 40);
 		$resample  = $orientation->apply($size);
 		$driver    = new FakeDriver();
@@ -314,8 +327,8 @@ class PlanTest extends TestCase
 		$fit       = $landscape === true ? new Size(60, 40) : new Size(30, 45);
 
 		$plans = [
-			Plan::for($source, $thumb),
-			Plan::for($source, $thumb, driver: $driver)
+			Plan::for($source, $options),
+			Plan::for($source, $options, driver: $driver)
 		];
 
 		foreach ($plans as $plan) {
@@ -329,7 +342,7 @@ class PlanTest extends TestCase
 			$this->assertEquals(new Rect(...$scaled), $plan->region($loaded));
 		}
 
-		$plan   = Plan::for($source, $thumb, driver: $orienting);
+		$plan   = Plan::for($source, $options, driver: $orienting);
 		$loaded = $plan->scale();
 
 		$this->assertEquals($size, $plan->size);
@@ -362,28 +375,18 @@ class PlanTest extends TestCase
 	#[DataProvider('forResizeProvider')]
 	public function testForResize(
 		array $source,
-		array $thumb,
+		array $options,
 		array $size
 	): void {
 		$full   = new Rect(0, 0, ...$source);
 		$source = $this->source(...$source);
-		$thumb  = new Thumb(width: $thumb[0], height: $thumb[1]);
+		$options  = new Options(width: $options[0], height: $options[1]);
 
-		$plan = Plan::for($source, $thumb);
+		$plan = Plan::for($source, $options);
 
 		$this->assertEquals(new Size(...$size), $plan->size);
 		$this->assertEquals(new Size(...$size), $plan->resample());
 		$this->assertEquals($full, $plan->region());
-	}
-
-	public function testForThumb(): void
-	{
-		$source = $this->source(1200, 768);
-		$thumb  = new Thumb(blur: 10, grayscale: true, sharpen: 50);
-
-		$plan = Plan::for($source, $thumb);
-
-		$this->assertSame($thumb, $plan->thumb);
 	}
 
 	public static function forUnsupportedProvider(): array
@@ -403,11 +406,11 @@ class PlanTest extends TestCase
 	{
 		$file   = $this->file('image.jpg', $data);
 		$source = new Source($file);
-		$thumb  = new Thumb(format: $format);
+		$options  = new Options(format: $format);
 
 		$this->expectException(UnsupportedException::class);
 
-		Plan::for($source, $thumb);
+		Plan::for($source, $options);
 	}
 
 	public static function hintProvider(): array
@@ -443,20 +446,20 @@ class PlanTest extends TestCase
 	public function testHint(
 		array $source,
 		Orientation $orientation,
-		array $thumb,
+		array $options,
 		array $hint
 	): void {
 		$source = $this->source(...$source, orientation: $orientation);
-		$thumb  = new Thumb(width: $thumb[0], height: $thumb[1], crop: $thumb[2]);
-		$plan   = Plan::for($source, $thumb);
+		$options  = new Options(width: $options[0], height: $options[1], crop: $options[2]);
+		$plan   = Plan::for($source, $options);
 
 		$this->assertEquals(new Size(...$hint), $plan->hint());
 	}
 
 	public function testRegion(): void
 	{
-		$left    = new Thumb(width: 30, height: 40, crop: 'top left');
-		$right   = new Thumb(width: 30, height: 40, crop: 'top right');
+		$left    = new Options(width: 30, height: 40, crop: 'top left');
+		$right   = new Options(width: 30, height: 40, crop: 'top right');
 		$flipped = new Source(self::FIXTURES . '/orientation/Landscape_2.jpg');
 		$rotated = new Source(self::FIXTURES . '/orientation/Landscape_6.jpg');
 		$upright = new Source(self::FIXTURES . '/orientation/Landscape_1.jpg');
@@ -494,11 +497,11 @@ class PlanTest extends TestCase
 	}
 
 	#[DataProvider('regionOrientationsProvider')]
-	public function testRegionOrientations(array $size, array $thumb): void
+	public function testRegionOrientations(array $size, array $options): void
 	{
-		$thumb   = new Thumb(width: $thumb[0], height: $thumb[1], crop: $thumb[2]);
+		$options   = new Options(width: $options[0], height: $options[1], crop: $options[2]);
 		$source  = $this->source(...$size);
-		$upright = Plan::for($source, $thumb);
+		$upright = Plan::for($source, $options);
 		$scale   = $upright->scale();
 		$hint    = $upright->hint();
 		$scaled  = $upright->region($scale);
@@ -506,7 +509,7 @@ class PlanTest extends TestCase
 
 		foreach (Orientation::cases() as $orientation) {
 			$source   = $this->source(...$size, orientation: $orientation);
-			$plan     = Plan::for($source, $thumb);
+			$plan     = Plan::for($source, $options);
 			$expected = $orientation->map($scaled, $scale);
 			$loaded   = $plan->scale();
 
@@ -534,13 +537,13 @@ class PlanTest extends TestCase
 	#[DataProvider('scaleProvider')]
 	public function testScale(
 		array $source,
-		array $thumb,
+		array $options,
 		array $scale,
 		array $region
 	): void {
 		$source = $this->source(...$source);
-		$thumb  = new Thumb(width: $thumb[0], height: $thumb[1], crop: $thumb[2]);
-		$plan   = Plan::for($source, $thumb);
+		$options  = new Options(width: $options[0], height: $options[1], crop: $options[2]);
+		$plan   = Plan::for($source, $options);
 
 		$loaded = $plan->scale();
 
@@ -568,14 +571,14 @@ class PlanTest extends TestCase
 			$orientation = Orientation::from($value);
 			$source      = $this->source($width, $height, $orientation);
 			$displayed   = $source->size();
-			$thumb       = new Thumb(
+			$options       = new Options(
 				width:  $option(),
 				height: $option(),
 				crop:   $crops[$random->getInt(0, count($crops) - 1)]
 			);
 
 			foreach ($drivers as $driver) {
-				$plan     = Plan::for($source, $thumb, driver: $driver);
+				$plan     = Plan::for($source, $options, driver: $driver);
 				$canvas   = $plan->orientation->apply($displayed);
 				$resample = $plan->resample();
 				$region   = $plan->region();
@@ -586,9 +589,9 @@ class PlanTest extends TestCase
 					$canvas->width,
 					$canvas->height,
 					$plan->orientation->name,
-					$thumb->width ?? '-',
-					$thumb->height ?? '-',
-					$thumb->crop ?? 'no crop'
+					$options->width ?? '-',
+					$options->height ?? '-',
+					$options->crop ?? 'no crop'
 				);
 
 				$this->assertEquals($plan->size, $oriented, $case);
@@ -596,14 +599,14 @@ class PlanTest extends TestCase
 				$this->assertGreaterThan(0, $region->width, $case);
 				$this->assertGreaterThan(0, $region->height, $case);
 
-				if ($thumb->crop === null) {
+				if ($options->crop === null) {
 					$whole = new Rect(0, 0, $canvas->width, $canvas->height);
 
 					$this->assertEquals($whole, $region, $case);
 				} else {
 					$requested = new Size(
-						width:  $thumb->width ?? $thumb->height ?? $displayed->width,
-						height: $thumb->height ?? $thumb->width ?? $displayed->height
+						width:  $options->width ?? $options->height ?? $displayed->width,
+						height: $options->height ?? $options->width ?? $displayed->height
 					);
 					$requested = $plan->orientation->apply($requested);
 					$cut       = static::deviation($region, $requested);
@@ -625,7 +628,7 @@ class PlanTest extends TestCase
 				$this->assertSame($resample->width, $scaled->width, $case);
 				$this->assertSame($resample->height, $scaled->height, $case);
 
-				if ($plan->orientation === Orientation::None && $thumb->crop === 'bottom right') {
+				if ($plan->orientation === Orientation::None && $options->crop === 'bottom right') {
 					$this->assertSame($canvas->width, $region->x + $region->width, $case);
 					$this->assertSame($canvas->height, $region->y + $region->height, $case);
 					$this->assertSame($scale->width, $scaled->x + $scaled->width, $case);

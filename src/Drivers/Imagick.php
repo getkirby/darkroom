@@ -9,6 +9,7 @@ use Darkroom\Exception\ProcessException;
 use Darkroom\Format;
 use Darkroom\Orientation;
 use Darkroom\Plan;
+use Darkroom\Settings;
 use Darkroom\Size;
 use Darkroom\Source;
 use Darkroom\Tools\Hdr;
@@ -163,7 +164,7 @@ final class Imagick extends Driver
 	protected function defaults(): array
 	{
 		return [
-			'limit'   => 200_000_000,
+			'limit'   => Settings::LIMIT,
 			'threads' => 1,
 		];
 	}
@@ -175,43 +176,43 @@ final class Imagick extends Driver
 	): void {
 		// GIF stores only what changes, other encoders need whole frames;
 		// unchanged pixels turn transparent, so their dithering doesn't shimmer
-		if ($plan->frames === true && $plan->output->format === Format::Gif) {
+		if ($plan->frames === true && $plan->format === Format::Gif) {
 			$image = $image->optimizeImageLayers();
 			$image->optimizeImageTransparency();
 		}
 
-		$interlace = $plan->output->interlace === true ? Image::INTERLACE_PLANE : Image::INTERLACE_NO;
+		$interlace = $plan->interlace === true ? Image::INTERLACE_PLANE : Image::INTERLACE_NO;
 
 		// JPEG and WebP read the image's quality,
 		// AVIF and JPEG XL the wand's
-		$image->setCompressionQuality($plan->output->quality);
+		$image->setCompressionQuality($plan->quality);
 		$image->setInterlaceScheme($interlace);
 
 		// chroma at half resolution both ways (4:2:0),
 		// where ImageMagick would keep the source's or,
 		// from quality 90 on, write it whole
-		if ($plan->output->format === Format::Jpeg) {
+		if ($plan->format === Format::Jpeg) {
 			$image->setOption('jpeg:sampling-factor', '2x2,1x1,1x1');
 		}
 
 		// PNG reads the quality's tens as zlib level;
 		// 9 takes two to five times as long as zlib's
 		// default for files a few percent smaller
-		if ($plan->output->format === Format::Png) {
+		if ($plan->format === Format::Png) {
 			$image->setOption('png:compression-level', '6');
 		}
 
 		foreach ($image as $frame) {
-			$frame->setImageCompressionQuality($plan->output->quality);
+			$frame->setImageCompressionQuality($plan->quality);
 
 			// 16 bits only make thumbs larger
-			if ($plan->output->format === Format::Png) {
+			if ($plan->format === Format::Png) {
 				$frame->setImageDepth(8);
 			}
 
 			// on white, as encoders without alpha
 			// would keep the colors under it
-			if ($plan->output->format->isOpaque() === true) {
+			if ($plan->format->isOpaque() === true) {
 				$frame->setImageBackgroundColor('white');
 				$frame->setImageAlphaChannel(Image::ALPHACHANNEL_REMOVE);
 			}
@@ -220,7 +221,7 @@ final class Imagick extends Driver
 		// the prefix decides the format,
 		// not the temp file's name
 		$image->writeImages(
-			static::name($plan->output->format) . ':' . $file,
+			static::name($plan->format) . ':' . $file,
 			true
 		);
 	}
@@ -247,16 +248,16 @@ final class Imagick extends Driver
 	 */
 	private static function filter(Image $frame, Plan $plan): void
 	{
-		if ($plan->thumb->grayscale === true) {
+		if ($plan->options->grayscale === true) {
 			static::gray($frame);
 		}
 
-		if ($plan->thumb->blur !== null) {
-			$frame->blurImage(0, $plan->thumb->blur);
+		if ($plan->options->blur !== null) {
+			$frame->blurImage(0, $plan->options->blur);
 		}
 
-		if ($plan->thumb->sharpen !== null) {
-			$frame->sharpenImage(0, $plan->thumb->sharpen / 100);
+		if ($plan->options->sharpen !== null) {
+			$frame->sharpenImage(0, $plan->options->sharpen / 100);
 		}
 	}
 
@@ -517,13 +518,13 @@ final class Imagick extends Driver
 	private static function strip(Image $frame, Plan $plan): void
 	{
 		foreach ($frame->getImageProfiles('*', false) as $name) {
-			if ($plan->output->icc === false || $name !== 'icc') {
+			if ($plan->icc === false || $name !== 'icc') {
 				$frame->removeImageProfile((string)$name);
 			}
 		}
 
 		foreach ($frame->getImageProperties('*', false) as $name) {
-			if (in_array($plan->output->format, self::KEEP[$name] ?? [], true) === false) {
+			if (in_array($plan->format, self::KEEP[$name] ?? [], true) === false) {
 				$frame->deleteImageProperty($name);
 			}
 		}
@@ -566,7 +567,7 @@ final class Imagick extends Driver
 		// AVIF and HEIC keep the signal
 		// where ImageMagick read it, and so writes it
 		$keep =
-			in_array($plan->output->format, self::KEEP['heic:cicp'], true) === true &&
+			in_array($plan->format, self::KEEP['heic:cicp'], true) === true &&
 			$frame->getImageProperties('heic:cicp', false) !== [];
 
 		if ($plan->source->isHdr() === false || $keep === true) {

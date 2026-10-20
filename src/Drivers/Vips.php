@@ -182,16 +182,16 @@ final class Vips extends Driver
 	 */
 	private static function filter(Image $image, Plan $plan): Image
 	{
-		if ($plan->thumb->grayscale === true) {
+		if ($plan->options->grayscale === true) {
 			$image = static::gray($image);
 		}
 
-		if ($plan->thumb->blur !== null) {
-			$image = $image->gaussblur($plan->thumb->blur, ['min_ampl' => 0.05]);
+		if ($plan->options->blur !== null) {
+			$image = $image->gaussblur($plan->options->blur, ['min_ampl' => 0.05]);
 		}
 
-		if ($plan->thumb->sharpen !== null) {
-			$image = static::sharpen($image, $plan->thumb->sharpen);
+		if ($plan->options->sharpen !== null) {
+			$image = static::sharpen($image, $plan->options->sharpen);
 		}
 
 		return $image;
@@ -484,7 +484,7 @@ final class Vips extends Driver
 			}
 
 			// savers without alpha would flatten onto black
-			if ($plan->output->format->isOpaque() === true) {
+			if ($plan->format->isOpaque() === true) {
 				$image = static::flatten($image);
 			}
 
@@ -492,10 +492,10 @@ final class Vips extends Driver
 
 			// chroma at half resolution both ways (4:2:0), which libvips writes
 			// whole from quality 90 on, and JPEG's Huffman tables fitted to the image
-			$this->write($image, $target, $plan->output->format, [
-				'Q'               => $plan->output->quality,
-				'interlace'       => $plan->output->interlace,
-				'keep'            => $plan->output->icc === true ? ForeignKeep::ICC : ForeignKeep::NONE,
+			$this->write($image, $target, $plan->format, [
+				'Q'               => $plan->quality,
+				'interlace'       => $plan->interlace,
+				'keep'            => $plan->icc === true ? ForeignKeep::ICC : ForeignKeep::NONE,
 				'optimize_coding' => true,
 				'page_height'     => $plan->size->height,
 				'subsample_mode'  => 'on',
