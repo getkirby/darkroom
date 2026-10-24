@@ -423,6 +423,27 @@ class DarkroomTest extends TestCase
 		$this->assertFalse($plan->icc);
 	}
 
+	public function testPlanEmpty(): void
+	{
+		$darkroom = new Darkroom([]);
+		$src      = $this->file('empty.jpg', "\xFF\xD8\xFF\xE0");
+
+		$this->expectException(UnsupportedException::class);
+		$this->expectExceptionMessage('Image without a readable size: ' . $src);
+
+		$darkroom->plan($src);
+	}
+
+	public function testPlanLimit(): void
+	{
+		$darkroom = new Darkroom([], settings: ['limit' => 180 * 120 - 1]);
+
+		$this->expectException(LimitException::class);
+		$this->expectExceptionMessage('Image above the limit of 21599 pixels: ' . self::JPEG);
+
+		$darkroom->plan(self::JPEG);
+	}
+
 	public function testProcess(): void
 	{
 		$driver   = new FakeDriver(['animate' => Format::cases()]);

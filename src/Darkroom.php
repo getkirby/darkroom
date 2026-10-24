@@ -37,6 +37,28 @@ final class Darkroom
 		$this->instances = array_map($this->instance(...), $drivers);
 	}
 
+	/**
+	 * @throws UnsupportedException Without a readable size
+	 * @throws LimitException Above the pixel limit
+	 */
+	protected function check(Source $source): void
+	{
+		$limit  = $this->settings->limit ?? PHP_INT_MAX;
+		$pixels = $source->size()->pixels();
+
+		if ($pixels === 0) {
+			throw new UnsupportedException(
+				message: 'Image without a readable size: ' . $source->file
+			);
+		}
+
+		if ($pixels > $limit) {
+			throw new LimitException(
+				message: 'Image above the limit of ' . $limit . ' pixels: ' . $source->file
+			);
+		}
+	}
+
 	protected function clean(): void
 	{
 		foreach (array_keys($this->temps ?? []) as $temp) {
@@ -174,13 +196,19 @@ final class Darkroom
 		return new Source($file);
 	}
 
+	/**
+	 * @throws UnsupportedException For an unreadable source
+	 * @throws LimitException Above the pixel limit
+	 */
 	public function plan(
 		Source|string $source,
-		Options|array $options
+		Options|array $options = []
 	): Plan {
 		if (is_string($source) === true) {
 			$source = $this->open($source);
 		}
+
+		$this->check($source);
 
 		$options = Options::from($options);
 
@@ -211,22 +239,10 @@ final class Darkroom
 			$src     = $src->source;
 		}
 
-		$limit  = $this->settings->limit ?? PHP_INT_MAX;
 		$source = $src instanceof Source ? $src : $this->open($src);
 		$input  = $source->format();
-		$pixels = $source->size()->pixels();
 
-		if ($pixels === 0) {
-			throw new UnsupportedException(
-				message: 'Image without a readable size: ' . $source->file
-			);
-		}
-
-		if ($pixels > $limit) {
-			throw new LimitException(
-				message: 'Image above the limit of ' . $limit . ' pixels: ' . $source->file
-			);
-		}
+		$this->check($source);
 
 		$options = Options::from($options);
 		$output  = Format::from(pathinfo($dst, PATHINFO_EXTENSION));
