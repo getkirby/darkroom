@@ -91,6 +91,10 @@ final readonly class Options extends Defaults
 			return $position->value;
 		}
 
+		if ($position instanceof Focus) {
+			return (string)$position;
+		}
+
 		if (is_string($position) === false) {
 			static::error('crop', $position);
 		}

@@ -118,6 +118,28 @@ class FocusTest extends TestCase
 		$this->assertEquals(new Rect(...$expected), $rect);
 	}
 
+	public static function toStringProvider(): array
+	{
+		return [
+			'center'   => [0.5, 0.5, '50% 50%'],
+			'edges'    => [0.0, 1.0, '0% 100%'],
+			'decimals' => [0.704, 0.304, '70.4% 30.4%'],
+			'fine'     => [0.005, 0.333, '0.5% 33.3%'],
+		];
+	}
+
+	#[DataProvider('toStringProvider')]
+	public function testToString(
+		float $x,
+		float $y,
+		string $string
+	): void {
+		$focus = new Focus($x, $y);
+
+		$this->assertSame($string, (string)$focus);
+		$this->assertEquals($focus, Focus::from($string));
+	}
+
 	#[DataProvider('fromProvider')]
 	public function testTryFrom(
 		string $value,
@@ -131,5 +153,10 @@ class FocusTest extends TestCase
 	public function testTryFromInvalid(string $value): void
 	{
 		$this->assertNull(Focus::tryFrom($value));
+	}
+
+	public function testTryFromNull(): void
+	{
+		$this->assertNull(Focus::tryFrom(null));
 	}
 }

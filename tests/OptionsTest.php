@@ -163,6 +163,7 @@ class OptionsTest extends TestCase
 			'decimals'     => [['crop' => '30.5% 70.25%'], ['crop' => '30.5% 70.25%']],
 			'off canvas'   => [['crop' => '150% -10%'], ['crop' => '150% -10%']],
 			'gravity'      => [['crop' => Gravity::TopLeft], ['crop' => 'top left']],
+			'focus'        => [['crop' => new Focus(0.7, 0.3)], ['crop' => '70% 30%']],
 
 			'greyscale'         => [['greyscale' => true], ['grayscale' => true]],
 			'bw'                => [['bw' => true], ['grayscale' => true]],

@@ -13,6 +13,16 @@ final readonly class Focus
 	}
 
 	/**
+	 * As `x% y%`, which `from()` reads back
+	 */
+	public function __toString(): string
+	{
+		$percent = fn (float $fraction): string => (string)round($fraction * 100.0, 1) . '%';
+
+		return $percent($this->x) . ' ' . $percent($this->y);
+	}
+
+	/**
 	 * From a Gravity, its name or `x% y%`
 	 *
 	 * @throws InvalidArgumentException For an invalid value
@@ -61,8 +71,12 @@ final readonly class Focus
 		);
 	}
 
-	public static function tryFrom(string|Gravity $value): static|null
+	public static function tryFrom(string|Gravity|null $value): static|null
 	{
+		if ($value === null) {
+			return null;
+		}
+
 		try {
 			return static::from($value);
 		} catch (InvalidArgumentException) {
