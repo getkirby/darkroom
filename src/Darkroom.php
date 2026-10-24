@@ -9,6 +9,8 @@ use InvalidArgumentException;
 
 final class Darkroom
 {
+	public const array DRIVERS = ['imagick', 'gd', 'vips'];
+
 	public readonly Defaults $defaults;
 	public readonly Settings $settings;
 
@@ -26,7 +28,7 @@ final class Darkroom
 	 * @param array<string|class-string<Driver>|Driver> $drivers
 	 */
 	public function __construct(
-		public readonly array $drivers = ['imagick', 'gd', 'vips'],
+		public readonly array $drivers = self::DRIVERS,
 		Defaults|array $defaults = [],
 		Settings|array $settings = [],
 	) {

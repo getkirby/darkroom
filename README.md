@@ -77,7 +77,7 @@ Images are never enlarged, not even by a crop: it is exactly `width` × `height`
 | `imagick` | `ext-imagick`, ImageMagick 6.9.10 or 7.0.8 or newer | Large JPEGs, animations, color profiles, CMYK and HDR. |
 | `vips` | libvips 8.15 or newer, `ext-ffi`, `jcupitt/vips` | Speed and memory on large images. |
 
-The `drivers` option can be a list of aliases, class names or direct `Darkroom\Driver` instances (default: `['imagick', 'gd', 'vips']`). Darkroom automatically selects the first available one that reads the source and writes the target's format.
+The `drivers` option can be a list of aliases, class names or direct `Darkroom\Driver` instances (default: `Darkroom::DRIVERS`, which is `['imagick', 'gd', 'vips']`). Darkroom automatically selects the first available one that reads the source and writes the target's format.
 
 **Gd** writes the first frame of an animation and keeps only RGB color profiles, between JPEG, PNG and WebP. It throws a `LimitException` for an image too large for `memory_limit` instead of trying the next driver, so list it after `imagick` and `vips`. Sources it would get wrong, such as HDR ones, go to the next driver.
 
