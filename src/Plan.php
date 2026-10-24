@@ -92,6 +92,35 @@ final readonly class Plan
 	}
 
 	/**
+	 * Names what the plan writes, without the format;
+	 * plans that write the same image from a source share it
+	 */
+	public function key(): string
+	{
+		$original = $this->source->size();
+		$crop     = $this->crop;
+		$cut      = sprintf('crop%d-%d-%d-%d', $crop->x, $crop->y, $crop->width, $crop->height);
+		$whole    =
+			$crop->width === $original->width &&
+			$crop->height === $original->height;
+
+		$parts = [
+			$this->size->width . 'x' . $this->size->height,
+			$whole === true ? null : $cut,
+			$this->options->blur !== null ? 'blur' . $this->options->blur : null,
+			$this->options->grayscale === true ? 'grayscale' : null,
+			$this->options->sharpen !== null ? 'sharpen' . $this->options->sharpen : null,
+			'q' . $this->quality,
+			$this->interlace === true ? 'interlace' : null,
+			$this->icc === false ? 'noicc' : null,
+		];
+
+		$parts = array_filter($parts, fn ($part) => $part !== null);
+
+		return implode('-', $parts);
+	}
+
+	/**
 	 * The rectangle to cut, as decoded, from the source at full
 	 * size or shrunk to `$decoded`, which must cover `::scale()`
 	 */

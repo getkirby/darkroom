@@ -456,6 +456,39 @@ class PlanTest extends TestCase
 		$this->assertEquals(new Size(...$size), $plan->jpegSize());
 	}
 
+	public static function keyProvider(): array
+	{
+		$square = ['width' => 300, 'height' => 300];
+
+		return [
+			'whole image'      => [[], '1200x800-q90'],
+			'resize'           => [['width' => 300], '300x200-q90'],
+			'larger'           => [['width' => 2000], '1200x800-q90'],
+			'crop'             => [[...$square, 'crop' => 'center'], '300x300-crop200-0-800-800-q90'],
+			'crop left'        => [[...$square, 'crop' => 'left'], '300x300-crop0-0-800-800-q90'],
+			'same crop'        => [[...$square, 'crop' => '10% 50%'], '300x300-crop0-0-800-800-q90'],
+			'crop, same ratio' => [['width' => 600, 'height' => 400, 'crop' => true], '600x400-q90'],
+			'filters'          => [
+				['width' => 300, 'blur' => 5, 'grayscale' => true, 'sharpen' => 25],
+				'300x200-blur5-grayscale-sharpen25-q90'
+			],
+			'encoding' => [
+				['width' => 300, 'quality' => 80, 'interlace' => true, 'icc' => false],
+				'300x200-q80-interlace-noicc'
+			],
+		];
+	}
+
+	#[DataProvider('keyProvider')]
+	public function testKey(array $options, string $key): void
+	{
+		$source  = $this->source(1200, 800);
+		$options = Options::from($options);
+		$plan    = Plan::for($source, $options);
+
+		$this->assertSame($key, $plan->key());
+	}
+
 	public function testRegion(): void
 	{
 		$left    = new Options(width: 30, height: 40, crop: 'top left');
