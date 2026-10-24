@@ -269,6 +269,17 @@ final class Darkroom
 		return $plan;
 	}
 
+	public function tryPlan(
+		Source|string $source,
+		Options|array $options = []
+	): Plan|null {
+		try {
+			return $this->plan($source, $options);
+		} catch (LimitException|UnsupportedException) {
+			return null;
+		}
+	}
+
 	protected function write(
 		Driver $driver,
 		Plan $plan,

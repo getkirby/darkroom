@@ -817,4 +817,39 @@ class DarkroomTest extends TestCase
 
 		$darkroom->process(self::JPEG, $webp, []);
 	}
+
+	public function testTryPlan(): void
+	{
+		$driver   = new FakeDriver();
+		$darkroom = new Darkroom([$driver]);
+
+		$plan = $darkroom->tryPlan(self::JPEG, ['width' => 90]);
+
+		$this->assertEquals(new Size(90, 60), $plan?->size());
+	}
+
+	public function testTryPlanInvalidOptions(): void
+	{
+		$driver   = new FakeDriver();
+		$darkroom = new Darkroom([$driver]);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Invalid width: 'abc'");
+
+		$darkroom->tryPlan(self::JPEG, ['width' => 'abc']);
+	}
+
+	public function testTryPlanRefused(): void
+	{
+		$driver     = new FakeDriver();
+		$limited    = new Darkroom([$driver], settings: ['limit' => 100]);
+		$driverless = new Darkroom([]);
+		$empty      = $this->file('empty.jpg', "\xFF\xD8\xFF\xE0");
+		$text       = $this->file('text.jpg', 'text');
+
+		$this->assertNull($limited->tryPlan($empty));
+		$this->assertNull($limited->tryPlan($text));
+		$this->assertNull($limited->tryPlan(self::JPEG));
+		$this->assertNull($driverless->tryPlan(self::JPEG));
+	}
 }
