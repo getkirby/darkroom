@@ -83,6 +83,8 @@ enum Format
 	}
 
 	/**
+	 * From an extension or a MIME type
+	 *
 	 * @throws InvalidArgumentException For an unknown value
 	 */
 	public static function from(Format|string $value): static
@@ -91,8 +93,15 @@ enum Format
 			return $value;
 		}
 
-		if ($format = static::tryFrom($value)) {
-			return $format;
+		$name = strtolower($value);
+
+		foreach (self::cases() as $format) {
+			if (
+				in_array($name, $format->extensions(), true) === true ||
+				in_array($name, $format->mimes(), true) === true
+			) {
+				return $format;
+			}
 		}
 
 		throw new InvalidArgumentException(
@@ -127,22 +136,12 @@ enum Format
 		};
 	}
 
-	/**
-	 * From an extension or a MIME type
-	 */
-	public static function tryFrom(string $value): static|null
+	public static function tryFrom(Format|string $value): static|null
 	{
-		$name = strtolower($value);
-
-		foreach (self::cases() as $format) {
-			if (
-				in_array($name, $format->extensions(), true) === true ||
-				in_array($name, $format->mimes(), true) === true
-			) {
-				return $format;
-			}
+		try {
+			return static::from($value);
+		} catch (InvalidArgumentException) {
+			return null;
 		}
-
-		return null;
 	}
 }
