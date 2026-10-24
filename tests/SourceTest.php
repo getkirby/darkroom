@@ -241,6 +241,19 @@ class SourceTest extends TestCase
 		$source->format();
 	}
 
+	public function testFormatUnsupportedWithSize(): void
+	{
+		$source = self::fixture('other/plain.bmp');
+
+		$this->expectException(UnsupportedException::class);
+
+		try {
+			$source->format();
+		} finally {
+			$this->assertEquals(new Size(30, 20), $source->size());
+		}
+	}
+
 	/**
 	 * `magick icc.jpg p3.icc`
 	 * `vips copy icc.jpg 'icc.png[keep=icc]'`
@@ -383,6 +396,12 @@ class SourceTest extends TestCase
 			'jxl'                 => ['jxl/plain.jxl', 30, 20, Orientation::None],
 			'jxl, exif'           => ['jxl/exif-6.jxl', 20, 30, Orientation::Rotate90],
 			'jxl, brob'           => ['jxl/brob.jxl', 20, 30, Orientation::Rotate90],
+
+			// `magick -size 30x20 xc:'#336699' plain.<extension>`
+			'bmp'  => ['other/plain.bmp', 30, 20, Orientation::None],
+			'ico'  => ['other/plain.ico', 30, 20, Orientation::None],
+			'psd'  => ['other/plain.psd', 30, 20, Orientation::None],
+			'tiff' => ['other/plain.tif', 30, 20, Orientation::None],
 		];
 	}
 

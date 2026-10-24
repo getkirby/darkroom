@@ -108,7 +108,20 @@ final class Source
 			}
 		);
 
-		return $this->header = $header ?? new Header();
+		if ($header !== null) {
+			return $this->header = $header;
+		}
+
+		// PHP knows the size of more images, such as BMP or TIFF
+		$size = $this->file === '' ? false : @getimagesize($this->file);
+
+		if ($size === false) {
+			return $this->header = new Header();
+		}
+
+		return $this->header = new Header(
+			size: new Size($size[0], $size[1])
+		);
 	}
 
 	public function icc(): string
