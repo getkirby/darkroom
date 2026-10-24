@@ -204,7 +204,17 @@ class OptionsTest extends TestCase
 					'threads'      => 4,
 					'width'        => 600,
 				],
-				['width' => 600]
+				[
+					'width' => 600,
+					'other' => [
+						'filename'     => 'photo.jpg',
+						'scaleWidth'   => 0.5,
+						'scaleHeight'  => 0.5,
+						'sourceWidth'  => 1200,
+						'sourceHeight' => 800,
+						'threads'      => 4,
+					]
+				]
 			],
 			'every key spelled out' => [
 				[
@@ -219,7 +229,10 @@ class OptionsTest extends TestCase
 					'sharpen'     => null,
 					'width'       => null,
 				],
-				['quality' => 90]
+				[
+					'quality' => 90,
+					'other'   => ['scaleHeight' => null, 'scaleWidth' => null]
+				]
 			],
 		];
 	}
@@ -319,7 +332,8 @@ class OptionsTest extends TestCase
 			quality:   80,
 			format:    Format::Jpeg,
 			interlace: false,
-			icc:       false
+			icc:       false,
+			other:     ['watermark' => 'logo.png']
 		);
 
 		$array = $options->toArray();
@@ -336,6 +350,7 @@ class OptionsTest extends TestCase
 			'blur'      => 5,
 			'grayscale' => true,
 			'sharpen'   => 25,
+			'watermark' => 'logo.png',
 		], $array);
 
 		$this->assertSame((array)$options, (array)$back);

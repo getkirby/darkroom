@@ -15,6 +15,7 @@ final readonly class Options extends Defaults
 	 * @param $sharpen Amount, 1–100
 	 * @param $quality 1–100
 	 * @param $icc Keep the color profile
+	 * @param $other Keys it doesn't know, such as a plugin's
 	 */
 	public function __construct(
 		public int|null $width = null,
@@ -27,6 +28,7 @@ final readonly class Options extends Defaults
 		Format|null $format = null,
 		bool|null $interlace = null,
 		bool|null $icc = null,
+		public array $other = [],
 	) {
 		parent::__construct(
 			quality:   $quality,
@@ -60,6 +62,10 @@ final readonly class Options extends Defaults
 		$blur      = $options['blur'] ?? null;
 		$sharpen   = $options['sharpen'] ?? null;
 
+		unset($options['greyscale'], $options['bw']);
+
+		$other = array_diff_key($options, get_class_vars(self::class));
+
 		return new static(
 			width:     static::number('width', $options['width'] ?? null),
 			height:    static::number('height', $options['height'] ?? null),
@@ -70,7 +76,8 @@ final readonly class Options extends Defaults
 			quality:   $defaults->quality,
 			format:    $defaults->format,
 			interlace: $defaults->interlace,
-			icc:       $defaults->icc
+			icc:       $defaults->icc,
+			other:     $other
 		);
 	}
 
@@ -113,7 +120,8 @@ final readonly class Options extends Defaults
 			'crop'      => $this->crop,
 			'blur'      => $this->blur,
 			'grayscale' => $this->grayscale === true ? true : null,
-			'sharpen'   => $this->sharpen
+			'sharpen'   => $this->sharpen,
+			...$this->other
 		];
 
 		return array_filter($array, fn ($value) => $value !== null);
