@@ -4,6 +4,8 @@ namespace Darkroom\Playground;
 
 use Darkroom\Darkroom;
 use Darkroom\Driver;
+use Darkroom\Options;
+use Darkroom\Plan;
 use Darkroom\Source;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
@@ -92,8 +94,8 @@ final class Playground
 	 */
 	protected function plan(Source $source, array $options): array
 	{
-		$planner = $this->darkroom();
-		$plan    = $planner->plan($source, $options);
+		$options = Options::from($options);
+		$plan    = Plan::for($source, $options);
 		$plan    = Cell::plan($plan);
 
 		return $plan['size'];
