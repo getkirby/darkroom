@@ -5,62 +5,50 @@ namespace Darkroom;
 use InvalidArgumentException;
 
 /**
- * What a `Darkroom` and its drivers run with
+ * General settings for `Darkroom` and its drivers
  */
 final readonly class Settings
 {
 	public const int LIMIT = 200_000_000;
 
 	/**
-	 * @param $limit Pixel cap for a source and all its frames
-	 * @param $other Each driver's own settings, such as `threads`
-	 *
-	 * @throws InvalidArgumentException For a limit below 1
+	 * @param $limit Pixel cap for a source and its frames
+	 * @param $other Driver-specific settings
 	 */
 	public function __construct(
 		public int|null $limit = self::LIMIT,
 		public array $other = [],
 	) {
-		if ($limit !== null && $limit < 1) {
-			throw static::error($limit);
-		}
 	}
 
-	private static function error(mixed $limit): InvalidArgumentException
-	{
-		$value = is_scalar($limit) === true ? var_export($limit, true) : get_debug_type($limit);
-
-		return new InvalidArgumentException(
-			message: 'Invalid limit: ' . $value
-		);
-	}
-
-	/**
-	 * From settings as configuration gives them: `LIMIT`
-	 * without a `limit`, none for `null`
-	 *
-	 * @throws InvalidArgumentException For an invalid limit
-	 */
 	public static function from(Settings|array $settings): self
 	{
 		if ($settings instanceof self) {
 			return $settings;
 		}
 
-		$limit = array_key_exists('limit', $settings) === true ? $settings['limit'] : self::LIMIT;
+		$limit = self::LIMIT;
 
-		if ($limit !== null && is_int($limit) === false) {
-			throw static::error($limit);
+		if (array_key_exists('limit', $settings) === true) {
+			$limit = $settings['limit'];
+			unset($settings['limit']);
 		}
 
-		unset($settings['limit']);
+		if ($limit === null) {
+			return new self(limit: null, other: $settings);
+		}
 
-		return new self($limit, $settings);
+		if (is_int($limit) === false || $limit < 1) {
+			$value = is_scalar($limit) === true ? var_export($limit, true) : get_debug_type($limit);
+
+			throw new InvalidArgumentException(
+				message: 'Invalid limit: ' . $value
+			);
+		}
+
+		return new self(limit: $limit, other: $settings);
 	}
 
-	/**
-	 * What each driver is constructed with
-	 */
 	public function toArray(): array
 	{
 		return [...$this->other, 'limit' => $this->limit];

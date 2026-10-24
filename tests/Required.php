@@ -8,7 +8,7 @@ use ReflectionClass;
 
 trait Required
 {
-	private static function required(string $driver, Format|null $format): bool
+	protected static function required(string $driver, Format|null $format): bool
 	{
 		$list    = (string)getenv('DARKROOM_REQUIRE');
 		$entries = preg_split('/\s+/', $list, flags: PREG_SPLIT_NO_EMPTY);

@@ -7,7 +7,7 @@ use Darkroom\Readers\Reader;
 use Darkroom\Readers\Webp;
 
 /**
- * Embeds an ICC profile into an encoded image that has none
+ * Embeds an ICC profile into an encoded image
  *
  * @internal
  */
@@ -16,7 +16,7 @@ final class Icc
 	/**
 	 * The most bytes of the profile in one JPEG segment
 	 */
-	private const int SEGMENT = 65519;
+	protected const int SEGMENT = 65519;
 
 	/**
 	 * The image with the profile in JPEG, PNG and WebP
@@ -42,7 +42,7 @@ final class Icc
 	 * `ICC_PROFILE` APP2 segments after the start of image
 	 * and a JFIF segment, which come first
 	 */
-	private static function jpeg(string $data, string $profile): string
+	protected static function jpeg(string $data, string $profile): string
 	{
 		$parts    = str_split($profile, self::SEGMENT);
 		$count    = chr(count($parts));
@@ -66,7 +66,7 @@ final class Icc
 	 * An `iCCP` chunk after the `IHDR` chunk,
 	 * which comes first; none without zlib
 	 */
-	private static function png(string $data, string $profile): string
+	protected static function png(string $data, string $profile): string
 	{
 		if (function_exists('gzcompress') === false) {
 			return $data;
@@ -85,7 +85,7 @@ final class Icc
 	 * The `VP8X` chunk of a simple file: its canvas,
 	 * and the alpha flag of a lossless one with alpha
 	 */
-	private static function vp8x(string $chunk): string
+	protected static function vp8x(string $chunk): string
 	{
 		$size   = Webp::size($chunk);
 		$width  = substr(pack('V', $size->width - 1), 0, 3);
@@ -105,7 +105,7 @@ final class Icc
 	 * An `ICCP` chunk after the `VP8X` chunk, with its flag;
 	 * a simple file is extended to have one
 	 */
-	private static function webp(string $data, string $profile): string
+	protected static function webp(string $data, string $profile): string
 	{
 		$first    = substr($data, 12, 18);
 		$extended = str_starts_with($first, 'VP8X');

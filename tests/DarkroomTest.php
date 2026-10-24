@@ -26,12 +26,12 @@ class DarkroomTest extends TestCase
 {
 	use Required;
 
-	private const string GIF  = __DIR__ . '/fixtures/gif/animated.gif';
-	private const string HEIC = __DIR__ . '/fixtures/heif/plain.heic';
-	private const string JPEG = __DIR__ . '/fixtures/orientation/Landscape_1.jpg';
-	private const string PNG  = __DIR__ . '/fixtures/png/plain.png';
+	protected const string GIF  = __DIR__ . '/fixtures/gif/animated.gif';
+	protected const string HEIC = __DIR__ . '/fixtures/heif/plain.heic';
+	protected const string JPEG = __DIR__ . '/fixtures/orientation/Landscape_1.jpg';
+	protected const string PNG  = __DIR__ . '/fixtures/png/plain.png';
 
-	private function files(string $dir = ''): array
+	protected function files(string $dir = ''): array
 	{
 		$names = scandir($this->tmp() . $dir);
 
@@ -403,7 +403,7 @@ class DarkroomTest extends TestCase
 		];
 
 		foreach ($plans as $plan) {
-			$this->assertEquals(new Size(90, 60), $plan->size);
+			$this->assertEquals(new Size(90, 60), $plan->size());
 			$this->assertSame(Format::Jpeg, $plan->format);
 			$this->assertSame(90, $plan->quality);
 		}
@@ -583,12 +583,12 @@ class DarkroomTest extends TestCase
 
 		$plan = $darkroom->process(self::JPEG, $dst, []);
 
-		$this->assertEquals(new Size(180, 120), $plan->size);
+		$this->assertEquals(new Size(180, 120), $plan->size());
 
 		// a crop larger than the image is capped at it
 		$plan = $darkroom->process(self::JPEG, $dst, ['width' => 200, 'crop' => true]);
 
-		$this->assertEquals(new Size(120, 120), $plan->size);
+		$this->assertEquals(new Size(120, 120), $plan->size());
 	}
 
 	public function testProcessLimitSource(): void
@@ -619,7 +619,7 @@ class DarkroomTest extends TestCase
 
 		$plan = $darkroom->process($src, $dst, ['width' => 100]);
 
-		$this->assertEquals(new Size(100, 100), $plan->size);
+		$this->assertEquals(new Size(100, 100), $plan->size());
 	}
 
 	public function testProcessOptions(): void
@@ -637,7 +637,7 @@ class DarkroomTest extends TestCase
 
 		$plan = $darkroom->process(self::JPEG, $dst, $options);
 
-		$this->assertEquals(new Size(60, 60), $plan->size);
+		$this->assertEquals(new Size(60, 60), $plan->size());
 		$this->assertTrue($plan->options->grayscale);
 		$this->assertFalse($plan->interlace);
 		$this->assertSame(Format::Png, $plan->format);
@@ -735,7 +735,7 @@ class DarkroomTest extends TestCase
 		$plan = $darkroom->process($source, $dst, ['width' => 90]);
 
 		$this->assertSame($source, $plan->source);
-		$this->assertEquals(new Size(90, 60), $plan->size);
+		$this->assertEquals(new Size(90, 60), $plan->size());
 	}
 
 	public function testProcessUnrecognised(): void

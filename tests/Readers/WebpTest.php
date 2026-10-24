@@ -16,7 +16,7 @@ class WebpTest extends ReaderTestCase
 {
 	protected const string READER = Webp::class;
 
-	private static function extended(
+	protected static function extended(
 		int $flags,
 		int $width = 30,
 		int $height = 20
@@ -27,12 +27,12 @@ class WebpTest extends ReaderTestCase
 		return self::riff('VP8X', chr($flags) . "\0\0\0" . $width . $height);
 	}
 
-	private static function lossless(int $bits): string
+	protected static function lossless(int $bits): string
 	{
 		return self::riff('VP8L', "\x2F" . pack('V', $bits));
 	}
 
-	private static function lossy(int $width = 30, int $height = 20): string
+	protected static function lossy(int $width = 30, int $height = 20): string
 	{
 		$frame = "\x50\x02\0\x9D\x01\x2A" . pack('vv', $width, $height) . str_repeat("\0", 8);
 
@@ -333,7 +333,7 @@ class WebpTest extends ReaderTestCase
 		$this->assertTruncated($animated);
 	}
 
-	private static function webp(string ...$chunks): string
+	protected static function webp(string ...$chunks): string
 	{
 		$data = 'WEBP' . implode('', $chunks);
 

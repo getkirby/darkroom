@@ -17,7 +17,7 @@ final class Jxl extends Reader
 	/**
 	 * Up to 32 bits from `$position` on, lowest first
 	 */
-	private static function bits(
+	protected static function bits(
 		string $data,
 		int &$position,
 		int $count
@@ -36,7 +36,7 @@ final class Jxl extends Reader
 	 * @param resource $handle
 	 * @return Generator<string, int>
 	 */
-	private static function boxes($handle): Generator
+	protected static function boxes($handle): Generator
 	{
 		if (fread($handle, 12) === "\0\0\0\x0CJXL \r\n\x87\n") {
 			yield from self::walk($handle, 'box');
@@ -50,7 +50,7 @@ final class Jxl extends Reader
 	 *
 	 * @param resource $handle
 	 */
-	private static function codestream($handle): string
+	protected static function codestream($handle): string
 	{
 		$data = (string)fread($handle, 64);
 
@@ -99,7 +99,7 @@ final class Jxl extends Reader
 	 * @param resource $handle
 	 * @return array{Header, bool}
 	 */
-	private static function header($handle): array
+	protected static function header($handle): array
 	{
 		$data = self::codestream($handle);
 		$end  = strlen($data) * 8;
@@ -156,7 +156,7 @@ final class Jxl extends Reader
 	 * Skips a preview header: in multiples of 8 or not,
 	 * the height, a ratio, the width without one
 	 */
-	private static function preview(string $data, int &$position): void
+	protected static function preview(string $data, int &$position): void
 	{
 		$bits = self::bits($data, $position, 1) === 1 ? [0, 0, 5, 9] : [6, 8, 10, 12];
 
@@ -181,7 +181,7 @@ final class Jxl extends Reader
 	 * Height or width: for small images 5 bits of multiples of 8,
 	 * else 2 bits for how many follow
 	 */
-	private static function side(
+	protected static function side(
 		string $data,
 		int &$position,
 		bool $small
@@ -198,7 +198,7 @@ final class Jxl extends Reader
 	 * A size header: whether it is small, the height,
 	 * then the width or its ratio to the height
 	 */
-	private static function size(string $data, int &$position): Size
+	protected static function size(string $data, int &$position): Size
 	{
 		$small  = self::bits($data, $position, 1) === 1;
 		$height = self::side($data, $position, $small);

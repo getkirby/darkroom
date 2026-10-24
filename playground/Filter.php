@@ -4,7 +4,7 @@ namespace Darkroom\Playground;
 
 final class Filter
 {
-	private const array KEYS = [
+	protected const array KEYS = [
 		'source',
 		'group',
 		'case',

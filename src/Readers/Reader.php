@@ -8,8 +8,7 @@ use Darkroom\Rect;
 use Generator;
 
 /**
- * Reads one container format from the start of a file,
- * no more than it needs
+ * Reads a container format from the start of a file
  *
  * @internal
  */
@@ -25,8 +24,6 @@ abstract class Reader
 	public const array UNSPECIFIED = [2, 2, 2, 1];
 
 	/**
-	 * Up to `$length` bytes, at most `LIMIT`
-	 *
 	 * @param resource $handle
 	 */
 	public static function bytes($handle, int $length): string
@@ -66,9 +63,6 @@ abstract class Reader
 	}
 
 	/**
-	 * Data length of the first chunk or box of the type,
-	 * with the handle at its data
-	 *
 	 * @param Generator<string, int> $walk
 	 */
 	public static function find(Generator $walk, string $type): int
@@ -100,8 +94,6 @@ abstract class Reader
 	}
 
 	/**
-	 * The ICC color profile
-	 *
 	 * @param resource $handle
 	 */
 	public static function icc($handle): string
@@ -109,10 +101,6 @@ abstract class Reader
 		return '';
 	}
 
-	/**
-	 * An unsigned integer from big-endian or
-	 * little-endian bytes; missing bytes count as zero
-	 */
 	public static function int(string $bytes, bool $little = false): int
 	{
 		if (strlen($bytes) === 1) {
@@ -149,9 +137,6 @@ abstract class Reader
 	}
 
 	/**
-	 * Runs `$call` with the format's reader,
-	 * a handle at the start of the file and the format
-	 *
 	 * @template T
 	 * @param Closure(class-string<Reader>, resource, Format): T $call
 	 * @return T|null
@@ -183,10 +168,6 @@ abstract class Reader
 		}
 	}
 
-	/**
-	 * The ICC profile at the start of the data,
-	 * up to the length its header states
-	 */
 	public static function profile(string $data): string
 	{
 		$length = self::int(substr($data, 0, 4));
@@ -205,16 +186,11 @@ abstract class Reader
 	}
 
 	/**
-	 * Size as stored and orientation
-	 *
 	 * @param resource $handle
 	 */
 	abstract public static function read($handle): Header;
 
 	/**
-	 * Moves the handle unless it is there,
-	 * as a seek drops PHP's read buffer
-	 *
 	 * @param resource $handle
 	 */
 	public static function seek($handle, int $position): void
@@ -225,10 +201,6 @@ abstract class Reader
 	}
 
 	/**
-	 * EXIF data in TIFF's layout from the next `$length` bytes,
-	 * without JPEG's marker; with `$offset`, the bytes start
-	 * with the offset of the TIFF header after them
-	 *
 	 * @param resource $handle
 	 */
 	public static function tiff(
@@ -252,9 +224,6 @@ abstract class Reader
 	}
 
 	/**
-	 * Type and data length of each chunk or box
-	 * in the next `$length` bytes, at most `STEPS`
-	 *
 	 * @param resource $handle
 	 * @param 'box'|'png'|'riff' $layout
 	 * @return Generator<string, int>

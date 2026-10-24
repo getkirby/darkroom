@@ -15,9 +15,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(Icc::class)]
 class IccTest extends TestCase
 {
-	private const string FIXTURES = __DIR__ . '/../fixtures';
+	protected const string FIXTURES = __DIR__ . '/../fixtures';
 
-	private static function encode(
+	protected static function encode(
 		string $encoder,
 		bool $alpha = false,
 		int ...$options
@@ -42,7 +42,7 @@ class IccTest extends TestCase
 		return stream_get_contents($stream);
 	}
 
-	private static function gd(string $data): string
+	protected static function gd(string $data): string
 	{
 		$image  = imagecreatefromstring($data);
 		$stream = fopen('php://memory', 'w+b');
@@ -54,14 +54,14 @@ class IccTest extends TestCase
 		return stream_get_contents($stream);
 	}
 
-	private static function pad(string $profile, int $bytes): string
+	protected static function pad(string $profile, int $bytes): string
 	{
 		$length = pack('N', strlen($profile) + $bytes);
 
 		return substr_replace($profile . str_repeat("\0", $bytes), $length, 0, 4);
 	}
 
-	private static function read(string $data): string
+	protected static function read(string $data): string
 	{
 		$format = Format::detect($data);
 		$reader = Reader::for($format);

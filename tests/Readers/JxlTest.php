@@ -14,9 +14,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 class JxlTest extends ReaderTestCase
 {
 	protected const string READER = Jxl::class;
-	private const array SIZE = [[0, 1], [0, 2], [89, 9], [1, 3]];
+	protected const array SIZE = [[0, 1], [0, 2], [89, 9], [1, 3]];
 
-	private static function container(string ...$boxes): string
+	protected static function container(string ...$boxes): string
 	{
 		$signature = self::box('JXL ', "\r\n\x87\n");
 		$ftyp      = self::ftyp('jxl ', 'jxl ');
@@ -24,7 +24,7 @@ class JxlTest extends ReaderTestCase
 		return $signature . $ftyp . implode('', $boxes);
 	}
 
-	private static function jxl(array ...$fields): string
+	protected static function jxl(array ...$fields): string
 	{
 		$bits = '';
 
@@ -43,7 +43,7 @@ class JxlTest extends ReaderTestCase
 		return "\xFF\x0A" . $bytes;
 	}
 
-	private static function jxlp(int $index, string $part): string
+	protected static function jxlp(int $index, string $part): string
 	{
 		return self::box('jxlp', pack('N', $index) . $part);
 	}

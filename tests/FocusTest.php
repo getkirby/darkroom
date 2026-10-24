@@ -4,6 +4,8 @@ namespace Darkroom\Tests;
 
 use Darkroom\Focus;
 use Darkroom\Gravity;
+use Darkroom\Rect;
+use Darkroom\Size;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -80,5 +82,35 @@ class FocusTest extends TestCase
 		$this->expectExceptionMessage('Invalid focus: ' . $value);
 
 		Focus::from($value);
+	}
+
+	public static function placeProvider(): array
+	{
+		return [
+			'center'       => [[0.5, 0.5], [800, 800], [1200, 800], [200, 0, 800, 800]],
+			'off center'   => [[0.4, 0.5], [800, 800], [1200, 800], [80, 0, 800, 800]],
+			'top left'     => [[0.0, 0.0], [800, 800], [1200, 800], [0, 0, 800, 800]],
+			'bottom right' => [[1.0, 1.0], [800, 800], [1200, 800], [400, 0, 800, 800]],
+			'at the edge'  => [[0.9, 0.5], [800, 800], [1200, 800], [400, 0, 800, 800]],
+			'vertical'     => [[0.5, 0.3], [1200, 400], [1200, 800], [0, 40, 1200, 400]],
+			'rounded'      => [[0.5, 0.5], [3, 3], [10, 10], [4, 4, 3, 3]],
+			'whole canvas' => [[0.7, 0.3], [1200, 800], [1200, 800], [0, 0, 1200, 800]],
+		];
+	}
+
+	#[DataProvider('placeProvider')]
+	public function testPlace(
+		array $focus,
+		array $size,
+		array $canvas,
+		array $expected
+	): void {
+		$focus  = new Focus(...$focus);
+		$size   = new Size(...$size);
+		$canvas = new Size(...$canvas);
+
+		$rect = $focus->place($size, $canvas);
+
+		$this->assertEquals(new Rect(...$expected), $rect);
 	}
 }

@@ -58,7 +58,7 @@ abstract class DriverTestCase extends TestCase
 		$this->assertLessThanOrEqual($limit, $difference, 'Differs from ' . $name);
 	}
 
-	private function blocks(string $name, int ...$colors): string
+	protected function blocks(string $name, int ...$colors): string
 	{
 		$file  = $this->file($name);
 		$image = imagecreatetruecolor(16 * count($colors), 16);
@@ -75,7 +75,7 @@ abstract class DriverTestCase extends TestCase
 		return $file;
 	}
 
-	private static function cicp(string $file): array|null
+	protected static function cicp(string $file): array|null
 	{
 		$data = file_get_contents($file);
 		$box  = strpos($data, 'colrnclx');
@@ -87,7 +87,7 @@ abstract class DriverTestCase extends TestCase
 		return array_values(unpack('n3', $data, $box + 8));
 	}
 
-	private static function depth(string $file): array
+	protected static function depth(string $file): array
 	{
 		$data = file_get_contents($file);
 		$box  = strpos($data, 'pixi');
@@ -101,7 +101,7 @@ abstract class DriverTestCase extends TestCase
 		return array_values(unpack('C' . $channels, $data, $box + 9));
 	}
 
-	private function detail(string $file): float
+	protected function detail(string $file): float
 	{
 		$image  = $this->image($file);
 		$width  = imagesx($image);
@@ -122,7 +122,7 @@ abstract class DriverTestCase extends TestCase
 		return $sum / (($width - 1) * $height * 3);
 	}
 
-	private static function difference(GdImage $expected, GdImage $actual): float
+	protected static function difference(GdImage $expected, GdImage $actual): float
 	{
 		$width  = imagesx($expected);
 		$height = imagesy($expected);
@@ -142,7 +142,7 @@ abstract class DriverTestCase extends TestCase
 
 	abstract protected function driver(): Driver;
 
-	private function first(string $file): string
+	protected function first(string $file): string
 	{
 		$this->readable($file);
 
@@ -152,7 +152,7 @@ abstract class DriverTestCase extends TestCase
 		return $image->getImageBlob();
 	}
 
-	private static function flatten(int $color): array
+	protected static function flatten(int $color): array
 	{
 		$opacity = 1 - ($color >> 24 & 0x7F) / 127;
 		$back    = 255 * (1 - $opacity);
@@ -164,7 +164,7 @@ abstract class DriverTestCase extends TestCase
 		];
 	}
 
-	private function frames(string $file): int
+	protected function frames(string $file): int
 	{
 		$this->readable($file);
 
@@ -194,7 +194,7 @@ abstract class DriverTestCase extends TestCase
 		return true;
 	}
 
-	private function icc(string $file): string
+	protected function icc(string $file): string
 	{
 		$this->readable($file);
 
@@ -204,7 +204,7 @@ abstract class DriverTestCase extends TestCase
 		return $profiles['icc'] ?? '';
 	}
 
-	private function image(string $file): GdImage
+	protected function image(string $file): GdImage
 	{
 		$data   = file_get_contents($file);
 		$format = Format::detect($data);
@@ -239,7 +239,7 @@ abstract class DriverTestCase extends TestCase
 		return $placed;
 	}
 
-	private static function interlaced(string $file): bool
+	protected static function interlaced(string $file): bool
 	{
 		$data   = file_get_contents($file);
 		$format = Format::detect($data);
@@ -293,7 +293,7 @@ abstract class DriverTestCase extends TestCase
 		return $plan;
 	}
 
-	private static function profile(string $file): bool
+	protected static function profile(string $file): bool
 	{
 		$data = file_get_contents($file);
 
@@ -303,7 +303,7 @@ abstract class DriverTestCase extends TestCase
 			str_contains($data, 'ICCP') === true;
 	}
 
-	private function readable(string $file): void
+	protected function readable(string $file): void
 	{
 		$data   = file_get_contents($file);
 		$format = Format::detect($data);
@@ -318,7 +318,7 @@ abstract class DriverTestCase extends TestCase
 		}
 	}
 
-	private static function rgb(int $color): array
+	protected static function rgb(int $color): array
 	{
 		return [$color >> 16 & 0xFF, $color >> 8 & 0xFF, $color & 0xFF];
 	}
@@ -352,7 +352,7 @@ abstract class DriverTestCase extends TestCase
 		}
 	}
 
-	private function strip(string $file): string
+	protected function strip(string $file): string
 	{
 		$this->readable($file);
 
@@ -703,7 +703,7 @@ abstract class DriverTestCase extends TestCase
 
 		$this->assertSame($format, $plan->format);
 		$this->assertSame($format, $output->format());
-		$this->assertEquals($plan->size, $output->size());
+		$this->assertEquals($plan->size(), $output->size());
 
 		if ($info !== false) {
 			$this->assertSame($format, Format::from($info['mime']));
@@ -818,7 +818,7 @@ abstract class DriverTestCase extends TestCase
 
 		$output = new Source($file);
 
-		$this->assertEquals($plan->size, $output->size());
+		$this->assertEquals($plan->size(), $output->size());
 	}
 
 	public static function processHdrProvider(): array
@@ -1055,7 +1055,7 @@ abstract class DriverTestCase extends TestCase
 		$output = new Source($file);
 
 		$this->assertSame(Orientation::None, $output->orientation());
-		$this->assertEquals($plan->size, $output->size());
+		$this->assertEquals($plan->size(), $output->size());
 	}
 
 	public static function processProfileProvider(): array
@@ -1181,7 +1181,7 @@ abstract class DriverTestCase extends TestCase
 
 		$output = new Source($file);
 
-		$this->assertEquals($plan->size, $output->size());
+		$this->assertEquals($plan->size(), $output->size());
 	}
 
 	/**
@@ -1227,7 +1227,7 @@ abstract class DriverTestCase extends TestCase
 		$this->assertReference($fixture, $file);
 	}
 
-	private function timing(string $file): array
+	protected function timing(string $file): array
 	{
 		$this->readable($file);
 

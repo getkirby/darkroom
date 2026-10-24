@@ -15,10 +15,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(Heif::class)]
 class HeifTest extends ReaderTestCase
 {
-	private const int DATA = 32;
+	protected const int DATA = 32;
 	protected const string READER = Heif::class;
 
-	private static function absurd(): string
+	protected static function absurd(): string
 	{
 		$pitm = self::pitm(1);
 		$iinf = self::box('iinf', pack('xxxxn', 0xFFFF));
@@ -33,17 +33,17 @@ class HeifTest extends ReaderTestCase
 		return self::heif($pitm, $iinf, $iloc, $iref, $iprp);
 	}
 
-	private static function clap(int ...$values): string
+	protected static function clap(int ...$values): string
 	{
 		return self::box('clap', pack('N8', ...$values));
 	}
 
-	private static function colr(int $transfer): string
+	protected static function colr(int $transfer): string
 	{
 		return self::box('colr', 'nclx' . pack('nnnC', 9, $transfer, 9, 0x80));
 	}
 
-	private static function field(int $value, int $size): string
+	protected static function field(int $value, int $size): string
 	{
 		return match ($size) {
 			0       => '',
@@ -52,7 +52,7 @@ class HeifTest extends ReaderTestCase
 		};
 	}
 
-	private static function heif(string ...$boxes): string
+	protected static function heif(string ...$boxes): string
 	{
 		$ftyp = self::ftyp('heic', 'mif1', 'heic');
 		$meta = self::meta(...$boxes);
@@ -60,14 +60,14 @@ class HeifTest extends ReaderTestCase
 		return $ftyp . $meta;
 	}
 
-	private static function iinf(array $entries, int|null $count = null): string
+	protected static function iinf(array $entries, int|null $count = null): string
 	{
 		$count ??= count($entries);
 
 		return self::box('iinf', pack('xxxxn', $count) . implode('', $entries));
 	}
 
-	private static function iloc(
+	protected static function iloc(
 		array $items,
 		int $version = 0,
 		int $sizes = 0x4400
@@ -91,7 +91,7 @@ class HeifTest extends ReaderTestCase
 		return self::box('iloc', $data);
 	}
 
-	private static function infe(
+	protected static function infe(
 		int $item,
 		string $type,
 		int $version = 2
@@ -102,12 +102,12 @@ class HeifTest extends ReaderTestCase
 		return self::box('infe', $header . $type);
 	}
 
-	private static function ipco(string ...$properties): string
+	protected static function ipco(string ...$properties): string
 	{
 		return self::box('ipco', implode('', $properties));
 	}
 
-	private static function ipma(
+	protected static function ipma(
 		array $entries,
 		int $version = 0,
 		int $flags = 0
@@ -123,27 +123,27 @@ class HeifTest extends ReaderTestCase
 		return self::box('ipma', $data);
 	}
 
-	private static function iprp(string ...$boxes): string
+	protected static function iprp(string ...$boxes): string
 	{
 		return self::box('iprp', implode('', $boxes));
 	}
 
-	private static function iref(array $references, int $version = 0): string
+	protected static function iref(array $references, int $version = 0): string
 	{
 		return self::box('iref', pack('Cxxx', $version) . implode('', $references));
 	}
 
-	private static function irot(int $turns): string
+	protected static function irot(int $turns): string
 	{
 		return self::box('irot', chr($turns));
 	}
 
-	private static function ispe(int $width = 300, int $height = 200): string
+	protected static function ispe(int $width = 300, int $height = 200): string
 	{
 		return self::box('ispe', pack('xxxxNN', $width, $height));
 	}
 
-	private static function item(
+	protected static function item(
 		string $data,
 		string|null $iloc = null,
 		string|null $iref = null,
@@ -163,24 +163,24 @@ class HeifTest extends ReaderTestCase
 		return $ftyp . $mdat . $meta;
 	}
 
-	private static function meta(string ...$boxes): string
+	protected static function meta(string ...$boxes): string
 	{
 		return self::box('meta', pack('N', 0) . implode('', $boxes));
 	}
 
-	private static function pad(string $box, int $bytes): string
+	protected static function pad(string $box, int $bytes): string
 	{
 		return pack('N', strlen($box) + $bytes) . substr($box, 4) . str_repeat("\0", $bytes);
 	}
 
-	private static function pitm(int $item, int $version = 0): string
+	protected static function pitm(int $item, int $version = 0): string
 	{
 		$id = $version === 0 ? 'n' : 'N';
 
 		return self::box('pitm', pack('Cxxx', $version) . pack($id, $item));
 	}
 
-	private static function primary(string ...$properties): string
+	protected static function primary(string ...$properties): string
 	{
 		$ispe    = self::ispe();
 		$indexes = range(1, count($properties) + 1);
@@ -192,7 +192,7 @@ class HeifTest extends ReaderTestCase
 		return self::heif($pitm, $iprp);
 	}
 
-	private static function reference(
+	protected static function reference(
 		string $type,
 		int $from,
 		array $to,

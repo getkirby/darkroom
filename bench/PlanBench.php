@@ -20,7 +20,7 @@ use PhpBench\Attributes\Warmup;
 #[Warmup(1)]
 final class PlanBench
 {
-	private const string FIXTURES = __DIR__ . '/../tests/fixtures';
+	protected const string FIXTURES = __DIR__ . '/../tests/fixtures';
 
 	public function benchCrop(array $params): void
 	{

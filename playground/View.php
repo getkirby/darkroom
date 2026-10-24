@@ -5,12 +5,12 @@ namespace Darkroom\Playground;
 final class View
 {
 	public function __construct(
-		private readonly Playground $playground,
-		private readonly Filter $filter,
+		protected readonly Playground $playground,
+		protected readonly Filter $filter,
 	) {
 	}
 
-	private static function bytes(int $bytes): string
+	protected static function bytes(int $bytes): string
 	{
 		if ($bytes < 1000) {
 			return $bytes . ' B';
@@ -19,7 +19,7 @@ final class View
 		return round($bytes / 1000, 1) . ' KB';
 	}
 
-	private function cell(array $cell): array
+	protected function cell(array $cell): array
 	{
 		$delta       = $cell['delta'] ?? null;
 		$output      = $cell['output'] ?? null;
@@ -44,7 +44,7 @@ final class View
 		];
 	}
 
-	private function checks(): array
+	protected function checks(): array
 	{
 		$checks = $this->playground->checks($this->filter);
 		$counts = [];
@@ -65,7 +65,7 @@ final class View
 		return $counts;
 	}
 
-	private function drivers(): array
+	protected function drivers(): array
 	{
 		$drivers = [];
 
@@ -87,7 +87,7 @@ final class View
 		return $drivers;
 	}
 
-	private static function facts(array $facts): string
+	protected static function facts(array $facts): string
 	{
 		$frames = $facts['frames'] === null ? 'animated' : $facts['frames'] . ' fr';
 
@@ -100,7 +100,7 @@ final class View
 		]));
 	}
 
-	private function filters(): array
+	protected function filters(): array
 	{
 		$issues  = $this->filter->has('issues');
 		$links   = [];
@@ -126,7 +126,7 @@ final class View
 		return $links;
 	}
 
-	private static function level(float $delta): string
+	protected static function level(float $delta): string
 	{
 		return match (true) {
 			$delta >= Delta::LIMIT     => 'issue',
@@ -135,7 +135,7 @@ final class View
 		};
 	}
 
-	private function link(
+	protected function link(
 		string $text,
 		array $change,
 		bool $current
@@ -163,12 +163,12 @@ final class View
 		];
 	}
 
-	private static function percent(float $value): string
+	protected static function percent(float $value): string
 	{
 		return number_format($value * 100, 1) . ' %';
 	}
 
-	private function row(array $row): array
+	protected function row(array $row): array
 	{
 		$options = [];
 
@@ -183,7 +183,7 @@ final class View
 		];
 	}
 
-	private function source(string $name): array
+	protected function source(string $name): array
 	{
 		$facts = $this->playground->facts($name);
 
@@ -197,7 +197,7 @@ final class View
 		];
 	}
 
-	private function sources(): array
+	protected function sources(): array
 	{
 		$sources = [];
 

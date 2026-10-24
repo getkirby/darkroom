@@ -16,7 +16,7 @@ class JpegTest extends ReaderTestCase
 {
 	protected const string READER = Jpeg::class;
 
-	private static function app2(string $profile, int $size = 65519): array
+	protected static function app2(string $profile, int $size = 65519): array
 	{
 		$parts    = str_split($profile, $size);
 		$segments = [];
@@ -29,7 +29,7 @@ class JpegTest extends ReaderTestCase
 		return $segments;
 	}
 
-	private static function frame(
+	protected static function frame(
 		int $width,
 		int $height,
 		int $marker = 0xC0
@@ -40,7 +40,7 @@ class JpegTest extends ReaderTestCase
 		return self::segment($marker, "\x08" . $size . $components);
 	}
 
-	private static function jpeg(string ...$segments): string
+	protected static function jpeg(string ...$segments): string
 	{
 		return "\xFF\xD8" . implode('', $segments);
 	}
@@ -375,7 +375,7 @@ class JpegTest extends ReaderTestCase
 		$this->assertTruncated($exif);
 	}
 
-	private static function xmp(): string
+	protected static function xmp(): string
 	{
 		return self::segment(0xE1, "http://ns.adobe.com/xap/1.0/\0<x:xmpmeta/>");
 	}

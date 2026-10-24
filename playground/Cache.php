@@ -16,7 +16,7 @@ final class Cache
 	 * @param iterable<string> $files
 	 */
 	public function __construct(
-		private readonly string $root,
+		protected readonly string $root,
 		iterable $files
 	) {
 		$hashes = [];
@@ -46,10 +46,6 @@ final class Cache
 		}
 	}
 
-	/**
-	 * The data stored as `$key`, else made by `$make` and stored;
-	 * one request makes it while the others wait for it
-	 */
 	public function remember(string $key, Closure $make): array
 	{
 		$file = $this->dir . '/' . $key . '.json';
@@ -76,7 +72,7 @@ final class Cache
 		return json_decode((string)file_get_contents($file), true);
 	}
 
-	private static function remove(string $dir): void
+	protected static function remove(string $dir): void
 	{
 		if (is_dir($dir) === false) {
 			return;

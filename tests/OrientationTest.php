@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 #[CoversClass(Orientation::class)]
 class OrientationTest extends TestCase
 {
-	private static function colors(GdImage $image, Rect $rect): array
+	protected static function colors(GdImage $image, Rect $rect): array
 	{
 		$colors = [];
 
@@ -27,7 +27,7 @@ class OrientationTest extends TestCase
 		return $colors;
 	}
 
-	private static function image(Size $size): GdImage
+	protected static function image(Size $size): GdImage
 	{
 		$image = imagecreatetruecolor($size->width, $size->height);
 
@@ -40,7 +40,7 @@ class OrientationTest extends TestCase
 		return $image;
 	}
 
-	private static function orient(
+	protected static function orient(
 		GdImage $image,
 		Orientation $orientation
 	): GdImage {
@@ -62,7 +62,7 @@ class OrientationTest extends TestCase
 		};
 	}
 
-	private static function pixels(GdImage $image): array
+	protected static function pixels(GdImage $image): array
 	{
 		$pixels = [];
 
@@ -89,16 +89,28 @@ class OrientationTest extends TestCase
 		$this->assertEquals(new Size(2, 3), Orientation::Rotate270->apply($size));
 	}
 
-	public function testFlips(): void
+	public function testIsFlipped(): void
 	{
-		$this->assertFalse(Orientation::None->flips());
-		$this->assertTrue(Orientation::FlipHorizontal->flips());
-		$this->assertFalse(Orientation::Rotate180->flips());
-		$this->assertTrue(Orientation::FlipVertical->flips());
-		$this->assertTrue(Orientation::Transpose->flips());
-		$this->assertFalse(Orientation::Rotate90->flips());
-		$this->assertTrue(Orientation::Transverse->flips());
-		$this->assertFalse(Orientation::Rotate270->flips());
+		$this->assertFalse(Orientation::None->isFlipped());
+		$this->assertTrue(Orientation::FlipHorizontal->isFlipped());
+		$this->assertFalse(Orientation::Rotate180->isFlipped());
+		$this->assertTrue(Orientation::FlipVertical->isFlipped());
+		$this->assertTrue(Orientation::Transpose->isFlipped());
+		$this->assertFalse(Orientation::Rotate90->isFlipped());
+		$this->assertTrue(Orientation::Transverse->isFlipped());
+		$this->assertFalse(Orientation::Rotate270->isFlipped());
+	}
+
+	public function testIsSwapped(): void
+	{
+		$this->assertFalse(Orientation::None->isSwapped());
+		$this->assertFalse(Orientation::FlipHorizontal->isSwapped());
+		$this->assertFalse(Orientation::Rotate180->isSwapped());
+		$this->assertFalse(Orientation::FlipVertical->isSwapped());
+		$this->assertTrue(Orientation::Transpose->isSwapped());
+		$this->assertTrue(Orientation::Rotate90->isSwapped());
+		$this->assertTrue(Orientation::Transverse->isSwapped());
+		$this->assertTrue(Orientation::Rotate270->isSwapped());
 	}
 
 	public function testMap(): void
@@ -158,18 +170,6 @@ class OrientationTest extends TestCase
 		}
 	}
 
-	public function testSwaps(): void
-	{
-		$this->assertFalse(Orientation::None->swaps());
-		$this->assertFalse(Orientation::FlipHorizontal->swaps());
-		$this->assertFalse(Orientation::Rotate180->swaps());
-		$this->assertFalse(Orientation::FlipVertical->swaps());
-		$this->assertTrue(Orientation::Transpose->swaps());
-		$this->assertTrue(Orientation::Rotate90->swaps());
-		$this->assertTrue(Orientation::Transverse->swaps());
-		$this->assertTrue(Orientation::Rotate270->swaps());
-	}
-
 	public function testTurns(): void
 	{
 		$this->assertSame(0, Orientation::None->turns());
@@ -194,7 +194,7 @@ class OrientationTest extends TestCase
 			$oriented = self::orient($image, $orientation);
 			$turned   = imagerotate($copy, -90 * $orientation->turns(), 0);
 
-			if ($orientation->flips() === true) {
+			if ($orientation->isFlipped() === true) {
 				imageflip($turned, IMG_FLIP_HORIZONTAL);
 			}
 

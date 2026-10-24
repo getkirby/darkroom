@@ -19,9 +19,9 @@ use Random\Randomizer;
 #[CoversClass(Plan::class)]
 class PlanTest extends TestCase
 {
-	private const string FIXTURES = __DIR__ . '/fixtures';
+	protected const string FIXTURES = __DIR__ . '/fixtures';
 
-	private function assertInside(
+	protected function assertInside(
 		Rect $rect,
 		Size $size,
 		string $message = ''
@@ -32,7 +32,7 @@ class PlanTest extends TestCase
 		$this->assertLessThanOrEqual($size->height, $rect->y + $rect->height, $message);
 	}
 
-	private static function deviation(Rect|Size $size, Size $ratio): float
+	protected static function deviation(Rect|Size $size, Size $ratio): float
 	{
 		return min(
 			abs($size->width * $ratio->height / $ratio->width - $size->height),
@@ -40,7 +40,7 @@ class PlanTest extends TestCase
 		);
 	}
 
-	private static function jpeg(Size $stored, Orientation $orientation): string
+	protected static function jpeg(Size $stored, Orientation $orientation): string
 	{
 		$app1  = self::app1($orientation->value);
 		$frame = "\x08" . pack('nn', $stored->height, $stored->width) . "\x01\x01\x11\0";
@@ -49,7 +49,7 @@ class PlanTest extends TestCase
 		return "\xFF\xD8" . $app1 . $sof;
 	}
 
-	private function source(
+	protected function source(
 		int $width,
 		int $height,
 		Orientation $orientation = Orientation::None
@@ -88,7 +88,7 @@ class PlanTest extends TestCase
 
 		$plan = Plan::for($source, $options);
 
-		$this->assertEquals(new Size(...$size), $plan->size);
+		$this->assertEquals(new Size(...$size), $plan->size());
 		$this->assertEquals(new Size(...$size), $plan->resample());
 		$this->assertEquals(new Rect(...$region), $plan->region());
 	}
@@ -137,9 +137,9 @@ class PlanTest extends TestCase
 		);
 
 		$plan      = Plan::for($source, $options);
-		$deviation = static::deviation($plan->size, $requested);
+		$deviation = static::deviation($plan->size(), $requested);
 
-		$this->assertEquals(new Size(...$size), $plan->size);
+		$this->assertEquals(new Size(...$size), $plan->size());
 		$this->assertEquals(new Size(...$size), $plan->resample());
 		$this->assertEquals(new Rect(...$region), $plan->region());
 		$this->assertLessThan(1, $deviation);
@@ -177,7 +177,7 @@ class PlanTest extends TestCase
 
 		$plan = Plan::for($source, $options);
 
-		$this->assertEquals(new Size(...$size), $plan->size);
+		$this->assertEquals(new Size(...$size), $plan->size());
 		$this->assertEquals(new Rect(...$region), $plan->region());
 	}
 
@@ -220,20 +220,20 @@ class PlanTest extends TestCase
 
 		$plan = Plan::for($source, $resize);
 
-		$this->assertEquals(new Size(0, 0), $plan->size);
+		$this->assertEquals(new Size(0, 0), $plan->size());
 		$this->assertEquals(new Rect(0, 0, 0, 0), $plan->region());
 		$this->assertEquals(new Rect(0, 0, 0, 0), $plan->region($decoded));
 		$this->assertEquals(new Size(0, 0), $plan->scale());
-		$this->assertEquals(new Size(0, 0), $plan->hint());
+		$this->assertEquals(new Size(0, 0), $plan->jpegSize());
 
 		$plan = Plan::for($source, $crop);
 
-		$this->assertEquals(new Size(300, 200), $plan->size);
+		$this->assertEquals(new Size(300, 200), $plan->size());
 		$this->assertEquals(new Size(300, 200), $plan->resample());
 		$this->assertEquals(new Rect(0, 0, 0, 0), $plan->region());
 		$this->assertEquals(new Rect(0, 0, 0, 0), $plan->region($decoded));
 		$this->assertEquals(new Size(0, 0), $plan->scale());
-		$this->assertEquals(new Size(0, 0), $plan->hint());
+		$this->assertEquals(new Size(0, 0), $plan->jpegSize());
 	}
 
 	public function testForFormat(): void
@@ -334,7 +334,7 @@ class PlanTest extends TestCase
 		foreach ($plans as $plan) {
 			$loaded = $plan->scale();
 
-			$this->assertEquals($size, $plan->size);
+			$this->assertEquals($size, $plan->size());
 			$this->assertEquals($resample, $plan->resample());
 			$this->assertSame($orientation, $plan->orientation);
 			$this->assertEquals(new Rect(...$region), $plan->region());
@@ -345,7 +345,7 @@ class PlanTest extends TestCase
 		$plan   = Plan::for($source, $options, driver: $orienting);
 		$loaded = $plan->scale();
 
-		$this->assertEquals($size, $plan->size);
+		$this->assertEquals($size, $plan->size());
 		$this->assertEquals($size, $plan->resample());
 		$this->assertSame(Orientation::None, $plan->orientation);
 		$this->assertEquals($upright, $plan->region());
@@ -384,7 +384,7 @@ class PlanTest extends TestCase
 
 		$plan = Plan::for($source, $options);
 
-		$this->assertEquals(new Size(...$size), $plan->size);
+		$this->assertEquals(new Size(...$size), $plan->size());
 		$this->assertEquals(new Size(...$size), $plan->resample());
 		$this->assertEquals($full, $plan->region());
 	}
@@ -413,7 +413,7 @@ class PlanTest extends TestCase
 		Plan::for($source, $options);
 	}
 
-	public static function hintProvider(): array
+	public static function jpegSizeProvider(): array
 	{
 		$none    = Orientation::None;
 		$rotated = Orientation::Rotate90;
@@ -442,18 +442,18 @@ class PlanTest extends TestCase
 		];
 	}
 
-	#[DataProvider('hintProvider')]
-	public function testHint(
+	#[DataProvider('jpegSizeProvider')]
+	public function testJpegSize(
 		array $source,
 		Orientation $orientation,
 		array $options,
-		array $hint
+		array $size
 	): void {
 		$source = $this->source(...$source, orientation: $orientation);
 		$options  = new Options(width: $options[0], height: $options[1], crop: $options[2]);
 		$plan   = Plan::for($source, $options);
 
-		$this->assertEquals(new Size(...$hint), $plan->hint());
+		$this->assertEquals(new Size(...$size), $plan->jpegSize());
 	}
 
 	public function testRegion(): void
@@ -503,7 +503,7 @@ class PlanTest extends TestCase
 		$source  = $this->source(...$size);
 		$upright = Plan::for($source, $options);
 		$scale   = $upright->scale();
-		$hint    = $upright->hint();
+		$hint    = $upright->jpegSize();
 		$scaled  = $upright->region($scale);
 		$hinted  = $upright->region($hint);
 
@@ -516,7 +516,7 @@ class PlanTest extends TestCase
 			$this->assertEquals($expected, $plan->region($loaded), $orientation->name);
 
 			$expected = $orientation->map($hinted, $hint);
-			$loaded   = $plan->hint();
+			$loaded   = $plan->jpegSize();
 
 			$this->assertEquals($expected, $plan->region($loaded), $orientation->name);
 		}
@@ -594,7 +594,7 @@ class PlanTest extends TestCase
 					$options->crop ?? 'no crop'
 				);
 
-				$this->assertEquals($plan->size, $oriented, $case);
+				$this->assertEquals($plan->size(), $oriented, $case);
 				$this->assertInside($region, $canvas, $case);
 				$this->assertGreaterThan(0, $region->width, $case);
 				$this->assertGreaterThan(0, $region->height, $case);
@@ -635,7 +635,7 @@ class PlanTest extends TestCase
 					$this->assertSame($scale->height, $scaled->y + $scaled->height, $case);
 				}
 
-				$hint    = $plan->hint();
+				$hint    = $plan->jpegSize();
 				$nearest = (int)round(8 * max(
 					$hint->width / $canvas->width,
 					$hint->height / $canvas->height
@@ -677,5 +677,20 @@ class PlanTest extends TestCase
 				$this->assertInside($plan->region($decoded), $decoded, $case);
 			}
 		}
+	}
+
+	public function testSize(): void
+	{
+		$source  = $this->source(1200, 800);
+		$options = new Options(width: 300);
+		$plan    = Plan::for($source, $options);
+
+		$this->assertEquals(new Size(300, 200), $plan->size());
+		$this->assertSame(300, $plan->width());
+		$this->assertSame(200, $plan->height());
+		$this->assertSame(1.5, $plan->ratio());
+		$this->assertTrue($plan->isLandscape());
+		$this->assertFalse($plan->isPortrait());
+		$this->assertFalse($plan->isSquare());
 	}
 }

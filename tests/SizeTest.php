@@ -17,6 +17,33 @@ class SizeTest extends TestCase
 		$this->assertSame(768, $size->height);
 	}
 
+	public static function cropProvider(): array
+	{
+		return [
+			'wider ratio'  => [[1200, 800], [300, 100], [1200, 400]],
+			'taller ratio' => [[1200, 800], [100, 100], [800, 800]],
+			'same ratio'   => [[1200, 800], [300, 200], [1200, 800]],
+			'larger ratio' => [[300, 200], [3000, 1000], [300, 100]],
+			'floored'      => [[1000, 700], [3, 2], [1000, 666]],
+			'never 0'      => [[10, 6000], [6000, 1], [10, 1]],
+			'empty'        => [[0, 0], [300, 200], [0, 0]],
+		];
+	}
+
+	#[DataProvider('cropProvider')]
+	public function testCrop(
+		array $size,
+		array $ratio,
+		array $expected
+	): void {
+		$size  = new Size(...$size);
+		$ratio = new Size(...$ratio);
+
+		$crop = $size->crop($ratio);
+
+		$this->assertEquals(new Size(...$expected), $crop);
+	}
+
 	public static function fitProvider(): array
 	{
 		return [

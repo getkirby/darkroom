@@ -282,7 +282,7 @@ class VipsTest extends DriverTestCase
 
 		$output = new Source($file);
 
-		$this->assertEquals($plan->size, $output->size());
+		$this->assertEquals($plan->size(), $output->size());
 	}
 
 	public static function processThreadsProvider(): array

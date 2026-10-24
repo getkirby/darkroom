@@ -17,7 +17,7 @@ final class Png extends Reader
 	 * @param resource $handle
 	 * @return Generator<string, int>
 	 */
-	private static function chunks($handle): Generator
+	protected static function chunks($handle): Generator
 	{
 		if (fread($handle, 8) !== "\x89PNG\r\n\x1A\n") {
 			return;

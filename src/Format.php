@@ -5,9 +5,6 @@ namespace Darkroom;
 use Darkroom\Readers\Reader;
 use InvalidArgumentException;
 
-/**
- * An image format by name
- */
 enum Format
 {
 	case Avif;
@@ -71,7 +68,7 @@ enum Format
 	/**
 	 * @return non-empty-list<string>
 	 */
-	private function extensions(): array
+	protected function extensions(): array
 	{
 		return match ($this) {
 			self::Avif => ['avif'],
@@ -86,21 +83,16 @@ enum Format
 	}
 
 	/**
-	 * From an extension or a MIME type, in any letter case
-	 *
-	 * @throws InvalidArgumentException For any other value
+	 * @throws InvalidArgumentException For an unknown value
 	 */
-	public static function from(string $value): static
+	public static function from(Format|string $value): static
 	{
-		$name = strtolower($value);
+		if ($value instanceof self) {
+			return $value;
+		}
 
-		foreach (self::cases() as $format) {
-			if (
-				in_array($name, $format->extensions(), true) === true ||
-				in_array($name, $format->mimes(), true) === true
-			) {
-				return $format;
-			}
+		if ($format = static::tryFrom($value)) {
+			return $format;
 		}
 
 		throw new InvalidArgumentException(
@@ -108,9 +100,6 @@ enum Format
 		);
 	}
 
-	/**
-	 * Without transparency: JPEG has no alpha
-	 */
 	public function isOpaque(): bool
 	{
 		return $this === self::Jpeg;
@@ -124,7 +113,7 @@ enum Format
 	/**
 	 * @return non-empty-list<string>
 	 */
-	private function mimes(): array
+	protected function mimes(): array
 	{
 		return match ($this) {
 			self::Avif => ['image/avif'],
@@ -136,5 +125,24 @@ enum Format
 			self::Png  => ['image/png', 'image/apng'],
 			self::Webp => ['image/webp'],
 		};
+	}
+
+	/**
+	 * From an extension or a MIME type
+	 */
+	public static function tryFrom(string $value): static|null
+	{
+		$name = strtolower($value);
+
+		foreach (self::cases() as $format) {
+			if (
+				in_array($name, $format->extensions(), true) === true ||
+				in_array($name, $format->mimes(), true) === true
+			) {
+				return $format;
+			}
+		}
+
+		return null;
 	}
 }

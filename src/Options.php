@@ -5,7 +5,7 @@ namespace Darkroom;
 use InvalidArgumentException;
 
 /**
- * What the thumb should be: geometry and filters on top of what a darkroom defaults
+ * Target specifications for the thumbnail
  */
 final readonly class Options extends Defaults
 {
@@ -28,7 +28,12 @@ final readonly class Options extends Defaults
 		bool|null $interlace = null,
 		bool|null $icc = null,
 	) {
-		parent::__construct($quality, $format, $interlace, $icc);
+		parent::__construct(
+			quality:   $quality,
+			format:    $format,
+			interlace: $interlace,
+			icc:       $icc
+		);
 	}
 
 	public function focus(): Focus|null
@@ -40,95 +45,71 @@ final readonly class Options extends Defaults
 		return Focus::from($this->crop);
 	}
 
-	/**
-	 * From options as configuration or a URL gives
-	 * them; unknown keys are ignored
-	 *
-	 * @throws InvalidArgumentException For an invalid value of a known key
-	 */
-	public static function from(Defaults|array $values): static
+	public static function from(Defaults|array $options): static
 	{
-		if ($values instanceof static) {
-			return $values;
+		if ($options instanceof static) {
+			return $options;
 		}
 
-		if ($values instanceof Defaults) {
-			$values = $values->toArray();
+		if ($options instanceof Defaults) {
+			$options = $options->toArray();
 		}
 
-		$values['grayscale'] ??= $values['greyscale'] ?? $values['bw'] ?? null;
-
-		$values  = static::clean($values);
-		$base     = static::read($values);
-		$blur     = $values['blur'] ?? null;
-		$crop     = $values['crop'] ?? null;
-		$sharpen  = $values['sharpen'] ?? null;
+		$defaults  = Defaults::from($options);
+		$grayscale = $options['grayscale'] ?? $options['greyscale'] ?? $options['bw'] ?? null;
+		$blur      = $options['blur'] ?? null;
+		$sharpen   = $options['sharpen'] ?? null;
 
 		return new static(
-			...$base,
-			width: static::number(
-				'width',
-				$values['width'] ?? null
-			),
-			height: static::number(
-				'height',
-				$values['height'] ?? null
-			),
-			crop: static::position(
-				$crop === true ? Gravity::Center : $crop
-			),
-			blur: static::number(
-				'blur',
-				$blur === true ? 10 : $blur,
-				100
-			),
-			grayscale: static::flag(
-				'grayscale',
-				$values['grayscale']
-			) === true,
-			sharpen: static::number(
-				'sharpen',
-				$sharpen === true ? 50 : $sharpen,
-				100
-			)
+			width:     static::number('width', $options['width'] ?? null),
+			height:    static::number('height', $options['height'] ?? null),
+			crop:      static::position($options['crop'] ?? null),
+			blur:      static::number('blur', $blur === true ? 10 : $blur, 100),
+			grayscale: static::flag('grayscale', $grayscale) === true,
+			sharpen:   static::number('sharpen', $sharpen === true ? 50 : $sharpen, 100),
+			quality:   $defaults->quality,
+			format:    $defaults->format,
+			interlace: $defaults->interlace,
+			icc:       $defaults->icc
 		);
 	}
 
 	/**
 	 * @throws InvalidArgumentException For an invalid crop
 	 */
-	private static function position(mixed $value): string|null
+	protected static function position(mixed $position): string|null
 	{
-		if ($value === null) {
+		if (in_array($position, [null, '', false, 0], true) === true) {
 			return null;
 		}
 
-		if ($value instanceof Gravity) {
-			return $value->value;
+		if ($position === true) {
+			return Gravity::Center->value;
 		}
 
-		if (is_string($value) === false) {
-			throw static::error('crop', $value);
+		if ($position instanceof Gravity) {
+			return $position->value;
 		}
 
-		Focus::from($value);
+		if (is_string($position) === false) {
+			static::error('crop', $position);
+		}
 
-		return $value;
+		Focus::from($position);
+
+		return $position;
 	}
 
-	/**
-	 * Plain values that `from()` reads back
-	 */
 	public function toArray(): array
 	{
 		$array = [
+			...parent::toArray(),
 			'width'     => $this->width,
 			'height'    => $this->height,
 			'crop'      => $this->crop,
 			'blur'      => $this->blur,
 			'grayscale' => $this->grayscale === true ? true : null,
-			'sharpen'   => $this->sharpen,
-			...parent::toArray()
+			'sharpen'   => $this->sharpen
 		];
 
 		return array_filter($array, fn ($value) => $value !== null);

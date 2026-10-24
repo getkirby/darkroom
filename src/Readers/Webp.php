@@ -12,7 +12,7 @@ final class Webp extends Reader
 	/**
 	 * The flags of an extended file's metadata chunks
 	 */
-	private const array FLAGS = [
+	protected const array FLAGS = [
 		'EXIF' => 0x08,
 		'ICCP' => 0x20,
 	];
@@ -23,7 +23,7 @@ final class Webp extends Reader
 	 *
 	 * @param resource $handle
 	 */
-	private static function chunk($handle): string
+	protected static function chunk($handle): string
 	{
 		$head = (string)fread($handle, 30);
 
@@ -52,7 +52,7 @@ final class Webp extends Reader
 	/**
 	 * The flags of an extended file
 	 */
-	private static function flags(string $chunk): int
+	protected static function flags(string $chunk): int
 	{
 		if (str_starts_with($chunk, 'VP8X') === false) {
 			return 0;
@@ -94,7 +94,7 @@ final class Webp extends Reader
 	 * @param resource $handle
 	 * @param key-of<self::FLAGS> $type
 	 */
-	private static function locate(
+	protected static function locate(
 		$handle,
 		string $chunk,
 		string $type

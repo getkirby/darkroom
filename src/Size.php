@@ -11,6 +11,25 @@ final readonly class Size
 	}
 
 	/**
+	 * The largest part with the ratio of `$ratio`
+	 */
+	public function crop(Size $ratio): static
+	{
+		// multiplied before dividing, to stay exact
+		return match ($ratio->width * $this->height <=> $ratio->height * $this->width) {
+			1 => new static(
+				$this->width,
+				max(1, (int)floor($this->width * $ratio->height / $ratio->width))
+			),
+			-1 => new static(
+				max(1, (int)floor($this->height * $ratio->width / $ratio->height)),
+				$this->height
+			),
+			0 => $this
+		};
+	}
+
+	/**
 	 * Shrinks into the box, keeping the ratio
 	 */
 	public function fit(

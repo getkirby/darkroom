@@ -4,15 +4,15 @@ namespace Darkroom\Playground;
 
 final class Checks
 {
-	private const array COUNT = [
+	protected const array COUNT = [
 		'passed'      => 0,
 		'issues'      => 0,
 		'unsupported' => 0
 	];
 
 	public function __construct(
-		private readonly Playground $playground,
-		private readonly Filter $filter,
+		protected readonly Playground $playground,
+		protected readonly Filter $filter,
 	) {
 	}
 

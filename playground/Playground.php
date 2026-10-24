@@ -19,13 +19,13 @@ final class Playground
 	/**
 	 * @var array<string, Darkroom>
 	 */
-	private array $darkrooms = [];
-	private array|null $drivers = null;
+	protected array $darkrooms = [];
+	protected array|null $drivers = null;
 
 	/**
 	 * @var array<string, Source>
 	 */
-	private array $files = [];
+	protected array $files = [];
 
 	public function __construct(
 		public readonly string $root
@@ -50,7 +50,7 @@ final class Playground
 		return new Checks($this, $filter);
 	}
 
-	private function darkroom(string ...$drivers): Darkroom
+	protected function darkroom(string ...$drivers): Darkroom
 	{
 		return $this->darkrooms[implode(',', $drivers)] ??= new Darkroom($drivers);
 	}
@@ -65,7 +65,7 @@ final class Playground
 		return Cell::facts($this->root . '/sources/' . $name);
 	}
 
-	private function make(string $key, Source $source, array $options): array
+	protected function make(string $key, Source $source, array $options): array
 	{
 		$dir   = $this->cache->dir . '/' . $key;
 		$url   = '/cache/' . $this->cache->fingerprint . '/' . $key;
@@ -90,7 +90,7 @@ final class Playground
 	 *
 	 * @return array{int, int}
 	 */
-	private function plan(Source $source, array $options): array
+	protected function plan(Source $source, array $options): array
 	{
 		$planner = $this->darkroom();
 		$plan    = $planner->plan($source, $options);
@@ -99,7 +99,7 @@ final class Playground
 		return $plan['size'];
 	}
 
-	private function probe(): array
+	protected function probe(): array
 	{
 		$drivers = [];
 
@@ -167,7 +167,7 @@ final class Playground
 	 *
 	 * @return list<array{string, string, string}>
 	 */
-	private function select(Filter $filter): array
+	protected function select(Filter $filter): array
 	{
 		$rows = [];
 
@@ -187,7 +187,7 @@ final class Playground
 		return $filter->select('driver', array_keys($this->drivers()));
 	}
 
-	private function source(string $name): Source
+	protected function source(string $name): Source
 	{
 		return $this->files[$name] ??= new Source($this->root . '/sources/' . $name);
 	}

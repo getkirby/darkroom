@@ -30,7 +30,7 @@ class GdTest extends DriverTestCase
 		return false;
 	}
 
-	private static function iccp(int $type, string $data): string
+	protected static function iccp(int $type, string $data): string
 	{
 		$pixels = str_repeat("\x80", $type === 0 ? 30 : 90);
 		$rows   = str_repeat("\0" . $pixels, 20);
@@ -42,7 +42,7 @@ class GdTest extends DriverTestCase
 		return self::png($ihdr, $iccp, $idat, $iend);
 	}
 
-	private function peak(
+	protected function peak(
 		string $source,
 		string $file,
 		array $options
@@ -88,7 +88,7 @@ class GdTest extends DriverTestCase
 		];
 	}
 
-	private function subsamples(): bool
+	protected function subsamples(): bool
 	{
 		$image = imagecreatetruecolor(16, 16);
 		$file  = $this->file('probe.jpg');

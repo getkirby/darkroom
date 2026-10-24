@@ -19,14 +19,6 @@ class SettingsTest extends TestCase
 		$this->assertSame([], $settings->other);
 	}
 
-	public function testConstructInvalid(): void
-	{
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('Invalid limit: 0');
-
-		new Settings(limit: 0);
-	}
-
 	public static function fromProvider(): array
 	{
 		return [

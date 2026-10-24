@@ -96,6 +96,11 @@ class FormatTest extends TestCase
 		$this->assertSame($format, Format::from($value));
 	}
 
+	public function testFromFormat(): void
+	{
+		$this->assertSame(Format::Png, Format::from(Format::Png));
+	}
+
 	public static function fromInvalidProvider(): array
 	{
 		return [
@@ -135,6 +140,18 @@ class FormatTest extends TestCase
 		$this->assertSame('image/jxl', Format::Jxl->mime());
 		$this->assertSame('image/png', Format::Png->mime());
 		$this->assertSame('image/webp', Format::Webp->mime());
+	}
+
+	#[DataProvider('fromProvider')]
+	public function testTryFrom(string $value, Format $format): void
+	{
+		$this->assertSame($format, Format::tryFrom($value));
+	}
+
+	#[DataProvider('fromInvalidProvider')]
+	public function testTryFromInvalid(string $value): void
+	{
+		$this->assertNull(Format::tryFrom($value));
 	}
 
 	public function testViewable(): void

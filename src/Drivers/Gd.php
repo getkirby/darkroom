@@ -17,22 +17,14 @@ use ErrorException;
 use GdImage;
 use ValueError;
 
-/**
- * Decodes the whole first frame,
- * resamples it once and orients the small result;
- * writes no metadata but an RGB color profile
- */
 final class Gd extends Driver
 {
 	/**
 	 * Transparent black, as GD stores it in truecolor images
 	 */
-	private const int CLEAR = 0x7F000000;
+	protected const int CLEAR = 0x7F000000;
 
-	/**
-	 * A transparent truecolor image that takes pixels as they are
-	 */
-	private static function blank(int $width, int $height): GdImage
+	protected static function blank(int $width, int $height): GdImage
 	{
 		$image = imagecreatetruecolor($width, $height);
 
@@ -55,12 +47,7 @@ final class Gd extends Driver
 		return $image;
 	}
 
-	/**
-	 * A gaussian blur: shrunk in one step
-	 * until sigma is 1–2 pixels, smoothed there,
-	 * then doubled back with one pass each
-	 */
-	private static function blur(GdImage $image, int $sigma): GdImage
+	protected static function blur(GdImage $image, int $sigma): GdImage
 	{
 		$width    = imagesx($image);
 		$height   = imagesy($image);
@@ -141,9 +128,9 @@ final class Gd extends Driver
 	}
 
 	/**
-	 * The first frame
+	 * Decodes the first frame
 	 */
-	private static function decode(Plan $plan): GdImage
+	protected static function decode(Plan $plan): GdImage
 	{
 		$file    = $plan->source->file;
 		$decoder = static::decoder($plan->source->format());
@@ -158,21 +145,15 @@ final class Gd extends Driver
 		return $image;
 	}
 
-	/**
-	 * GD's function that reads the format
-	 */
-	private static function decoder(Format $format): string
+	protected static function decoder(Format $format): string
 	{
 		return 'imagecreatefrom' . strtolower($format->name);
 	}
 
 	/**
-	 * Whether GD decodes an animated WebP:
-	 * two lossless frames of a black pixel
-	 *
 	 * @todo seems super specific, needed?
 	 */
-	private static function decodesAnimation(): bool
+	protected static function decodesAnimation(): bool
 	{
 		$pixel = 'VP8L' . pack('V', 14) . "\x2F\0\0\0\0\x07\x10\x11\xFD\x0F\x44\x44\xFF\x03";
 		$frame = 'ANMF' . pack('V', 16 + strlen($pixel)) . str_repeat("\0", 12) . "\x64\0\0\0" . $pixel;
@@ -187,11 +168,7 @@ final class Gd extends Driver
 		return @imagecreatefromstring($riff) !== false;
 	}
 
-	/**
-	 * The image in the plan's format,
-	 * encoded in memory for the color profile
-	 */
-	private static function encode(GdImage $image, Plan $plan): string
+	protected static function encode(GdImage $image, Plan $plan): string
 	{
 		// encoders without alpha would keep the colors under it; JPEG
 		// decodes opaque, and no step after decoding adds transparency
@@ -234,19 +211,12 @@ final class Gd extends Driver
 		return (string)stream_get_contents($stream);
 	}
 
-	/**
-	 * GD's function that writes the format
-	 */
-	private static function encoder(Format $format): string
+	protected static function encoder(Format $format): string
 	{
 		return 'image' . strtolower($format->name);
 	}
 
-	/**
-	 * Whether the encoder writes a pixel, as some
-	 * builds read a format they can't write
-	 */
-	private static function encodes(string $encoder): bool
+	protected static function encodes(string $encoder): bool
 	{
 		if (function_exists($encoder) === false) {
 			return false;
@@ -258,10 +228,7 @@ final class Gd extends Driver
 		return @$encoder($image, $stream) === true;
 	}
 
-	/**
-	 * Grayscale, blur and sharpen, in this order
-	 */
-	private static function filter(GdImage $image, Plan $plan): GdImage
+	protected static function filter(GdImage $image, Plan $plan): GdImage
 	{
 		if ($plan->options->grayscale === true) {
 			imagefilter($image, IMG_FILTER_GRAYSCALE);
@@ -278,10 +245,7 @@ final class Gd extends Driver
 		return $image;
 	}
 
-	/**
-	 * The image on white, blended by its alpha
-	 */
-	private static function flatten(GdImage $image): GdImage
+	protected static function flatten(GdImage $image): GdImage
 	{
 		$width     = imagesx($image);
 		$height    = imagesy($image);
@@ -311,10 +275,7 @@ final class Gd extends Driver
 		return extension_loaded('gd');
 	}
 
-	/**
-	 * Turns the stored pixels into the displayed image
-	 */
-	private static function orient(
+	protected static function orient(
 		GdImage $image,
 		Orientation $orientation
 	): GdImage {
@@ -336,20 +297,14 @@ final class Gd extends Driver
 			imagealphablending($image, false);
 		}
 
-		if ($orientation->flips() === true) {
+		if ($orientation->isFlipped() === true) {
 			imageflip($image, IMG_FLIP_HORIZONTAL);
 		}
 
 		return $image;
 	}
 
-	/**
-	 * At most 256 colors and the transparent one,
-	 * as GIF holds: each the mean of its pixels,
-	 * where GD's quantizer alone gives the middle
-	 * of its color cell
-	 */
-	private static function palette(GdImage $image): GdImage
+	protected static function palette(GdImage $image): GdImage
 	{
 		$width   = imagesx($image);
 		$height  = imagesy($image);
@@ -363,11 +318,7 @@ final class Gd extends Driver
 		return $palette;
 	}
 
-	/**
-	 * Throws before decoding an image that can't fit into
-	 * the memory limit, which would end in a fatal error
-	 */
-	private static function preflight(Plan $plan): void
+	protected static function preflight(Plan $plan): void
 	{
 		/** @var non-empty-string $setting always set, -1 for no limit */
 		$setting = ini_get('memory_limit');
@@ -431,11 +382,7 @@ final class Gd extends Driver
 		}
 	}
 
-	/**
-	 * The source's color profile, if kept;
-	 * only an RGB one, as GD writes RGB
-	 */
-	private static function profile(Plan $plan): string
+	protected static function profile(Plan $plan): string
 	{
 		if ($plan->icc === false) {
 			return '';
@@ -447,10 +394,7 @@ final class Gd extends Driver
 		return substr($profile, 16, 4) === 'RGB ' ? $profile : '';
 	}
 
-	/**
-	 * The plan's region, averaged to the resample size
-	 */
-	private static function resample(GdImage $image, Plan $plan): GdImage
+	protected static function resample(GdImage $image, Plan $plan): GdImage
 	{
 		$region   = $plan->region();
 		$resample = $plan->resample();
@@ -458,10 +402,7 @@ final class Gd extends Driver
 		return static::resize($image, $region, $resample);
 	}
 
-	/**
-	 * The rectangle of the image, averaged to the size in one pass
-	 */
-	private static function resize(
+	protected static function resize(
 		GdImage $image,
 		Rect $rect,
 		Size $size
@@ -484,7 +425,7 @@ final class Gd extends Driver
 		return $resized;
 	}
 
-	private static function sharpen(GdImage $image, int $amount): void
+	protected static function sharpen(GdImage $image, int $amount): void
 	{
 		[$kernel, $divisor] = Sharpen::kernel($amount);
 
@@ -492,10 +433,7 @@ final class Gd extends Driver
 		imageconvolution($image, $kernel, $divisor, 0.5);
 	}
 
-	/**
-	 * Passes of a 3×3 gaussian, each with a variance of 0.5
-	 */
-	private static function smooth(GdImage $image, int $passes): void
+	protected static function smooth(GdImage $image, int $passes): void
 	{
 		$kernel = [
 			[1, 2, 1],
@@ -509,11 +447,7 @@ final class Gd extends Driver
 		}
 	}
 
-	/**
-	 * Clears pixels at most half opaque and makes the
-	 * others opaque, as ImageMagick does for GIF
-	 */
-	private static function threshold(GdImage $image): void
+	protected static function threshold(GdImage $image): void
 	{
 		$width  = imagesx($image);
 		$height = imagesy($image);
@@ -532,10 +466,7 @@ final class Gd extends Driver
 		imagecopymerge($image, $cut, 0, 0, 0, 0, $width, $height, 100);
 	}
 
-	/**
-	 * Writes the encoded image in one call
-	 */
-	private static function write(string $file, string $data): void
+	protected static function write(string $file, string $data): void
 	{
 		if (file_put_contents($file, $data) !== strlen($data)) {
 			throw new ProcessException(

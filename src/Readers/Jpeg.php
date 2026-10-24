@@ -90,7 +90,7 @@ final class Jpeg extends Reader
 	 *
 	 * @param resource $handle
 	 */
-	private static function marker($handle): int|null
+	protected static function marker($handle): int|null
 	{
 		if (fread($handle, 1) !== "\xFF") {
 			return null;
@@ -164,7 +164,7 @@ final class Jpeg extends Reader
 	 * @param resource $handle
 	 * @return Generator<int, int>
 	 */
-	private static function segments($handle): Generator
+	protected static function segments($handle): Generator
 	{
 		if (fread($handle, 2) !== "\xFF\xD8") {
 			return;

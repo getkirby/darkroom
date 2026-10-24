@@ -18,7 +18,7 @@ final class Heif extends Reader
 	/**
 	 * By a horizontal flip or none, then by clockwise quarter turns
 	 */
-	private const array ORIENTATIONS = [
+	protected const array ORIENTATIONS = [
 		[
 			Orientation::None,
 			Orientation::Rotate90,
@@ -36,7 +36,7 @@ final class Heif extends Reader
 	/**
 	 * The bytes parsed of each property
 	 */
-	private const array PROPERTIES = [
+	protected const array PROPERTIES = [
 		'clap' => 32,
 		'colr' => 11,
 		'imir' => 1,
@@ -50,7 +50,7 @@ final class Heif extends Reader
 	 * @param list<array{string, string}> $properties
 	 * @return array{Size, Rect}
 	 */
-	private static function aperture(array $properties): array
+	protected static function aperture(array $properties): array
 	{
 		$ispe = '';
 		$clap = '';
@@ -92,7 +92,7 @@ final class Heif extends Reader
 	 * @param resource $handle
 	 * @return list<int>|null
 	 */
-	private static function associations(
+	protected static function associations(
 		$handle,
 		int $length,
 		int $item
@@ -190,7 +190,7 @@ final class Heif extends Reader
 	/**
 	 * Whether the list holds the entry, at a multiple of its length
 	 */
-	private static function contains(string $list, string $entry): bool
+	protected static function contains(string $list, string $entry): bool
 	{
 		$offset = strpos($list, $entry);
 
@@ -256,7 +256,7 @@ final class Heif extends Reader
 	 * @param resource $handle
 	 * @return list<int>
 	 */
-	private static function items($handle, int $length): array
+	protected static function items($handle, int $length): array
 	{
 		// version and flags, then a 16-bit number of entries,
 		// or a 32-bit one from version 1
@@ -291,7 +291,7 @@ final class Heif extends Reader
 	 *
 	 * @return array{int, int}|null
 	 */
-	private static function location(string $data, int $item): array|null
+	protected static function location(string $data, int $item): array|null
 	{
 		$version  = ord($data[0] ?? "\0");
 		$position = 4;
@@ -353,7 +353,7 @@ final class Heif extends Reader
 	 * @param resource $handle
 	 * @return Generator<string, int>
 	 */
-	private static function meta($handle): Generator
+	protected static function meta($handle): Generator
 	{
 		$boxes  = self::walk($handle, 'box');
 		$length = self::find($boxes, 'meta');
@@ -371,7 +371,7 @@ final class Heif extends Reader
 	 *
 	 * @param resource $handle
 	 */
-	private static function primary($handle, int $length): int
+	protected static function primary($handle, int $length): int
 	{
 		// version and flags, then a 16-bit ID,
 		// or a 32-bit one from version 1
@@ -389,7 +389,7 @@ final class Heif extends Reader
 	 * @param list<key-of<self::PROPERTIES>> $types
 	 * @return list<array{string, string}>
 	 */
-	private static function properties($handle, array $types): array
+	protected static function properties($handle, array $types): array
 	{
 		$primary = 0;
 		$iprp    = null;
@@ -501,7 +501,7 @@ final class Heif extends Reader
 	 * @param resource $handle
 	 * @param list<int> $items
 	 */
-	private static function reference(
+	protected static function reference(
 		$handle,
 		int $length,
 		array $items,
@@ -544,7 +544,7 @@ final class Heif extends Reader
 	 *
 	 * @return array{int, int}
 	 */
-	private static function span(
+	protected static function span(
 		string $clap,
 		int $image,
 		bool $horizontal
@@ -571,7 +571,7 @@ final class Heif extends Reader
 	/**
 	 * The integer of `$length` bytes at `$position`
 	 */
-	private static function take(
+	protected static function take(
 		string $data,
 		int &$position,
 		int $length

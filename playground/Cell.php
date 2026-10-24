@@ -12,26 +12,23 @@ use Darkroom\Source;
 use Imagick;
 use Throwable;
 
-/**
- * One thumb of one source by one driver
- */
 final class Cell
 {
 	/**
 	 * @param $info The driver's entry of `Darkroom::info()`
 	 */
 	public function __construct(
-		private readonly Darkroom $darkroom,
-		private readonly array $info,
-		private readonly Source $source,
-		private readonly array $options,
+		protected readonly Darkroom $darkroom,
+		protected readonly array $info,
+		protected readonly Source $source,
+		protected readonly array $options,
 	) {
 	}
 
 	/**
 	 * Why the driver can't, by its probes
 	 */
-	private function cant(): string|null
+	protected function cant(): string|null
 	{
 		if ($this->info['available'] !== true) {
 			return 'unavailable';
@@ -94,7 +91,7 @@ final class Cell
 		];
 	}
 
-	private static function format(
+	protected static function format(
 		Darkroom $darkroom,
 		Source $source,
 		array $options
@@ -113,7 +110,7 @@ final class Cell
 	/**
 	 * Frames in a file, as Imagick counts them; null without it
 	 */
-	private static function frames(string $file): int|null
+	protected static function frames(string $file): int|null
 	{
 		if (extension_loaded('imagick') === false) {
 			return null;
@@ -132,7 +129,7 @@ final class Cell
 	/**
 	 * What the output differs in from the plan
 	 */
-	private function issues(array $plan, array $output): array
+	protected function issues(array $plan, array $output): array
 	{
 		$issues = [];
 		$source = static::frames($this->source->file);
@@ -234,14 +231,10 @@ final class Cell
 		];
 	}
 
-	/**
-	 * What the playground checks of a plan,
-	 * the only place that reads one
-	 */
 	public static function plan(Plan $plan): array
 	{
 		return [
-			'size'   => static::size($plan->size),
+			'size'   => static::size($plan->size()),
 			'format' => $plan->format->extension(),
 			'frames' => $plan->frames,
 		];
@@ -250,7 +243,7 @@ final class Cell
 	/**
 	 * @return array{int, int}
 	 */
-	private static function size(Size $size): array
+	protected static function size(Size $size): array
 	{
 		return [$size->width, $size->height];
 	}

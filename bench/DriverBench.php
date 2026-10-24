@@ -71,7 +71,7 @@ abstract class DriverBench
 		];
 	}
 
-	private function process(string $file, array $options): void
+	protected function process(string $file, array $options): void
 	{
 		$driver   = $this->driver();
 		$darkroom = new Darkroom([$driver]);

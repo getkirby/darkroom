@@ -11,7 +11,7 @@ use RecursiveIteratorIterator;
 
 abstract class TestCase extends BaseTestCase
 {
-	private string|null $tmp = null;
+	protected string|null $tmp = null;
 
 	protected static function app1(int $orientation): string
 	{

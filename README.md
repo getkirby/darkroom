@@ -37,7 +37,7 @@ $format = $darkroom->format($source);
 $darkroom->process($plan, 'thumbs/photo-400.' . $format->extension());
 ```
 
-`::process()` writes the thumb in the format of the target's extension, creates missing directories and only shows the file once it is complete. It returns the `Plan`, with the thumb's `->size`.
+`::process()` writes the thumb in the format of the target's extension, creates missing directories and only shows the file once it is complete. It returns the `Plan`, with the thumb's `->width()` and `->height()`.
 
 `::plan()` gives the same without processing, e.g. for `->width` and `->height` attributes; for several plans, pass the `Source` from `::open()`, which reads the file's header once.
 

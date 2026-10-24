@@ -65,7 +65,7 @@ final class FakeDriver extends Driver
 		return $this->settings['orients'];
 	}
 
-	private function probe(string $key, Format $format): bool
+	protected function probe(string $key, Format $format): bool
 	{
 		$name = $key . ':' . $format->name;
 

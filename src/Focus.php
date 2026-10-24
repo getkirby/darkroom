@@ -4,9 +4,6 @@ namespace Darkroom;
 
 use InvalidArgumentException;
 
-/**
- * A point in relative coordinates, 0.0–1.0 from the top left
- */
 final readonly class Focus
 {
 	public function __construct(
@@ -15,11 +12,6 @@ final readonly class Focus
 	) {
 	}
 
-	/**
-	 * From a Gravity, its name or `x% y%`
-	 *
-	 * @throws InvalidArgumentException For anything else
-	 */
 	public static function from(string|Gravity $value): static
 	{
 		if (is_string($value) === true) {
@@ -42,6 +34,25 @@ final readonly class Focus
 		return new static(
 			x: $fraction($match[1]),
 			y: $fraction($match[2])
+		);
+	}
+
+	public function place(Size $size, Size $canvas): Rect
+	{
+		$start = fn (
+			float $canvas,
+			float $size,
+			float $focus
+		): int => (int)min(
+			max(0.0, round($canvas * $focus - $size / 2.0)),
+			$canvas - $size
+		);
+
+		return new Rect(
+			x:      $start($canvas->width, $size->width, $this->x),
+			y:      $start($canvas->height, $size->height, $this->y),
+			width:  $size->width,
+			height: $size->height
 		);
 	}
 }

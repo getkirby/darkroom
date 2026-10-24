@@ -47,7 +47,7 @@ final class Gif extends Reader
 	 * @param resource $handle
 	 * @return Generator<int, string>
 	 */
-	private static function images($handle, string $screen): Generator
+	protected static function images($handle, string $screen): Generator
 	{
 		if (strlen($screen) < 7) {
 			return;
@@ -129,7 +129,7 @@ final class Gif extends Reader
 	 *
 	 * @param resource $handle
 	 */
-	private static function screen($handle): string
+	protected static function screen($handle): string
 	{
 		$head = (string)fread($handle, 13);
 
@@ -143,7 +143,7 @@ final class Gif extends Reader
 	/**
 	 * Width and height at the start of the data
 	 */
-	private static function size(string $data): Size
+	protected static function size(string $data): Size
 	{
 		return new Size(
 			self::int(substr($data, 0, 2), little: true),
@@ -154,7 +154,7 @@ final class Gif extends Reader
 	/**
 	 * Length of the color table that the flags announce
 	 */
-	private static function table(int $flags): int
+	protected static function table(int $flags): int
 	{
 		return ($flags & 0x80) === 0x80 ? 3 << ($flags & 0x07) + 1 : 0;
 	}

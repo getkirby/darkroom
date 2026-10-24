@@ -3,8 +3,8 @@
 namespace Darkroom\Tools;
 
 /**
- * A gaussian sharpen with a sigma of the amount in hundredths,
- * as a 3×3 kernel: the pixel twice, less its blur
+ * A gaussian sharpen with a sigma of the amount
+ * in hundredths, as a 3×3 kernel
  *
  * @internal
  */

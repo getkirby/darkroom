@@ -3,8 +3,7 @@
 namespace Darkroom;
 
 /**
- * EXIF orientation, named by what turns the stored
- * into the displayed image; rotations are clockwise
+ * EXIF orientation
  */
 enum Orientation: int
 {
@@ -19,17 +18,14 @@ enum Orientation: int
 
 	public function apply(Size $size): Size
 	{
-		if ($this->swaps() === true) {
+		if ($this->isSwapped() === true) {
 			return new Size($size->height, $size->width);
 		}
 
 		return $size;
 	}
 
-	/**
-	 * Whether a horizontal flip follows the `turns()`
-	 */
-	public function flips(): bool
+	public function isFlipped(): bool
 	{
 		return match ($this) {
 			self::FlipHorizontal,
@@ -40,9 +36,14 @@ enum Orientation: int
 		};
 	}
 
+	public function isSwapped(): bool
+	{
+		return $this->value >= 5;
+	}
+
 	/**
-	 * From displayed into stored coordinates,
-	 * for an image displayed at `$size`
+	 * Where `$rect` on the image displayed at `$size`
+	 * lies before the orientation is applied
 	 */
 	public function map(Rect $rect, Size $size): Rect
 	{
@@ -96,17 +97,6 @@ enum Orientation: int
 		};
 	}
 
-	/**
-	 * Whether width and height trade places
-	 */
-	public function swaps(): bool
-	{
-		return $this->value >= 5;
-	}
-
-	/**
-	 * Clockwise quarter turns, before the `flips()`
-	 */
 	public function turns(): int
 	{
 		return match ($this) {

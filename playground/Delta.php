@@ -63,7 +63,7 @@ final class Delta
 	 * @param list<Imagick> $a
 	 * @param list<Imagick> $b
 	 */
-	private static function difference(array $a, array $b): float
+	protected static function difference(array $a, array $b): float
 	{
 		$metric = Imagick::METRIC_ROOTMEANSQUAREDERROR;
 		$worst  = 0.0;
@@ -85,7 +85,7 @@ final class Delta
 	 *
 	 * @return list<Imagick>|null
 	 */
-	private static function frames(string $file): array|null
+	protected static function frames(string $file): array|null
 	{
 		if (extension_loaded('imagick') === false) {
 			return null;

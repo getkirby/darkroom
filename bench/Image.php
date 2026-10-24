@@ -19,7 +19,7 @@ enum Image
 	/**
 	 * An APP1 segment with orientation 6
 	 */
-	private const string EXIF = "\xFF\xE1\0\x22Exif\0\0" .
+	protected const string EXIF = "\xFF\xE1\0\x22Exif\0\0" .
 		"MM\0\x2A\0\0\0\x08\0\x01\x01\x12\0\x03\0\0\0\x01\0\x06\0\0\0\0\0\0";
 
 	public function file(): string
@@ -50,7 +50,7 @@ enum Image
 	/**
 	 * Tiles grey grain over the image; opaque without alpha
 	 */
-	private static function grain(
+	protected static function grain(
 		GdImage $image,
 		int $min,
 		int $max,
@@ -76,7 +76,7 @@ enum Image
 	/**
 	 * Grey grain, the hardest to decode: the JPEG is twice as large as a photo's
 	 */
-	private static function noise(int $width, int $height): GdImage
+	protected static function noise(int $width, int $height): GdImage
 	{
 		$image = imagecreatetruecolor($width, $height);
 
@@ -87,7 +87,7 @@ enum Image
 	 * Six areas of color under fainter grain,
 	 * which decode about as fast as a photo
 	 */
-	private static function photo(int $width, int $height): GdImage
+	protected static function photo(int $width, int $height): GdImage
 	{
 		$colors = [0x6F8FAF, 0x9DB4C8, 0x5A6E8C, 0x4F6B3A, 0x8C6E4F, 0x2F3B24];
 		$image  = imagecreatetruecolor($width, $height);
@@ -106,7 +106,7 @@ enum Image
 	/**
 	 * The JPEG with the orientation right after its start of image marker
 	 */
-	private static function rotated(): string
+	protected static function rotated(): string
 	{
 		$file = self::Jpeg->file();
 		$jpeg = (string)file_get_contents($file);

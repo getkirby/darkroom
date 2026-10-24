@@ -5,8 +5,7 @@ namespace Darkroom;
 use InvalidArgumentException;
 
 /**
- * The options a `Darkroom` sets for every thumb: how it is written;
- * the constants apply where neither the thumb nor the darkroom says
+ * Options a `Darkroom` sets for every thumb
  */
 readonly class Defaults
 {
@@ -26,29 +25,13 @@ readonly class Defaults
 	) {
 	}
 
-	/**
-	 * Values that set nothing as `null`; `false` turns a flag off
-	 */
-	protected static function clean(array $values): array
-	{
-		foreach ($values as $key => $value) {
-			$nothing = in_array($key, ['icc', 'interlace'], true) === true ? [''] : ['', false, 0];
-
-			if (in_array($value, $nothing, true) === true) {
-				$values[$key] = null;
-			}
-		}
-
-		return $values;
-	}
-
 	protected static function error(
 		string $key,
 		mixed $value
-	): InvalidArgumentException {
+	): never {
 		$value = is_scalar($value) === true ? var_export($value, true) : get_debug_type($value);
 
-		return new InvalidArgumentException(
+		throw new InvalidArgumentException(
 			message: 'Invalid ' . $key . ': ' . $value
 		);
 	}
@@ -59,24 +42,44 @@ readonly class Defaults
 			return null;
 		}
 
-		return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? throw static::error($key, $value);
-	}
+		$flag = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 
-	/**
-	 * From defaults as configuration gives them; unknown keys are ignored
-	 *
-	 * @throws InvalidArgumentException For an invalid value of a known key
-	 */
-	public static function from(Defaults|array $values): self
-	{
-		if ($values instanceof self) {
-			return $values;
+		if ($flag === null) {
+			static::error($key, $value);
 		}
 
-		$values = static::clean($values);
-		$values = static::read($values);
+		return $flag;
+	}
 
-		return new self(...$values);
+	protected static function format(mixed $format): Format|null
+	{
+		if (in_array($format, [null, '', false, 0], true) === true) {
+			return null;
+		}
+
+		if ($format instanceof Format) {
+			return $format;
+		}
+
+		if (is_string($format) === false) {
+			static::error('format', $format);
+		}
+
+		return Format::from($format);
+	}
+
+	public static function from(Defaults|array $options): self
+	{
+		if ($options instanceof self) {
+			return $options;
+		}
+
+		return new self(
+			quality:   static::number('quality', $options['quality'] ?? null, 100),
+			format:    self::format($options['format'] ?? null),
+			interlace: static::flag('interlace', $options['interlace'] ?? null),
+			icc:       static::flag('icc', $options['icc'] ?? null)
+		);
 	}
 
 	protected static function number(
@@ -84,7 +87,7 @@ readonly class Defaults
 		mixed $value,
 		int $max = PHP_INT_MAX
 	): int|null {
-		if ($value === null) {
+		if (in_array($value, [null, '', false, 0], true) === true) {
 			return null;
 		}
 
@@ -92,9 +95,8 @@ readonly class Defaults
 			'options' => ['min_range' => 0]
 		]);
 
-		// filter_var() reads `true` as 1
 		if ($number === false || $value === true) {
-			throw static::error($key, $value);
+			static::error($key, $value);
 		}
 
 		if ($number === 0) {
@@ -104,42 +106,6 @@ readonly class Defaults
 		return min($number, $max);
 	}
 
-	/**
-	 * The defaults among cleaned `$values`, as constructor arguments
-	 *
-	 * @return array{quality: int|null, format: Format|null, interlace: bool|null, icc: bool|null}
-	 * @throws InvalidArgumentException For an invalid value
-	 */
-	protected static function read(array $values): array
-	{
-		$format = $values['format'] ?? null;
-
-		return [
-			'quality' => static::number(
-				'quality',
-				$values['quality'] ?? null,
-				100
-			),
-			'format' => match (true) {
-				is_string($format)        => Format::from($format),
-				$format === null,
-				$format instanceof Format => $format,
-				default                   => throw static::error('format', $format)
-			},
-			'interlace' => static::flag(
-				'interlace',
-				$values['interlace'] ?? null
-			),
-			'icc' => static::flag(
-				'icc',
-				$values['icc'] ?? null
-			)
-		];
-	}
-
-	/**
-	 * Plain values that `from()` reads back
-	 */
 	public function toArray(): array
 	{
 		$array = [

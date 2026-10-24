@@ -8,8 +8,8 @@ final class Stream
 	public int $read  = 0;
 	public int $seeks = 0;
 
-	private string $data  = '';
-	private int $position = 0;
+	protected string $data  = '';
+	protected int $position = 0;
 
 	public static function of($handle): self
 	{

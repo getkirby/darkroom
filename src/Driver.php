@@ -5,14 +5,12 @@ namespace Darkroom;
 use Closure;
 
 /**
- * Executes a Plan
- *
  * @psalm-consistent-constructor
  */
 abstract class Driver
 {
+	protected array $probes = [];
 	protected readonly array $settings;
-	private array $probes = [];
 
 	public function __construct(array $settings = [])
 	{
@@ -24,8 +22,6 @@ abstract class Driver
 	}
 
 	/**
-	 * Runs `$probe` once per key
-	 *
 	 * @template T
 	 * @param Closure(): T $probe
 	 * @return T
@@ -72,8 +68,5 @@ abstract class Driver
 		return false;
 	}
 
-	/**
-	 * `$file` is a temp path the Darkroom owns
-	 */
 	abstract public function process(Plan $plan, string $file): void;
 }

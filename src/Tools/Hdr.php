@@ -3,8 +3,9 @@
 namespace Darkroom\Tools;
 
 /**
- * PQ and HLG light for SDR: up to PEAK, each channel tone-mapped
- * by BT.2390's EETF to the reference white of 203 cd/m² (BT.2408)
+ * PQ and HLG light for SDR:
+ * up to PEAK, each channel tone-mapped by BT.2390's EETF
+ * to the reference white of 203 cd/m² (BT.2408)
  *
  * @internal
  * @psalm-type Row = array{float, float, float}
@@ -16,14 +17,14 @@ final class Hdr
 	/**
 	 * PQ's constants (SMPTE ST 2084)
 	 */
-	private const float C1 = 0.8359375;
-	private const float C2 = 18.8515625;
-	private const float C3 = 18.6875;
+	protected const float C1 = 0.8359375;
+	protected const float C2 = 18.8515625;
+	protected const float C3 = 18.6875;
 
 	/**
 	 * CIE xy of the white of all primaries
 	 */
-	private const array D65 = [0.3127, 0.329];
+	protected const array D65 = [0.3127, 0.329];
 
 	/**
 	 * HLG's transfer characteristics (H.273)
@@ -33,14 +34,14 @@ final class Hdr
 	/**
 	 * PQ's exponents (SMPTE ST 2084)
 	 */
-	private const float M1 = 0.1593017578125;
-	private const float M2 = 78.84375;
+	protected const float M1 = 0.1593017578125;
+	protected const float M2 = 78.84375;
 
 	/**
 	 * The most light kept, in cd/m²:
 	 * a usual mastering peak and HLG's nominal one
 	 */
-	private const float PEAK = 1000.0;
+	protected const float PEAK = 1000.0;
 
 	/**
 	 * PQ's transfer characteristics (H.273)
@@ -51,7 +52,7 @@ final class Hdr
 	 * CIE xy of red, green and blue per color primaries (H.273):
 	 * BT.709, BT.2020 and Display P3
 	 */
-	private const array PRIMARIES = [
+	protected const array PRIMARIES = [
 		1  => [[0.64, 0.33], [0.3, 0.6], [0.15, 0.06]],
 		9  => [[0.708, 0.292], [0.17, 0.797], [0.131, 0.046]],
 		12 => [[0.68, 0.32], [0.265, 0.69], [0.15, 0.06]],
@@ -60,12 +61,12 @@ final class Hdr
 	/**
 	 * The light SDR shows as white, in cd/m²
 	 */
-	private const float WHITE = 203.0;
+	protected const float WHITE = 203.0;
 
 	/**
 	 * PQ's EOTF: a signal from 0 to 1 in cd/m²
 	 */
-	private static function decode(float $signal): float
+	protected static function decode(float $signal): float
 	{
 		$signal = min(max($signal, 0.0), 1.0);
 		$power  = $signal ** (1.0 / self::M2);
@@ -78,7 +79,7 @@ final class Hdr
 	 * BT.2390's EETF from PEAK to WHITE on PQ signals:
 	 * the same up to a knee, then a spline that ends in WHITE
 	 */
-	private static function eetf(float $signal): float
+	protected static function eetf(float $signal): float
 	{
 		$peak  = static::encode(self::PEAK);
 		$white = static::encode(self::WHITE) / $peak;
@@ -102,7 +103,7 @@ final class Hdr
 	/**
 	 * PQ's inverse EOTF: cd/m² as a signal from 0 to 1
 	 */
-	private static function encode(float $light): float
+	protected static function encode(float $light): float
 	{
 		$power = (max($light, 0.0) / 10000.0) ** self::M1;
 
@@ -113,7 +114,7 @@ final class Hdr
 	 * @param Matrix $matrix
 	 * @return Matrix
 	 */
-	private static function invert(array $matrix): array
+	protected static function invert(array $matrix): array
 	{
 		[[$a, $b, $c], [$d, $e, $f], [$g, $h, $i]] = $matrix;
 
@@ -166,7 +167,7 @@ final class Hdr
 	 * @param Matrix $b
 	 * @return Matrix
 	 */
-	private static function multiply(array $a, array $b): array
+	protected static function multiply(array $a, array $b): array
 	{
 		$product = [];
 
@@ -188,7 +189,7 @@ final class Hdr
 	 * @param Chromaticity $xy
 	 * @return Row
 	 */
-	private static function point(array $xy): array
+	protected static function point(array $xy): array
 	{
 		[$x, $y] = $xy;
 
@@ -202,7 +203,7 @@ final class Hdr
 	 * @param Row $factors
 	 * @return Matrix
 	 */
-	private static function scale(array $matrix, array $factors): array
+	protected static function scale(array $matrix, array $factors): array
 	{
 		[$x, $y, $z] = $factors;
 
@@ -216,7 +217,7 @@ final class Hdr
 	/**
 	 * HLG's inverse OETF: a signal as scene light from 0 to 1
 	 */
-	private static function scene(float $signal): float
+	protected static function scene(float $signal): float
 	{
 		$a = 0.17883277;
 		$b = 1.0 - 4.0 * $a;
@@ -251,7 +252,7 @@ final class Hdr
 	 * @param array{Chromaticity, Chromaticity, Chromaticity} $primaries
 	 * @return Matrix
 	 */
-	private static function xyz(array $primaries): array
+	protected static function xyz(array $primaries): array
 	{
 		$red     = static::point($primaries[0]);
 		$green   = static::point($primaries[1]);

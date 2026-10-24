@@ -22,7 +22,7 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 #[CoversClass(Imagick::class)]
 class ImagickTest extends DriverTestCase
 {
-	private static function cmyk(): string
+	protected static function cmyk(): string
 	{
 		$identity = pack('N9', 0x10000, 0, 0, 0, 0x10000, 0, 0, 0, 0x10000);
 		$ramp     = pack('n2', 0, 0xFFFF);
@@ -55,7 +55,7 @@ class ImagickTest extends DriverTestCase
 		return $image->getImageProperties('heic:cicp', false) !== [];
 	}
 
-	private static function limits(): array
+	protected static function limits(): array
 	{
 		$types = [
 			Image::RESOURCETYPE_DISK,
@@ -68,7 +68,7 @@ class ImagickTest extends DriverTestCase
 		return array_map(Image::getResourceLimit(...), $types);
 	}
 
-	private static function quality(): bool
+	protected static function quality(): bool
 	{
 		$image = new Image(static::FIXTURES . '/orientation/Landscape_1.jpg');
 		$sizes = [];
@@ -265,7 +265,7 @@ class ImagickTest extends DriverTestCase
 		foreach ($thumbs as $values) {
 			$options = Options::from($values);
 			$plan  = Plan::for($source, $options, driver: $this->driver);
-			$hint  = $plan->hint();
+			$hint  = $plan->jpegSize();
 			$scale = $plan->scale();
 			$image = new Image();
 
@@ -300,7 +300,7 @@ class ImagickTest extends DriverTestCase
 			$areas[] = $frame->getImageWidth() * $frame->getImageHeight();
 		}
 
-		$screen = $plan->size->pixels();
+		$screen = $plan->size()->pixels();
 
 		$this->assertCount(3, $areas);
 		$this->assertSame($screen, $areas[0]);
@@ -368,7 +368,7 @@ class ImagickTest extends DriverTestCase
 		$this->assertSame(100.0, $limit);
 	}
 
-	private static function thumbs(int $width): array
+	protected static function thumbs(int $width): array
 	{
 		$thumbs = [];
 

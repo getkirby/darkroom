@@ -16,7 +16,7 @@ class Jp2Test extends ReaderTestCase
 	/**
 	 * SOC and SIZ with the reference grid and the image's offset on it
 	 */
-	private static function codestream(
+	protected static function codestream(
 		int $width,
 		int $height,
 		int $x = 0,
@@ -27,7 +27,7 @@ class Jp2Test extends ReaderTestCase
 		return "\xFF\x4F\xFF\x51" . $siz;
 	}
 
-	private static function container(string ...$boxes): string
+	protected static function container(string ...$boxes): string
 	{
 		$signature = "\0\0\0\x0CjP  \r\n\x87\n";
 		$ftyp      = self::box('ftyp', 'jp2 ' . "\0\0\0\0" . 'jp2 ');
@@ -38,7 +38,7 @@ class Jp2Test extends ReaderTestCase
 	/**
 	 * The `jp2h` box with its image header: height first
 	 */
-	private static function header(int $width, int $height): string
+	protected static function header(int $width, int $height): string
 	{
 		$ihdr = self::box('ihdr', pack('NNnCCCC', $height, $width, 3, 7, 7, 0, 0));
 

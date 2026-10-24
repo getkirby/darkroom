@@ -7,37 +7,23 @@ use Darkroom\Exception\LimitException;
 use Darkroom\Exception\UnsupportedException;
 use InvalidArgumentException;
 
-/**
- * Opens, plans and processes images
- */
 final class Darkroom
 {
-	/**
-	 * For every thumb without its own
-	 */
 	public readonly Defaults $defaults;
-
-	/**
-	 * For the darkroom and its drivers
-	 */
 	public readonly Settings $settings;
 
 	/**
 	 * @var array<Driver>
 	 */
-	private array $instances;
+	protected array $instances;
 
 	/**
-	 * Temp files of running `::process()` calls
-	 *
 	 * @var array<string, true>|null
 	 */
-	private array|null $temps = null;
+	protected array|null $temps = null;
 
 	/**
-	 * @param array<string|class-string<Driver>|Driver> $drivers In order of preference
-	 *
-	 * @throws InvalidArgumentException For an invalid default or setting, or an unknown driver
+	 * @param array<string|class-string<Driver>|Driver> $drivers
 	 */
 	public function __construct(
 		public readonly array $drivers = ['imagick', 'gd', 'vips'],
@@ -49,10 +35,7 @@ final class Darkroom
 		$this->instances = array_map($this->instance(...), $drivers);
 	}
 
-	/**
-	 * Removes the temp files a fatal error left behind
-	 */
-	private function clean(): void
+	protected function clean(): void
 	{
 		foreach (array_keys($this->temps ?? []) as $temp) {
 			@unlink($temp);
@@ -60,15 +43,15 @@ final class Darkroom
 	}
 
 	/**
-	 * First available driver that reads `$input` and writes `$output`;
-	 * a source also by what its format doesn't tell, such as frames
+	 * First available driver that
+	 * reads `$input` and writes `$output`
 	 */
 	public function driver(
 		Format|Source|string $input,
 		Format|string $output
 	): Driver|null {
-		$input  = $input instanceof Source ? $input : static::parse($input);
-		$output = static::parse($output);
+		$input  = $input instanceof Source ? $input : Format::from($input);
+		$output = Format::from($output);
 
 		foreach ($this->instances as $driver) {
 			if (
@@ -86,31 +69,31 @@ final class Darkroom
 	/**
 	 * The output format, for callers without a file name yet
 	 *
-	 * @param array<Format|string> $allowed In order of preference after the source's format
+	 * @param array<Format|string> $allowed
 	 *
-	 * @throws InvalidArgumentException If `$requested` isn't allowed
+	 * @throws InvalidArgumentException If `$format` isn't allowed
 	 * @throws UnsupportedException Without a driver for the format
 	 */
 	public function format(
 		Source $source,
-		Format|string|null $requested = null,
+		Format|string|null $format = null,
 		array $allowed = Format::VIEWABLE
 	): Format {
 		$input   = $source->format();
-		$allowed = array_map(static::parse(...), $allowed);
+		$allowed = array_map(Format::from(...), $allowed);
 
-		if ($requested !== null) {
-			$requested = static::parse($requested);
+		if ($format !== null) {
+			$format = Format::from($format);
 
-			if (in_array($requested, $allowed, true) === false) {
+			if (in_array($format, $allowed, true) === false) {
 				throw new InvalidArgumentException(
-					message: 'Output format not allowed: ' . $requested->extension()
+					message: 'Output format not allowed: ' . $format->extension()
 				);
 			}
 		}
 
 		// the source's format, else the allowed ones in the caller's order
-		$formats = $requested === null ? [$input, ...$allowed] : [$requested];
+		$formats = $format === null ? [$input, ...$allowed] : [$format];
 
 		foreach ($formats as $format) {
 			if (
@@ -126,9 +109,6 @@ final class Darkroom
 		);
 	}
 
-	/**
-	 * Details per driver, keyed like `$drivers`
-	 */
 	public function info(): array
 	{
 		$info = [];
@@ -166,7 +146,7 @@ final class Darkroom
 	/**
 	 * @throws InvalidArgumentException For an unknown driver
 	 */
-	private function instance(Driver|string $driver): Driver
+	protected function instance(Driver|string $driver): Driver
 	{
 		if ($driver instanceof Driver) {
 			return $driver;
@@ -187,28 +167,15 @@ final class Darkroom
 		return new $class($this->settings->toArray());
 	}
 
-	/**
-	 * Headers only, read when asked
-	 */
 	public function open(string $file): Source
 	{
 		return new Source($file);
 	}
 
-	private static function parse(Format|string $format): Format
-	{
-		if (is_string($format) === true) {
-			return Format::from($format);
-		}
-
-		return  $format;
-	}
-
-	/**
-	 * For several thumbs of a file, pass the `Source` from `open()`
-	 */
-	public function plan(Source|string $source, Options|array $options): Plan
-	{
+	public function plan(
+		Source|string $source,
+		Options|array $options
+	): Plan {
 		if (is_string($source) === true) {
 			$source = $this->open($source);
 		}
@@ -219,7 +186,8 @@ final class Darkroom
 	}
 
 	/**
-	 * Writes the thumb atomically, in the format of `$dst`'s extension
+	 * Writes the thumb atomically,
+	 * in the format of its `$dst`'s extension
 	 *
 	 * @throws UnsupportedException For an unreadable source or without a driver
 	 * @throws LimitException Above the pixel limit
@@ -238,7 +206,7 @@ final class Darkroom
 			}
 
 			$options = $src->options;
-			$src   = $src->source;
+			$src     = $src->source;
 		}
 
 		$limit  = $this->settings->limit ?? PHP_INT_MAX;
@@ -259,32 +227,34 @@ final class Darkroom
 		}
 
 		$options = Options::from($options);
+		$output  = Format::from(pathinfo($dst, PATHINFO_EXTENSION));
 
-		$format = Format::from(pathinfo($dst, PATHINFO_EXTENSION));
-
-		if ($options->format !== null && $options->format !== $format) {
+		if (
+			$options->format !== null &&
+			$options->format !== $output
+		) {
 			throw new InvalidArgumentException(
 				message: 'Format ' . $options->format->extension() . ' doesn\'t match: ' . $dst
 			);
 		}
 
-		$driver = $this->driver($source, $format);
+		$driver = $this->driver($source, $output);
 
 		if ($driver === null) {
 			throw new UnsupportedException(
-				message: 'No driver converts ' . $input->extension() . ' to ' . $format->extension()
+				message: 'No driver converts ' . $input->extension() . ' to ' . $output->extension()
 			);
 		}
 
-		$options = Options::from([...$options->toArray(), 'format' => $format]);
-		$plan  = Plan::for($source, $options, $this->defaults, $driver);
+		$options = Options::from([...$options->toArray(), 'format' => $output]);
+		$plan    = Plan::for($source, $options, $this->defaults, $driver);
 
 		$this->write($driver, $plan, $dst);
 
 		return $plan;
 	}
 
-	private function write(
+	protected function write(
 		Driver $driver,
 		Plan $plan,
 		string $file

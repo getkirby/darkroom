@@ -16,33 +16,25 @@ use Darkroom\Tools\Hdr;
 use Imagick as Image;
 use ImagickException;
 
-/**
- * Shrinks JPEG while decoding, then cuts out,
- * resizes and orients every frame;
- * keeps no metadata but the color profile
- */
 final class Imagick extends Driver
 {
 	/**
 	 * Properties the encoders of the formats read:
 	 * the HDR signal of AVIF and HEIC
 	 */
-	private const array KEEP = [
+	protected const array KEEP = [
 		'heic:cicp' => [Format::Avif, Format::Heic],
 	];
 
 	/**
 	 * ImageMagick's code for a resource limit error
 	 */
-	private const int LIMIT = 400;
+	protected const int LIMIT = 400;
 
 	/**
-	 * Whether two frames written in the format
-	 * are read back with their delays
-	 *
 	 * @todo what's the difference to isAnimated? or canAnimate?
 	 */
-	private static function animates(string $name): bool
+	protected static function animates(string $name): bool
 	{
 		$image = new Image();
 
@@ -102,12 +94,7 @@ final class Imagick extends Driver
 		);
 	}
 
-	/**
-	 * CMYK as sRGB, through the frame's CMYK profile;
-	 * by formula without one, or where ImageMagick
-	 * lacks LCMS and keeps the pixels
-	 */
-	private static function cmyk(Image $frame): void
+	protected static function cmyk(Image $frame): void
 	{
 		$profile = (string)($frame->getImageProfiles('icc')['icc'] ?? '');
 
@@ -125,18 +112,14 @@ final class Imagick extends Driver
 		}
 	}
 
-	/**
-	 * The first frame, or all of them, on their
-	 * screen; JPEG shrunk while decoding
-	 */
-	private static function decode(Plan $plan): Image
+	protected static function decode(Plan $plan): Image
 	{
-		$hint  = $plan->hint();
+		$size  = $plan->jpegSize();
 		$name  = static::name($plan->source->format());
 		$scene = $plan->frames === true ? '' : '[0]';
 		$image = new Image();
 
-		$image->setOption('jpeg:size', $hint->width . 'x' . $hint->height);
+		$image->setOption('jpeg:size', $size->width . 'x' . $size->height);
 
 		// a HEIF sequence's still, which the source's size
 		// describes, not the first frame of its track
@@ -169,7 +152,7 @@ final class Imagick extends Driver
 		];
 	}
 
-	private static function encode(
+	protected static function encode(
 		Image $image,
 		Plan $plan,
 		string $file
@@ -226,11 +209,7 @@ final class Imagick extends Driver
 		);
 	}
 
-	/**
-	 * Whether ImageMagick writes a pixel in the format,
-	 * as it lists formats it can only read
-	 */
-	private static function encodes(string $name): bool
+	protected static function encodes(string $name): bool
 	{
 		$image = new Image();
 
@@ -243,10 +222,7 @@ final class Imagick extends Driver
 		}
 	}
 
-	/**
-	 * Grayscale, blur and sharpen, in this order
-	 */
-	private static function filter(Image $frame, Plan $plan): void
+	protected static function filter(Image $frame, Plan $plan): void
 	{
 		if ($plan->options->grayscale === true) {
 			static::gray($frame);
@@ -261,11 +237,7 @@ final class Imagick extends Driver
 		}
 	}
 
-	/**
-	 * One frame's region at the resample
-	 * size, oriented, filtered and stripped
-	 */
-	private function frame(Image $frame, Plan $plan): void
+	protected function frame(Image $frame, Plan $plan): void
 	{
 		$decoded  = new Size($frame->getImageWidth(), $frame->getImageHeight());
 		$region   = $plan->region($decoded);
@@ -298,11 +270,7 @@ final class Imagick extends Driver
 		static::strip($frame, $plan);
 	}
 
-	/**
-	 * Rec. 601 luma of the gamma-encoded values,
-	 * as GD's; alpha keeps its row
-	 */
-	private static function gray(Image $frame): void
+	protected static function gray(Image $frame): void
 	{
 		$luma = [0.299, 0.587, 0.114, 0.0, 0.0];
 
@@ -349,13 +317,9 @@ final class Imagick extends Driver
 	}
 
 	/**
-	 * Whether ImageMagick has a coder for the format;
-	 * loads only that coder, where listing formats
-	 * would load all of them
-	 *
 	 * @todo not canRead, canWrite?
 	 */
-	private static function knows(string $name): bool
+	protected static function knows(string $name): bool
 	{
 		$image = new Image();
 
@@ -367,13 +331,10 @@ final class Imagick extends Driver
 	}
 
 	/**
-	 * Sets ImageMagick's resource limits, which hold for
-	 * the whole process, and returns the ones they replace
-	 *
 	 * @param array<int, int> $limits
 	 * @return array<int, int>
 	 */
-	private static function limit(array $limits): array
+	protected static function limit(array $limits): array
 	{
 		$previous = [];
 
@@ -389,11 +350,9 @@ final class Imagick extends Driver
 	}
 
 	/**
-	 * The threads, and the `limit` setting for all frames together
-	 *
 	 * @return array<int, int>
 	 */
-	private function limits(Plan $plan): array
+	protected function limits(Plan $plan): array
 	{
 		$limits = [
 			Image::RESOURCETYPE_THREAD => (int)$this->settings['threads']
@@ -424,19 +383,12 @@ final class Imagick extends Driver
 		];
 	}
 
-	/**
-	 * ImageMagick's name of the format
-	 */
-	private static function name(Format $format): string
+	protected static function name(Format $format): string
 	{
 		return strtoupper($format->name);
 	}
 
-	/**
-	 * Turns the stored pixels into the displayed image and says
-	 * so, as encoders write the orientation the decoder read
-	 */
-	private static function orient(
+	protected static function orient(
 		Image $frame,
 		Orientation $orientation
 	): void {
@@ -454,9 +406,6 @@ final class Imagick extends Driver
 		$frame->setImageOrientation(Image::ORIENTATION_TOPLEFT);
 	}
 
-	/**
-	 * libheif applies `irot` and `imir` while decoding
-	 */
 	public function orients(Source $source): bool
 	{
 		return match ($source->format()) {
@@ -510,12 +459,7 @@ final class Imagick extends Driver
 		}
 	}
 
-	/**
-	 * Removes all profiles but the color profile,
-	 * if kept, and the properties the output's encoder
-	 * doesn't read, as other encoders would write them as metadata
-	 */
-	private static function strip(Image $frame, Plan $plan): void
+	protected static function strip(Image $frame, Plan $plan): void
 	{
 		foreach ($frame->getImageProfiles('*', false) as $name) {
 			if ($plan->icc === false || $name !== 'icc') {
@@ -531,12 +475,9 @@ final class Imagick extends Driver
 	}
 
 	/**
-	 * A lookup table for `clutImage()`: the function's
-	 * values for evenly spaced inputs from 0 to 1
-	 *
 	 * @param Closure(float): float $function
 	 */
-	private static function table(
+	protected static function table(
 		int $length,
 		Closure $function
 	): Image {
@@ -556,13 +497,7 @@ final class Imagick extends Driver
 		return $table;
 	}
 
-	/**
-	 * PQ or HLG as sRGB, for encoders that would write
-	 * the signal's values as they are: in linear light,
-	 * from the source's primaries to BT.709,
-	 * then each channel tone-mapped and encoded
-	 */
-	private function tone(Image $frame, Plan $plan): void
+	protected function tone(Image $frame, Plan $plan): void
 	{
 		// AVIF and HEIC keep the signal
 		// where ImageMagick read it, and so writes it

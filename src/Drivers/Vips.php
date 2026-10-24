@@ -19,17 +19,12 @@ use Jcupitt\Vips\Image;
 use Jcupitt\Vips\Introspect;
 use Jcupitt\Vips\Target;
 
-/**
- * Loads the source shrunk to the plan's scale,
- * then cuts, orients and filters each frame;
- * needs libvips
- */
 final class Vips extends Driver
 {
 	/**
 	 * A white pixel, from libvips 8.18 through libheif 1.23 and aom 3.15
 	 */
-	private const string AVIF = <<<'BASE64'
+	protected const string AVIF = <<<'BASE64'
 		AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABw
 		aWN0AAAAAAAAAAAAAAAAAAAAACJpbG9jAAAAAERAAAEAAQAAAAAA+gABAAAAAAAAAB8AAAAjaWlu
 		ZgAAAAAAAQAAABVpbmZlAgAAAAABAABhdjAxAAAAAA5waXRtAAAAAAABAAAAVmlwcnAAAAA4aXBj
@@ -40,7 +35,7 @@ final class Vips extends Driver
 	/**
 	 * A white 64×64 image, from libvips 8.18 through libheif 1.23 and x265 4.3
 	 */
-	private const string HEIC = <<<'BASE64'
+	protected const string HEIC = <<<'BASE64'
 		AAAAHGZ0eXBoZWljAAAAAG1pZjFoZWljbWlhZgAAAUJtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABw
 		aWN0AAAAAAAAAAAAAAAAAAAAACJpbG9jAAAAAERAAAEAAQAAAAABZgABAAAAAAAAABYAAAAjaWlu
 		ZgAAAAAAAQAAABVpbmZlAgAAAAABAABodmMxAAAAAA5waXRtAAAAAAABAAAAwmlwcnAAAACkaXBj
@@ -50,11 +45,7 @@ final class Vips extends Driver
 		AAEAAQOBAgMAAAAebWRhdAAAABIoAa8TgObIaFPqH7pl35Rho5g=
 		BASE64;
 
-	/**
-	 * Whether two frames written in the format
-	 * load back as an animation
-	 */
-	private function animates(Format $format): bool
+	protected function animates(Format $format): bool
 	{
 		$pixel  = static::pixel();
 		$target = Target::newToMemory();
@@ -132,11 +123,7 @@ final class Vips extends Driver
 		);
 	}
 
-	/**
-	 * Whether a sample of the format loads,
-	 * also where only ImageMagick reads it for libvips
-	 */
-	private static function decodes(Format $format): bool
+	protected static function decodes(Format $format): bool
 	{
 		try {
 			$data    = static::sample($format);
@@ -159,11 +146,7 @@ final class Vips extends Driver
 		];
 	}
 
-	/**
-	 * Whether a pixel can be written in the format,
-	 * as libheif may lack the format's encoder
-	 */
-	private function encodes(Format $format): bool
+	protected function encodes(Format $format): bool
 	{
 		$pixel  = static::pixel();
 		$target = Target::newToMemory();
@@ -177,10 +160,7 @@ final class Vips extends Driver
 		return true;
 	}
 
-	/**
-	 * Grayscale, blur and sharpen, in this order
-	 */
-	private static function filter(Image $image, Plan $plan): Image
+	protected static function filter(Image $image, Plan $plan): Image
 	{
 		if ($plan->options->grayscale === true) {
 			$image = static::gray($image);
@@ -197,10 +177,7 @@ final class Vips extends Driver
 		return $image;
 	}
 
-	/**
-	 * The image on white, blended by its alpha
-	 */
-	private static function flatten(Image $image): Image
+	protected static function flatten(Image $image): Image
 	{
 		if ($image->hasAlpha() === false) {
 			return $image;
@@ -213,16 +190,10 @@ final class Vips extends Driver
 	}
 
 	/**
-	 * The frames to load: all if the plan keeps them
-	 * and the loader gives their delays, else one;
-	 * checked against the limit at the size libvips
-	 * decodes them, as libnsgif grows a GIF's screen
-	 * to a larger frame
-	 *
 	 * @throws LimitException If the frames exceed the limit
 	 * @throws VipsException If libvips can't read the source
 	 */
-	private function frames(Plan $plan): int
+	protected function frames(Plan $plan): int
 	{
 		/** @var int|null $limit */
 		$limit  = $this->settings['limit'];
@@ -240,11 +211,7 @@ final class Vips extends Driver
 		return $frames;
 	}
 
-	/**
-	 * Rec. 601 luma of the gamma-encoded values,
-	 * as GD's; alpha is kept
-	 */
-	private static function gray(Image $image): Image
+	protected static function gray(Image $image): Image
 	{
 		if ($image->bands < 3) {
 			return $image;
@@ -299,12 +266,9 @@ final class Vips extends Driver
 	}
 
 	/**
-	 * The source at the plan's scale,
-	 * with all frames stacked if the plan keeps them
-	 *
 	 * @throws LimitException If the frames exceed the limit
 	 */
-	private function load(Plan $plan): Image
+	protected function load(Plan $plan): Image
 	{
 		$file   = $plan->source->file;
 		$scale  = $plan->scale();
@@ -324,13 +288,10 @@ final class Vips extends Driver
 	}
 
 	/**
-	 * The optional arguments of the saver
-	 * that writes the suffix into a target
-	 *
 	 * @return list<string>
 	 * @throws VipsException If there is none
 	 */
-	private function options(string $suffix): array
+	protected function options(string $suffix): array
 	{
 		/** @var list<string> */
 		return $this->cache($suffix, static function () use ($suffix): array {
@@ -354,10 +315,7 @@ final class Vips extends Driver
 		});
 	}
 
-	/**
-	 * Turns the stored pixels into the displayed image
-	 */
-	private static function orient(
+	protected static function orient(
 		Image $image,
 		Orientation $orientation
 	): Image {
@@ -375,17 +333,13 @@ final class Vips extends Driver
 			$image = $image->rot('d' . $turns * 90);
 		}
 
-		if ($orientation->flips() === true) {
+		if ($orientation->isFlipped() === true) {
 			$image = $image->flip('horizontal');
 		}
 
 		return $image;
 	}
 
-	/**
-	 * libheif applies HEIF's `irot` and `imir`,
-	 * libjxl the orientation of JPEG XL
-	 */
 	public function orients(Source $source): bool
 	{
 		return match ($source->format()) {
@@ -396,11 +350,7 @@ final class Vips extends Driver
 		};
 	}
 
-	/**
-	 * A white pixel, tagged sRGB
-	 * as older HEIF savers reject `multiband`
-	 */
-	private static function pixel(): Image
+	protected static function pixel(): Image
 	{
 		$black = Image::black(1, 1, ['bands' => 3]);
 		$white = $black->invert();
@@ -408,12 +358,7 @@ final class Vips extends Driver
 		return $white->copy(['interpretation' => 'srgb']);
 	}
 
-	/**
-	 * Whether libvips gives the animation's frames
-	 * with their delays; from the first animation
-	 * of the format, as its loader decides
-	 */
-	private function plays(Source $source): bool
+	protected function plays(Source $source): bool
 	{
 		$format = $source->format();
 
@@ -432,10 +377,7 @@ final class Vips extends Driver
 		}
 	}
 
-	/**
-	 * A cached capability, false while libvips isn't available
-	 */
-	private function probe(string $key, Closure $probe): bool
+	protected function probe(string $key, Closure $probe): bool
 	{
 		return $this->cache(
 			$key,
@@ -497,7 +439,7 @@ final class Vips extends Driver
 				'interlace'       => $plan->interlace,
 				'keep'            => $plan->icc === true ? ForeignKeep::ICC : ForeignKeep::NONE,
 				'optimize_coding' => true,
-				'page_height'     => $plan->size->height,
+				'page_height'     => $plan->height(),
 				'subsample_mode'  => 'on',
 			]);
 		} catch (VipsException $exception) {
@@ -509,13 +451,9 @@ final class Vips extends Driver
 	}
 
 	/**
-	 * A small image in the format, embedded for AVIF
-	 * and HEIC, as libheif may have a format's
-	 * decoder but no encoder
-	 *
 	 * @throws VipsException If libvips can't write the format
 	 */
-	private static function sample(Format $format): string
+	protected static function sample(Format $format): string
 	{
 		$sample = match ($format) {
 			Format::Avif => self::AVIF,
@@ -532,10 +470,7 @@ final class Vips extends Driver
 		return $pixel->writeToBuffer('.' . $format->extension());
 	}
 
-	/**
-	 * The color bands convolved with the sharpening kernel; alpha is kept
-	 */
-	private static function sharpen(Image $image, int $amount): Image
+	protected static function sharpen(Image $image, int $amount): Image
 	{
 		[$kernel, $divisor] = Sharpen::kernel($amount);
 
@@ -556,12 +491,7 @@ final class Vips extends Driver
 		return $sharp->bandjoin($alpha);
 	}
 
-	/**
-	 * The setting, else libvips' default, at most four
-	 * as each costs memory; read once, as setting it
-	 * replaces libvips' default
-	 */
-	private function threads(): int
+	protected function threads(): int
 	{
 		if ($this->settings['threads'] !== null) {
 			return (int)$this->settings['threads'];
@@ -579,24 +509,16 @@ final class Vips extends Driver
 		});
 	}
 
-	/**
-	 * The frames with their delays, from a header;
-	 * none where the loader gives no delays,
-	 * as JPEG XL's before libvips 8.16
-	 */
-	private static function timed(Image $image): int
+	protected static function timed(Image $image): int
 	{
 		// loaders that give delays also count the frames
 		return $image->typeOf('delay') === 0 ? 0 : (int)$image->get('n-pages');
 	}
 
 	/**
-	 * Writes the image in the format,
-	 * with the options its saver knows
-	 *
 	 * @throws VipsException If libvips fails
 	 */
-	private function write(
+	protected function write(
 		Image $image,
 		Target $target,
 		Format $format,

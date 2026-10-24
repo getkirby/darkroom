@@ -17,14 +17,14 @@ use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 #[CoversClass(Source::class)]
 class SourceTest extends TestCase
 {
-	private const string FIXTURES = __DIR__ . '/fixtures';
+	protected const string FIXTURES = __DIR__ . '/fixtures';
 
-	private static function fixture(string $name): Source
+	protected static function fixture(string $name): Source
 	{
 		return new Source(self::FIXTURES . '/' . $name);
 	}
 
-	private function invalid(): array
+	protected function invalid(): array
 	{
 		$missing = $this->file('missing.jpg');
 		$dir     = $this->tmp();
@@ -413,8 +413,15 @@ class SourceTest extends TestCase
 		Orientation $orientation
 	): void {
 		$source = self::fixture($file);
+		$size   = new Size($width, $height);
 
-		$this->assertEquals(new Size($width, $height), $source->size());
+		$this->assertEquals($size, $source->size());
+		$this->assertSame($width, $source->width());
+		$this->assertSame($height, $source->height());
+		$this->assertSame($size->ratio(), $source->ratio());
+		$this->assertSame($size->isLandscape(), $source->isLandscape());
+		$this->assertSame($size->isPortrait(), $source->isPortrait());
+		$this->assertSame($size->isSquare(), $source->isSquare());
 	}
 
 	public function testSizeUnreadable(): void

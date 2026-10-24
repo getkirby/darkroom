@@ -9,36 +9,35 @@ use Darkroom\Readers\Reader;
 use Darkroom\Tools\Hdr;
 
 /**
- * Source facts, read lazily and at most once from the file headers
+ * Source image information facts,
+ * read lazily from the file headers
  */
 final class Source
 {
-	private bool|null $animated = null;
-	private Rect|false|null $canvas = null;
+	use HasSize;
+
+	protected Rect|false|null $canvas = null;
 
 	/**
 	 * @var array{int, int, int, int}|null
 	 */
-	private array|null $cicp = null;
-	private array|null $exif = null;
-	private Header|null $header = null;
-	private string|null $icc = null;
-	private Size|null $size = null;
+	protected array|null $cicp = null;
+	protected array|null $exif = null;
+	protected Header|null $header = null;
+	protected string|null $icc = null;
+	protected bool|null $isAnimated = null;
+	protected Size|null $size = null;
 
 	public function __construct(
 		public readonly string $file
 	) {
 	}
 
-	/**
-	 * The canvas within the image a decoder returns
-	 * without placing it, in stored orientation
-	 */
 	public function canvas(): Rect|null
 	{
 		$this->canvas ??= Reader::open(
-			file: $this->file,
-			call: fn (string $reader, $handle) => $reader::canvas($handle)
+			$this->file,
+			fn (string $reader, $handle) => $reader::canvas($handle)
 		) ?? false;
 
 		return $this->canvas === false ? null : $this->canvas;
@@ -46,8 +45,7 @@ final class Source
 
 	/**
 	 * The color signal:
-	 * primaries, transfer, matrix and full range (H.273),
-	 * unspecified without one
+	 * primaries, transfer, matrix or full range (H.273)
 	 *
 	 * @internal
 	 * @return array{int, int, int, int}
@@ -55,8 +53,8 @@ final class Source
 	public function cicp(): array
 	{
 		return $this->cicp ??= Reader::open(
-			file: $this->file,
-			call: fn (string $reader, $handle) => $reader::cicp($handle)
+			$this->file,
+			fn (string $reader, $handle) => $reader::cicp($handle)
 		) ?? Reader::UNSPECIFIED;
 	}
 
@@ -65,21 +63,19 @@ final class Source
 	 */
 	public function exif(): array
 	{
-		if ($this->exif === null) {
-			$data = Reader::open(
-				file: $this->file,
-				call: fn (string $reader, $handle) => $reader::exif($handle)
-			);
-
-			$this->exif = Exif::tags($data ?? '');
+		if ($this->exif !== null) {
+			return $this->exif;
 		}
 
-		return $this->exif;
+		$data = Reader::open(
+			$this->file,
+			fn (string $reader, $handle) => $reader::exif($handle)
+		);
+
+		return $this->exif = Exif::tags($data ?? '');
 	}
 
 	/**
-	 * From the file signature, not the extension
-	 *
 	 * @throws UnsupportedException If the file is no image or can't be read
 	 */
 	public function format(): Format
@@ -89,14 +85,15 @@ final class Source
 		);
 	}
 
-	/**
-	 * Format, size and orientation, from one open
-	 */
-	private function header(): Header
+	protected function header(): Header
 	{
-		return $this->header ??= Reader::open(
-			file: $this->file,
-			call: function (
+		if ($this->header !== null) {
+			return $this->header;
+		}
+
+		$header = Reader::open(
+			$this->file,
+			function (
 				string $reader,
 				$handle,
 				Format $format
@@ -109,35 +106,27 @@ final class Source
 					$format
 				);
 			}
-		) ?? new Header();
+		);
+
+		return $this->header = $header ?? new Header();
 	}
 
-	/**
-	 * The ICC color profile of JPEG, PNG and WebP,
-	 * `''` without one
-	 */
 	public function icc(): string
 	{
 		return $this->icc ??= Reader::open(
-			file: $this->file,
-			call: fn (string $reader, $handle) => $reader::icc($handle)
+			$this->file,
+			fn (string $reader, $handle) => $reader::icc($handle)
 		) ?? '';
 	}
 
-	/**
-	 * Read on its own, as it can take more of the file than the size
-	 */
 	public function isAnimated(): bool
 	{
-		return $this->animated ??= Reader::open(
-			file: $this->file,
-			call: fn (string $reader, $handle) => $reader::isAnimated($handle)
+		return $this->isAnimated ??= Reader::open(
+			$this->file,
+			fn (string $reader, $handle) => $reader::isAnimated($handle)
 		) === true;
 	}
 
-	/**
-	 * A PQ or HLG transfer
-	 */
 	public function isHdr(): bool
 	{
 		$transfer = $this->cicp()[1];
@@ -150,9 +139,6 @@ final class Source
 		return $this->header()->orientation;
 	}
 
-	/**
-	 * As displayed (orientation applied)
-	 */
 	public function size(): Size
 	{
 		if ($this->size !== null) {
@@ -161,7 +147,10 @@ final class Source
 
 		$header = $this->header();
 
-		if ($header->size->width === 0 || $header->size->height === 0) {
+		if (
+			$header->size->width === 0 ||
+			$header->size->height === 0
+		) {
 			return $this->size = new Size(0, 0);
 		}
 

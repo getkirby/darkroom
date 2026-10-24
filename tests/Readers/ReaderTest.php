@@ -293,7 +293,7 @@ class ReaderTest extends ReaderTestCase
 		$this->assertSame(0, $stream->seeks);
 	}
 
-	private static function walk(
+	protected static function walk(
 		string $data,
 		string $layout,
 		int $length = PHP_INT_MAX

@@ -325,16 +325,16 @@ class OptionsTest extends TestCase
 		$back  = Options::from($array);
 
 		$this->assertSame([
+			'quality'   => 80,
+			'format'    => 'jpg',
+			'interlace' => false,
+			'icc'       => false,
 			'width'     => 300,
 			'height'    => 200,
 			'crop'      => 'top left',
 			'blur'      => 5,
 			'grayscale' => true,
 			'sharpen'   => 25,
-			'quality'   => 80,
-			'format'    => 'jpg',
-			'interlace' => false,
-			'icc'       => false,
 		], $array);
 
 		$this->assertSame((array)$options, (array)$back);
