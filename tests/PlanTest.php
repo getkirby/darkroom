@@ -693,4 +693,29 @@ class PlanTest extends TestCase
 		$this->assertFalse($plan->isPortrait());
 		$this->assertFalse($plan->isSquare());
 	}
+
+	public function testToArray(): void
+	{
+		$source   = $this->source(1200, 800);
+		$options  = new Options(width: 300, crop: 'top left');
+		$defaults = new Defaults(quality: 80, icc: false);
+		$plan     = Plan::for($source, $options, $defaults);
+
+		$array  = $plan->toArray();
+		$filled = Options::from($array);
+		$again  = Plan::for($source, $filled);
+
+		$this->assertSame([
+			'quality'   => 80,
+			'format'    => 'jpg',
+			'interlace' => false,
+			'icc'       => false,
+			'width'     => 300,
+			'crop'      => 'top left',
+		], $array);
+
+		$this->assertSame($array, $again->toArray());
+		$this->assertEquals($plan->crop, $again->crop);
+		$this->assertEquals($plan->size(), $again->size());
+	}
 }

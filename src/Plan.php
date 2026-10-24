@@ -152,4 +152,15 @@ final readonly class Plan
 	{
 		return $this->size;
 	}
+
+	public function toArray(): array
+	{
+		return [
+			'quality'   => $this->quality,
+			'format'    => $this->format->extension(),
+			'interlace' => $this->interlace,
+			'icc'       => $this->icc,
+			...$this->options->toArray(),
+		];
+	}
 }
