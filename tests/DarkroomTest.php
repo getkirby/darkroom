@@ -458,6 +458,19 @@ class DarkroomTest extends TestCase
 		$this->assertSame($format, $plan->options->format);
 	}
 
+	public function testPlanFrames(): void
+	{
+		$driver   = new FakeDriver(['animate' => Format::cases()]);
+		$darkroom = new Darkroom([$driver]);
+		$dst      = $this->file('thumb.gif');
+
+		$planned   = $darkroom->plan(self::GIF);
+		$processed = $darkroom->process($planned, $dst);
+
+		$this->assertFalse($planned->frames);
+		$this->assertTrue($processed->frames);
+	}
+
 	public function testPlanLimit(): void
 	{
 		$darkroom = new Darkroom([], settings: ['limit' => 180 * 120 - 1]);

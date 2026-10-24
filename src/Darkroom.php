@@ -189,7 +189,8 @@ final class Darkroom
 
 	/**
 	 * In the format of the options or defaults if a
-	 * driver writes it, else as `::format()` falls back
+	 * driver writes it, else as `::format()` falls back;
+	 * frames and orientation are left to `::process()`
 	 *
 	 * @throws UnsupportedException For an unreadable source or without a driver
 	 * @throws LimitException Above the pixel limit
@@ -207,9 +208,8 @@ final class Darkroom
 		$options = Options::from($options);
 		$format  = $this->format($source, $options->format ?? $this->defaults->format);
 		$options = Options::from([...$options->toArray(), 'format' => $format]);
-		$driver  = $this->driver($source, $format);
 
-		return Plan::for($source, $options, $this->defaults, $driver);
+		return Plan::for($source, $options, $this->defaults);
 	}
 
 	/**
