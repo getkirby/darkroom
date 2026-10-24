@@ -28,7 +28,6 @@ class FocusTest extends TestCase
 			'right'       => ['right', 1.0, 0.5],
 			'bottom'      => ['bottom', 0.5, 1.0],
 			'bottom left' => ['bottom left', 0.0, 1.0],
-			'gravity'     => [Gravity::TopLeft, 0.0, 0.0],
 
 			'comma'           => ['70%, 30%', 0.7, 0.3],
 			'comma, no space' => ['70%,30%', 0.7, 0.3],
@@ -47,11 +46,16 @@ class FocusTest extends TestCase
 
 	#[DataProvider('fromProvider')]
 	public function testFrom(
-		string|Gravity $value,
+		string $value,
 		float $x,
 		float $y
 	): void {
 		$this->assertEquals(new Focus($x, $y), Focus::from($value));
+	}
+
+	public function testFromGravity(): void
+	{
+		$this->assertEquals(new Focus(0.0, 0.0), Focus::from(Gravity::TopLeft));
 	}
 
 	public static function fromInvalidProvider(): array
@@ -112,5 +116,20 @@ class FocusTest extends TestCase
 		$rect = $focus->place($size, $canvas);
 
 		$this->assertEquals(new Rect(...$expected), $rect);
+	}
+
+	#[DataProvider('fromProvider')]
+	public function testTryFrom(
+		string $value,
+		float $x,
+		float $y
+	): void {
+		$this->assertEquals(new Focus($x, $y), Focus::tryFrom($value));
+	}
+
+	#[DataProvider('fromInvalidProvider')]
+	public function testTryFromInvalid(string $value): void
+	{
+		$this->assertNull(Focus::tryFrom($value));
 	}
 }

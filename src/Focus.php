@@ -12,29 +12,24 @@ final readonly class Focus
 	) {
 	}
 
+	/**
+	 * @throws InvalidArgumentException For an invalid value
+	 */
 	public static function from(string|Gravity $value): static
 	{
-		if (is_string($value) === true) {
-			$value = Gravity::tryFrom($value) ?? $value;
-		}
-
 		if ($value instanceof Gravity) {
 			return $value->focus();
 		}
 
-		if (preg_match('/^(-?\d+(?:\.\d+)?)%[\s,]+(-?\d+(?:\.\d+)?)%$/D', $value, $match) !== 1) {
+		$focus = static::tryFrom($value);
+
+		if ($focus === null) {
 			throw new InvalidArgumentException(
 				message: 'Invalid focus: ' . $value
 			);
 		}
 
-		// rounded, so float noise can't move a crop edge by a pixel
-		$fraction = fn (string $percent): float => round(min(max((float)$percent / 100.0, 0.0), 1.0), 3);
-
-		return new static(
-			x: $fraction($match[1]),
-			y: $fraction($match[2])
-		);
+		return $focus;
 	}
 
 	public function place(Size $size, Size $canvas): Rect
@@ -53,6 +48,30 @@ final readonly class Focus
 			y:      $start($canvas->height, $size->height, $this->y),
 			width:  $size->width,
 			height: $size->height
+		);
+	}
+
+	/**
+	 * From a Gravity name or `x% y%`
+	 */
+	public static function tryFrom(string $value): static|null
+	{
+		$gravity = Gravity::tryFrom($value);
+
+		if ($gravity !== null) {
+			return $gravity->focus();
+		}
+
+		if (preg_match('/^(-?\d+(?:\.\d+)?)%[\s,]+(-?\d+(?:\.\d+)?)%$/D', $value, $match) !== 1) {
+			return null;
+		}
+
+		// rounded, so float noise can't move a crop edge by a pixel
+		$fraction = fn (string $percent): float => round(min(max((float)$percent / 100.0, 0.0), 1.0), 3);
+
+		return new static(
+			x: $fraction($match[1]),
+			y: $fraction($match[2])
 		);
 	}
 }
