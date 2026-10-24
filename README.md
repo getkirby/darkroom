@@ -32,16 +32,15 @@ $plan     = $darkroom->process('photo.jpg', 'thumbs/photo.webp', $options);
 
 $source = $darkroom->open('photo.jpg');
 $plan   = $darkroom->plan($source, ['width' => 400]);
-$format = $darkroom->format($source);
 
-$darkroom->process($plan, 'thumbs/photo-400.' . $format->extension());
+$darkroom->process($plan, 'thumbs/photo-400.' . $plan->format->extension());
 ```
 
 `::process()` writes the thumb in the format of the target's extension, creates missing directories and only shows the file once it is complete. It returns the `Plan`, with the thumb's `->width()` and `->height()`.
 
-`::plan()` gives the same without processing, e.g. for `->width` and `->height` attributes; for several plans, pass the `Source` from `::open()`, which reads the file's header once.
+`::plan()` gives the same without processing, e.g. for `->width()` and `->height()` attributes. It refuses what `::process()` refuses and picks the format as `::format()` does, starting with the one the options or the darkroom's defaults ask for. For several plans, pass the `Source` from `::open()`, which reads the file's header once.
 
-`::format()` picks the output format before there is a file name: the source's format if it is allowed and a driver converts to it, else the first allowed one a driver converts to. The allowed formats default to `Format::VIEWABLE`, those every major browser shows: WebP, JPEG, PNG, GIF and AVIF.
+`::format()` picks the output format before there is a file name: the requested one if a driver converts to it, else the source's format if it is allowed and a driver converts to it, else the first allowed one a driver converts to. The allowed formats default to `Format::VIEWABLE`, those every major browser shows: WebP, JPEG, PNG, GIF and AVIF.
 
 ## Options
 

@@ -91,12 +91,14 @@ final class Darkroom
 	}
 
 	/**
-	 * The output format, for callers without a file name yet
+	 * The output format, for callers without a file name yet:
+	 * the first a driver writes of `$format`,
+	 * the source's if allowed, the allowed ones
 	 *
 	 * @param array<Format|string> $allowed
 	 *
-	 * @throws InvalidArgumentException If `$format` isn't allowed
-	 * @throws UnsupportedException Without a driver for the format
+	 * @throws InvalidArgumentException For an unknown format
+	 * @throws UnsupportedException Without a driver for any of them
 	 */
 	public function format(
 		Source $source,
@@ -105,26 +107,15 @@ final class Darkroom
 	): Format {
 		$input   = $source->format();
 		$allowed = array_map(Format::from(...), $allowed);
+		$formats = in_array($input, $allowed, true) === true ? [$input, ...$allowed] : $allowed;
 
 		if ($format !== null) {
-			$format = Format::from($format);
-
-			if (in_array($format, $allowed, true) === false) {
-				throw new InvalidArgumentException(
-					message: 'Output format not allowed: ' . $format->extension()
-				);
-			}
+			$formats = [Format::from($format), ...$formats];
 		}
 
-		// the source's format, else the allowed ones in the caller's order
-		$formats = $format === null ? [$input, ...$allowed] : [$format];
-
-		foreach ($formats as $format) {
-			if (
-				in_array($format, $allowed, true) === true &&
-				$this->driver($source, $format) !== null
-			) {
-				return $format;
+		foreach ($formats as $candidate) {
+			if ($this->driver($source, $candidate) !== null) {
+				return $candidate;
 			}
 		}
 
@@ -197,7 +188,10 @@ final class Darkroom
 	}
 
 	/**
-	 * @throws UnsupportedException For an unreadable source
+	 * In the format of the options or defaults if a
+	 * driver writes it, else as `::format()` falls back
+	 *
+	 * @throws UnsupportedException For an unreadable source or without a driver
 	 * @throws LimitException Above the pixel limit
 	 */
 	public function plan(
@@ -211,8 +205,11 @@ final class Darkroom
 		$this->check($source);
 
 		$options = Options::from($options);
+		$format  = $this->format($source, $options->format ?? $this->defaults->format);
+		$options = Options::from([...$options->toArray(), 'format' => $format]);
+		$driver  = $this->driver($source, $format);
 
-		return Plan::for($source, $options, $this->defaults);
+		return Plan::for($source, $options, $this->defaults, $driver);
 	}
 
 	/**

@@ -235,15 +235,17 @@ class DarkroomTest extends TestCase
 		$webp = [Format::Webp];
 
 		return [
-			'source'                => [self::JPEG, null, ['jpg', 'webp'], $all, Format::Jpeg],
-			'source not allowed'    => [self::GIF, null, ['webp', 'jpg'], $all, Format::Webp],
-			'source not writable'   => [self::PNG, null, ['png', 'webp'], $webp, Format::Webp],
-			'in the given order'    => [self::GIF, null, ['jpg', 'webp'], $all, Format::Jpeg],
-			'first not writable'    => [self::GIF, null, ['webp', 'jpg'], $jpeg, Format::Jpeg],
-			'requested'             => [self::JPEG, 'avif', ['avif', 'jpg'], $all, Format::Avif],
-			'requested as MIME'     => [self::JPEG, 'image/png', ['png'], $all, Format::Png],
-			'requested as a format' => [self::JPEG, Format::Png, [Format::Png], $all, Format::Png],
-			'allowed as MIME'       => [self::JPEG, null, ['image/jpeg'], $all, Format::Jpeg],
+			'source'                 => [self::JPEG, null, ['jpg', 'webp'], $all, Format::Jpeg],
+			'source not allowed'     => [self::GIF, null, ['webp', 'jpg'], $all, Format::Webp],
+			'source not writable'    => [self::PNG, null, ['png', 'webp'], $webp, Format::Webp],
+			'in the given order'     => [self::GIF, null, ['jpg', 'webp'], $all, Format::Jpeg],
+			'first not writable'     => [self::GIF, null, ['webp', 'jpg'], $jpeg, Format::Jpeg],
+			'requested'              => [self::JPEG, 'avif', ['avif', 'jpg'], $all, Format::Avif],
+			'requested as MIME'      => [self::JPEG, 'image/png', ['png'], $all, Format::Png],
+			'requested as a format'  => [self::JPEG, Format::Png, [Format::Png], $all, Format::Png],
+			'requested, not allowed' => [self::JPEG, 'png', ['jpg', 'webp'], $all, Format::Png],
+			'requested not writable' => [self::JPEG, 'webp', ['jpg', 'webp'], $jpeg, Format::Jpeg],
+			'allowed as MIME'        => [self::JPEG, null, ['image/jpeg'], $all, Format::Jpeg],
 		];
 	}
 
@@ -260,18 +262,6 @@ class DarkroomTest extends TestCase
 		$source   = new Source($file);
 
 		$this->assertSame($expected, $darkroom->format($source, $requested, $allowed));
-	}
-
-	public function testFormatNotAllowed(): void
-	{
-		$driver   = new FakeDriver();
-		$darkroom = new Darkroom([$driver]);
-		$source   = new Source(self::JPEG);
-
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('Output format not allowed: png');
-
-		$darkroom->format($source, 'png', ['jpg', 'webp']);
 	}
 
 	public static function formatUnreadableProvider(): array
@@ -297,9 +287,9 @@ class DarkroomTest extends TestCase
 	public static function formatUnsupportedProvider(): array
 	{
 		return [
-			'requested not writable' => ['webp', ['jpg', 'webp'], [Format::Jpeg]],
-			'nothing writable'       => [null, ['jpg', 'webp'], [Format::Png]],
-			'nothing allowed'        => [null, [], Format::cases()],
+			'nothing writable' => [null, ['jpg', 'webp'], [Format::Png]],
+			'nothing allowed'  => [null, [], Format::cases()],
+			'requested too'    => ['avif', ['jpg', 'webp'], [Format::Png]],
 		];
 	}
 
@@ -408,13 +398,14 @@ class DarkroomTest extends TestCase
 			$this->assertSame(90, $plan->quality);
 		}
 
-		$this->assertSame([], $driver->runs);
+		$this->assertSame([], $driver->plans);
 	}
 
 	public function testPlanDefaults(): void
 	{
+		$driver   = new FakeDriver();
 		$defaults = ['quality' => '80', 'interlace' => 'on', 'icc' => 'off'];
-		$darkroom = new Darkroom([], $defaults);
+		$darkroom = new Darkroom([$driver], $defaults);
 
 		$plan = $darkroom->plan(self::JPEG, []);
 
@@ -432,6 +423,39 @@ class DarkroomTest extends TestCase
 		$this->expectExceptionMessage('Image without a readable size: ' . $src);
 
 		$darkroom->plan($src);
+	}
+
+	public static function planFormatProvider(): array
+	{
+		$all      = Format::cases();
+		$viewable = [Format::Webp, Format::Jpeg];
+
+		return [
+			'source'                 => [self::JPEG, [], [], $all, Format::Jpeg],
+			'requested'              => [self::JPEG, ['format' => 'avif'], [], $all, Format::Avif],
+			'default'                => [self::JPEG, [], ['format' => 'webp'], $all, Format::Webp],
+			'requested over default' => [self::JPEG, ['format' => 'png'], ['format' => 'webp'], $all, Format::Png],
+			'requested not writable' => [self::JPEG, ['format' => 'avif'], [], $viewable, Format::Jpeg],
+			'hidden source'          => [self::HEIC, [], [], $viewable, Format::Webp],
+			'hidden, requested'      => [self::JPEG, ['format' => 'heic'], [], $all, Format::Heic],
+		];
+	}
+
+	#[DataProvider('planFormatProvider')]
+	public function testPlanFormat(
+		string $file,
+		array $options,
+		array $defaults,
+		array $write,
+		Format $format
+	): void {
+		$driver   = new FakeDriver(['write' => $write]);
+		$darkroom = new Darkroom([$driver], $defaults);
+
+		$plan = $darkroom->plan($file, $options);
+
+		$this->assertSame($format, $plan->format);
+		$this->assertSame($format, $plan->options->format);
 	}
 
 	public function testPlanLimit(): void
@@ -680,7 +704,7 @@ class DarkroomTest extends TestCase
 		$driver   = new FakeDriver();
 		$darkroom = new Darkroom([$driver]);
 		$options  = ['width' => 90, 'crop' => 'top left', 'grayscale' => true];
-		$dst      = $this->file('photo.webp');
+		$dst      = $this->file('photo.jpg');
 		$plan     = $darkroom->plan(self::JPEG, $options);
 		$expected = $darkroom->process(self::JPEG, $dst, $options);
 
