@@ -111,8 +111,8 @@ class PlanTest extends TestCase
 
 			'exactly the region' => [[1000, 500], [500, 500], 'center', [500, 500], [250, 0, 500, 500]],
 
-			// a region of 10 × 4, cut from 10 × 4.29; 4 × 7 / 3 is 9.33
-			'rounded once' => [[10, 10], [700, 300], 'center', [9, 4], [0, 3, 10, 4]],
+			// a region of 10 × 4, cut from 10 × 4.29, which the thumb fills
+			'rounded once' => [[10, 10], [700, 300], 'center', [10, 4], [0, 3, 10, 4]],
 
 			'never narrower than a pixel' => [[6000, 10], [50, 1000], 'center', [1, 10], [3000, 0, 1, 10]],
 

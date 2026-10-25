@@ -39,21 +39,30 @@ final readonly class Size
 		$width  = $width > 0 ? min($width, $this->width) : $this->width;
 		$height = $height > 0 ? min($height, $this->height) : $this->height;
 
-		// the side that shrinks more sets the other
-		return match ($width * $this->height <=> $height * $this->width) {
-			-1 => new static(
-				$width,
-				max(1, (int)round($this->height * $width / $this->width))
-			),
-			1  => new static(
-				max(1, (int)round($this->width * $height / $this->height)),
-				$height
-			),
-			0  => new static(
-				$width,
-				$height
-			)
-		};
+		if ($this->width === 0 || $this->height === 0) {
+			return new static($width, $height);
+		}
+
+		// either side may set the other: the larger size in the box
+		// wins, so that a fitted size fits into itself unchanged
+		$wide = new static(
+			$width,
+			max(1, (int)round($this->height * $width / $this->width))
+		);
+		$tall = new static(
+			max(1, (int)round($this->width * $height / $this->height)),
+			$height
+		);
+
+		if ($tall->width > $width) {
+			return $wide;
+		}
+
+		if ($wide->height > $height) {
+			return $tall;
+		}
+
+		return $tall->pixels() > $wide->pixels() ? $tall : $wide;
 	}
 
 	public function isLandscape(): bool

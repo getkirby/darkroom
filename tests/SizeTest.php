@@ -74,8 +74,11 @@ class SizeTest extends TestCase
 
 			'both sides limit, rounded once' => [[1000, 333], [100, 20], [60, 20]],
 
-			// 142 × 286.13
-			'the width limits' => [[200, 403], [142, 287], [142, 286]],
+			// 142.43 × 287 rounds to the box, larger than 142 × 286.13
+			'both sides fit' => [[200, 403], [142, 287], [142, 287]],
+
+			// 800 × 533.4 and 799.4 × 533
+			'a fitted size' => [[4000, 2667], [800, 533], [800, 533]],
 
 			// 302 × 300 / 400 is exactly 226.5
 			'rounded from the sizes' => [[400, 302], [300, null], [300, 227]],
@@ -94,6 +97,23 @@ class SizeTest extends TestCase
 
 		$this->assertEquals(new Size(...$expected), $fit);
 		$this->assertNotSame($size, $fit);
+	}
+
+	public function testFitFitted(): void
+	{
+		$sizes = [[4000, 2667], [200, 403], [1000, 333], [6000, 10], [1200, 768]];
+
+		foreach ($sizes as [$width, $height]) {
+			$size = new Size($width, $height);
+
+			for ($box = 1; $box <= 600; $box++) {
+				$wide = $size->fit($box);
+				$tall = $size->fit(null, $box);
+
+				$this->assertEquals($wide, $size->fit($wide->width, $wide->height));
+				$this->assertEquals($tall, $size->fit($tall->width, $tall->height));
+			}
+		}
 	}
 
 	public function testIsLandscape(): void
