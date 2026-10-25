@@ -563,6 +563,40 @@ class PlanTest extends TestCase
 		$this->assertSame($key, $plan->key());
 	}
 
+	public function testKeyRoundTrip(): void
+	{
+		$sources = [[1200, 800], [4000, 2667], [200, 403], [1000, 333], [800, 1200]];
+		$requests = [
+			['width' => 300],
+			['height' => 287],
+			['width' => 142, 'height' => 287],
+			['width' => 800, 'height' => 533],
+			['width' => 300, 'height' => 300, 'crop' => 'center'],
+			['width' => 700, 'height' => 300, 'crop' => 'top left'],
+			['width' => 301, 'height' => 199, 'crop' => '70% 30%'],
+			['width' => 120, 'crop' => 'bottom right'],
+			['width' => 400, 'blur' => 5, 'grayscale' => true, 'sharpen' => 25],
+			['width' => 400, 'quality' => 70, 'interlace' => true, 'icc' => false],
+		];
+
+		foreach ($sources as $size) {
+			$source = $this->source(...$size);
+
+			foreach ($requests as $request) {
+				$options = Options::from($request);
+				$plan    = Plan::for($source, $options);
+				$key     = $plan->key();
+
+				$options = Options::from($key);
+				$again   = Plan::for($source, $options);
+
+				$this->assertSame($key, $again->key());
+				$this->assertEquals($plan->size(), $again->size());
+				$this->assertEquals($plan->crop, $again->crop);
+			}
+		}
+	}
+
 	public function testRegion(): void
 	{
 		$left    = new Options(width: 30, height: 40, crop: 'top left');

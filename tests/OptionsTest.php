@@ -322,6 +322,61 @@ class OptionsTest extends TestCase
 		Options::from($values);
 	}
 
+	public static function fromKeyProvider(): array
+	{
+		$encoding = ['quality' => 90, 'interlace' => false, 'icc' => true];
+
+		return [
+			'size' => [
+				'1200x800-q90',
+				['width' => 1200, 'height' => 800, ...$encoding]
+			],
+			'crop' => [
+				'300x300-crop200-0-800-800-q90',
+				['width' => 300, 'height' => 300, 'crop' => new Rect(200, 0, 800, 800), ...$encoding]
+			],
+			'filters' => [
+				'300x200-blur5-grayscale-sharpen25-q90',
+				['width' => 300, 'height' => 200, 'blur' => 5, 'grayscale' => true, 'sharpen' => 25, ...$encoding]
+			],
+			'encoding' => [
+				'300x200-q80-interlace-noicc',
+				['width' => 300, 'height' => 200, 'quality' => 80, 'interlace' => true, 'icc' => false]
+			],
+		];
+	}
+
+	#[DataProvider('fromKeyProvider')]
+	public function testFromKey(string $key, array $expected): void
+	{
+		$expected = new Options(...$expected);
+
+		$options = Options::from($key);
+
+		$this->assertEquals($expected, $options);
+	}
+
+	public static function fromKeyInvalidProvider(): array
+	{
+		return [
+			'empty'          => [''],
+			'no quality'     => ['300x200'],
+			'other order'    => ['300x200-q90-blur5'],
+			'half a crop'    => ['300x200-crop1-2-q90'],
+			'unknown part'   => ['300x200-sepia-q90'],
+			'trailing space' => ['300x200-q90 '],
+		];
+	}
+
+	#[DataProvider('fromKeyInvalidProvider')]
+	public function testFromKeyInvalid(string $key): void
+	{
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Invalid key: ' . $key);
+
+		Options::from($key);
+	}
+
 	public function testFromOptions(): void
 	{
 		$options = new Options(width: 300);

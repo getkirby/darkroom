@@ -47,7 +47,12 @@ final readonly class Options extends Defaults
 		return Focus::from($this->crop);
 	}
 
-	public static function from(Defaults|array $options): static
+	/**
+	 * From an array, defaults or a plan's key
+	 *
+	 * @throws InvalidArgumentException For an invalid option or key
+	 */
+	public static function from(Defaults|array|string $options): static
 	{
 		if ($options instanceof static) {
 			return $options;
@@ -55,6 +60,10 @@ final readonly class Options extends Defaults
 
 		if ($options instanceof Defaults) {
 			$options = $options->toArray();
+		}
+
+		if (is_string($options) === true) {
+			$options = static::key($options);
 		}
 
 		$defaults  = Defaults::from($options);
@@ -79,6 +88,46 @@ final readonly class Options extends Defaults
 			icc:       $defaults->icc,
 			other:     $other
 		);
+	}
+
+	/**
+	 * The options a plan's key names, all
+	 * set so that defaults change nothing
+	 *
+	 * @throws InvalidArgumentException For an invalid key
+	 */
+	protected static function key(string $key): array
+	{
+		$pattern = '/^(\d+)x(\d+)(?:-crop(\d+)-(\d+)-(\d+)-(\d+))?(?:-blur(\d+))?(-grayscale)?(?:-sharpen(\d+))?-q(\d+)(-interlace)?(-noicc)?$/';
+
+		if (preg_match($pattern, $key, $match, PREG_UNMATCHED_AS_NULL) !== 1) {
+			throw new InvalidArgumentException(
+				message: 'Invalid key: ' . $key
+			);
+		}
+
+		$crop = null;
+
+		if ($match[3] !== null) {
+			$crop = new Rect(
+				x:      (int)$match[3],
+				y:      (int)$match[4],
+				width:  (int)$match[5],
+				height: (int)$match[6]
+			);
+		}
+
+		return [
+			'width'     => $match[1],
+			'height'    => $match[2],
+			'crop'      => $crop,
+			'blur'      => $match[7],
+			'grayscale' => $match[8] !== null,
+			'sharpen'   => $match[9],
+			'quality'   => $match[10],
+			'interlace' => $match[11] !== null,
+			'icc'       => $match[12] === null,
+		];
 	}
 
 	/**

@@ -40,6 +40,8 @@ $darkroom->process($plan, 'thumbs/photo-400.' . $plan->format->extension());
 
 `::plan()` gives the same without processing, e.g. for `->width()` and `->height()` attributes. It refuses what `::process()` refuses and picks the format as `::format()` does, starting with the one the options or the darkroom's defaults ask for. For several plans, pass the `Source` from `::open()`, which reads the file's header once.
 
+`$plan->key()` names what a plan writes, e.g. for file names, and `Options::from($key)` reads it back, so a thumb can be made later from its name alone.
+
 `::format()` picks the output format before there is a file name: the requested one if a driver converts to it, else the source's format if it is allowed and a driver converts to it, else the first allowed one a driver converts to. The allowed formats default to `Format::VIEWABLE`, those every major browser shows: WebP, JPEG, PNG, GIF and AVIF.
 
 ## Options
