@@ -2,6 +2,8 @@
 
 namespace Darkroom;
 
+use InvalidArgumentException;
+
 /**
  * The computed plan from the thumbnail options
  * with all information a driver needs to generate it
@@ -34,7 +36,18 @@ final readonly class Plan
 		$original = $source->size();
 		$focus    = $options->focus();
 
-		if ($focus === null) {
+		if ($options->crop instanceof Rect) {
+			$crop = static::part($options->crop, $original);
+
+			if ($options->width === null || $options->height === null) {
+				$cut  = new Size($crop->width, $crop->height);
+				$size = $cut->fit($options->width, $options->height);
+			} else {
+				// both sides as asked, shrunk into the part
+				$size = new Size($options->width, $options->height);
+				$size = $size->fit($crop->width, $crop->height);
+			}
+		} elseif ($focus === null) {
 			$size = $original->fit($options->width, $options->height);
 			$crop = new Rect(0, 0, $original->width, $original->height);
 		} else {
@@ -118,6 +131,27 @@ final readonly class Plan
 		$parts = array_filter($parts, fn ($part) => $part !== null);
 
 		return implode('-', $parts);
+	}
+
+	/**
+	 * @throws InvalidArgumentException For a part outside the image
+	 */
+	protected static function part(Rect $part, Size $size): Rect
+	{
+		if (
+			$part->x < 0 ||
+			$part->y < 0 ||
+			$part->width < 1 ||
+			$part->height < 1 ||
+			$part->x + $part->width > $size->width ||
+			$part->y + $part->height > $size->height
+		) {
+			throw new InvalidArgumentException(
+				message: 'Crop outside the image'
+			);
+		}
+
+		return $part;
 	}
 
 	/**

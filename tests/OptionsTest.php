@@ -7,6 +7,7 @@ use Darkroom\Focus;
 use Darkroom\Format;
 use Darkroom\Gravity;
 use Darkroom\Options;
+use Darkroom\Rect;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -67,6 +68,14 @@ class OptionsTest extends TestCase
 	public function testFocusWithoutCrop(): void
 	{
 		$options = new Options(width: 300);
+
+		$this->assertNull($options->focus());
+	}
+
+	public function testFocusWithPart(): void
+	{
+		$part    = new Rect(10, 20, 300, 200);
+		$options = new Options(crop: $part);
 
 		$this->assertNull($options->focus());
 	}
@@ -318,6 +327,16 @@ class OptionsTest extends TestCase
 		$options = new Options(width: 300);
 
 		$this->assertSame($options, Options::from($options));
+	}
+
+	public function testFromPart(): void
+	{
+		$part = new Rect(10, 20, 300, 200);
+
+		$options = Options::from(['crop' => $part]);
+
+		$this->assertSame($part, $options->crop);
+		$this->assertSame(['crop' => $part], $options->toArray());
 	}
 
 	public function testToArray(): void

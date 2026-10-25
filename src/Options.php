@@ -10,7 +10,7 @@ use InvalidArgumentException;
 final readonly class Options extends Defaults
 {
 	/**
-	 * @param $crop Gravity name or `x% y%`
+	 * @param $crop Gravity name, `x% y%` or the part in pixels
 	 * @param $blur Gaussian sigma in output pixels, 1–100
 	 * @param $sharpen Amount, 1–100
 	 * @param $quality 1–100
@@ -20,7 +20,7 @@ final readonly class Options extends Defaults
 	public function __construct(
 		public int|null $width = null,
 		public int|null $height = null,
-		public string|null $crop = null,
+		public Rect|string|null $crop = null,
 		public int|null $blur = null,
 		public bool $grayscale = false,
 		public int|null $sharpen = null,
@@ -40,7 +40,7 @@ final readonly class Options extends Defaults
 
 	public function focus(): Focus|null
 	{
-		if ($this->crop === null) {
+		if (is_string($this->crop) === false) {
 			return null;
 		}
 
@@ -84,7 +84,7 @@ final readonly class Options extends Defaults
 	/**
 	 * @throws InvalidArgumentException For an invalid crop
 	 */
-	protected static function position(mixed $position): string|null
+	protected static function position(mixed $position): Rect|string|null
 	{
 		if (in_array($position, [null, '', false, 0], true) === true) {
 			return null;
@@ -100,6 +100,10 @@ final readonly class Options extends Defaults
 
 		if ($position instanceof Focus) {
 			return (string)$position;
+		}
+
+		if ($position instanceof Rect) {
+			return $position;
 		}
 
 		if (is_string($position) === false) {

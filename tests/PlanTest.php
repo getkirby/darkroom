@@ -11,6 +11,7 @@ use Darkroom\Plan;
 use Darkroom\Rect;
 use Darkroom\Size;
 use Darkroom\Source;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Random\Engine\Mt19937;
@@ -143,6 +144,79 @@ class PlanTest extends TestCase
 		$this->assertEquals(new Size(...$size), $plan->resample());
 		$this->assertEquals(new Rect(...$region), $plan->region());
 		$this->assertLessThan(1, $deviation);
+	}
+
+	public static function forCropPartProvider(): array
+	{
+		$part = [100, 50, 600, 400];
+
+		return [
+			'both sides'     => [$part, [300, 200], [300, 200]],
+			'width'          => [$part, [300, null], [300, 200]],
+			'height'         => [$part, [null, 100], [150, 100]],
+			'no size'        => [$part, [null, null], [600, 400]],
+			'larger'         => [$part, [900, 600], [600, 400]],
+			'other ratio'    => [$part, [301, 200], [301, 200]],
+			'whole image'    => [[0, 0, 1200, 800], [300, 200], [300, 200]],
+			'a single pixel' => [[1199, 799, 1, 1], [null, null], [1, 1]],
+		];
+	}
+
+	#[DataProvider('forCropPartProvider')]
+	public function testForCropPart(
+		array $part,
+		array $requested,
+		array $size
+	): void {
+		$source  = $this->source(1200, 800);
+		$part    = new Rect(...$part);
+		$options = new Options(
+			width:  $requested[0],
+			height: $requested[1],
+			crop:   $part
+		);
+
+		$plan = Plan::for($source, $options);
+
+		$this->assertEquals(new Size(...$size), $plan->size());
+		$this->assertEquals($part, $plan->crop);
+	}
+
+	public function testForCropPartOrientation(): void
+	{
+		$source  = $this->source(1200, 800, Orientation::Rotate90);
+		$part    = new Rect(0, 0, 600, 400);
+		$options = new Options(crop: $part);
+
+		$plan = Plan::for($source, $options);
+
+		// as displayed
+		$this->assertEquals(new Size(600, 400), $plan->size());
+		$this->assertEquals($part, $plan->crop);
+	}
+
+	public static function forCropPartOutsideProvider(): array
+	{
+		return [
+			'left'   => [[-1, 0, 100, 100]],
+			'top'    => [[0, -1, 100, 100]],
+			'right'  => [[1101, 0, 100, 100]],
+			'bottom' => [[0, 701, 100, 100]],
+			'empty'  => [[0, 0, 0, 100]],
+		];
+	}
+
+	#[DataProvider('forCropPartOutsideProvider')]
+	public function testForCropPartOutside(array $part): void
+	{
+		$source  = $this->source(1200, 800);
+		$part    = new Rect(...$part);
+		$options = new Options(width: 100, crop: $part);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Crop outside the image');
+
+		Plan::for($source, $options);
 	}
 
 	public static function forCropRegionProvider(): array
