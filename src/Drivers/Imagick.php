@@ -96,20 +96,27 @@ final class Imagick extends Driver
 
 	protected static function cmyk(Image $frame): void
 	{
-		$profile = (string)($frame->getImageProfiles('icc')['icc'] ?? '');
+		$profile = static::profile($frame);
 
 		// the profile's color space, after its size,
 		// CMM, version and class
 		if (substr($profile, 16, 4) === 'CMYK') {
-			// sRGB-v2-micro of the Compact ICC Profiles (CC0)
-			$srgb = (string)file_get_contents(dirname(__DIR__, 2) . '/assets/srgb.icc');
-
-			$frame->profileImage('icc', $srgb);
+			$frame->profileImage('icc', static::srgb());
 		}
 
 		if ($frame->getImageColorspace() === Image::COLORSPACE_CMYK) {
 			$frame->transformImageColorspace(Image::COLORSPACE_SRGB);
 		}
+	}
+
+	/**
+	 * Whether ImageMagick converts between profiles, which takes LCMS
+	 */
+	protected static function converts(): bool
+	{
+		$options = Image::getConfigureOptions('DELEGATES');
+
+		return str_contains((string)($options['DELEGATES'] ?? ''), 'lcms');
 	}
 
 	protected static function decode(Plan $plan): Image
@@ -267,7 +274,7 @@ final class Imagick extends Driver
 
 		static::orient($frame, $plan->orientation);
 		static::filter($frame, $plan);
-		static::strip($frame, $plan);
+		$this->strip($frame, $plan);
 	}
 
 	protected static function gray(Image $frame): void
@@ -459,10 +466,39 @@ final class Imagick extends Driver
 		}
 	}
 
-	protected static function strip(Image $frame, Plan $plan): void
+	protected static function profile(Image $frame): string
 	{
+		return (string)($frame->getImageProfiles('icc')['icc'] ?? '');
+	}
+
+	/**
+	 * sRGB-v2-micro of the Compact ICC Profiles (CC0)
+	 */
+	protected static function srgb(): string
+	{
+		return (string)file_get_contents(dirname(__DIR__, 2) . '/assets/srgb.icc');
+	}
+
+	/**
+	 * Without metadata, and without the profile unless `icc`
+	 */
+	protected function strip(Image $frame, Plan $plan): void
+	{
+		$profile = static::profile($frame);
+		$keep    = $plan->icc;
+
+		// in sRGB without a profile, which takes LCMS;
+		// else an RGB profile stays for its colors
+		if ($plan->icc === false && substr($profile, 16, 4) === 'RGB ') {
+			$keep = $this->cache('lcms', static::converts(...)) === false;
+
+			if ($keep === false) {
+				$frame->profileImage('icc', static::srgb());
+			}
+		}
+
 		foreach ($frame->getImageProfiles('*', false) as $name) {
-			if ($plan->icc === false || $name !== 'icc') {
+			if ($keep === false || $name !== 'icc') {
 				$frame->removeImageProfile((string)$name);
 			}
 		}

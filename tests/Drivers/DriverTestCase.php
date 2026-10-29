@@ -87,6 +87,14 @@ abstract class DriverTestCase extends TestCase
 		return array_values(unpack('n3', $data, $box + 8));
 	}
 
+	/**
+	 * Whether the driver converts colors between profiles
+	 */
+	protected function converts(): bool
+	{
+		return true;
+	}
+
 	protected static function depth(string $file): array
 	{
 		$data = file_get_contents($file);
@@ -1077,7 +1085,33 @@ abstract class DriverTestCase extends TestCase
 
 		$this->process('icc.jpg', $file, static::OPTIONS, ['icc' => $icc]);
 
-		$this->assertSame($icc === true && static::ICC === true, static::profile($file));
+		// a profile other than sRGB stays where its colors can't be converted
+		$expected =
+			static::ICC === true &&
+			($icc === true || $this->converts() === false);
+
+		$this->assertSame($expected, static::profile($file));
+	}
+
+	/**
+	 * `magick -size 16x16 'xc:rgb(180,120,60)' -profile p3.icc PNG24:p3.png`
+	 */
+	public function testProcessProfileConversion(): void
+	{
+		$file = $this->file('thumb.png');
+
+		$this->process('p3.png', $file, static::OPTIONS, ['icc' => false]);
+
+		$image    = $this->image($file);
+		$color    = static::rgb(imagecolorat($image, 8, 8));
+		$expected = $this->converts() === true ? [190, 117, 45] : [180, 120, 60];
+
+		// Display P3's color in sRGB, else kept with its profile
+		$this->assertSame($this->converts() === false, static::profile($file));
+
+		foreach ($expected as $channel => $value) {
+			$this->assertEqualsWithDelta($value, $color[$channel], 2);
+		}
 	}
 
 	public static function processQualityProvider(): array

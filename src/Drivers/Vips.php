@@ -123,6 +123,23 @@ final class Vips extends Driver
 		);
 	}
 
+	/**
+	 * Whether libvips converts between profiles, which takes LCMS
+	 */
+	protected function converts(): bool
+	{
+		return $this->cache('lcms', static function (): bool {
+			// php-vips declares no binding,
+			// so it is found in the loaded libvips
+			$vips = \FFI::cdef('int vips_icc_present(void);');
+
+			/** @var int $present */
+			$present = $vips->vips_icc_present();
+
+			return $present === 1;
+		});
+	}
+
 	protected static function decodes(Format $format): bool
 	{
 		try {
@@ -435,10 +452,22 @@ final class Vips extends Driver
 		FFI::vips()->vips_error_clear();
 
 		try {
-			$image  = $this->load($plan);
-			$scale  = $plan->scale();
-			$region = $plan->region($scale);
-			$frames = [];
+			$image   = $this->load($plan);
+			$profile = static::profile($image);
+			$keep    = $plan->icc;
+			$scale   = $plan->scale();
+			$region  = $plan->region($scale);
+			$frames  = [];
+
+			// in sRGB without a profile, which takes LCMS;
+			// else an RGB profile stays for its colors
+			if ($plan->icc === false && substr($profile, 16, 4) === 'RGB ') {
+				$keep = $this->converts() === false;
+
+				if ($keep === false) {
+					$image = $image->icc_transform('srgb', ['embedded' => true]);
+				}
+			}
 
 			// frames are stacked, each as high as the scale
 			for ($top = 0; $top < $image->height; $top += $scale->height) {
@@ -469,7 +498,7 @@ final class Vips extends Driver
 			$this->write($image, $target, $plan->format, [
 				'Q'               => $plan->quality,
 				'interlace'       => $plan->interlace,
-				'keep'            => $plan->icc === true ? ForeignKeep::ICC : ForeignKeep::NONE,
+				'keep'            => $keep === true ? ForeignKeep::ICC : ForeignKeep::NONE,
 				'optimize_coding' => true,
 				'page_height'     => $plan->height(),
 				'subsample_mode'  => 'on',
@@ -480,6 +509,15 @@ final class Vips extends Driver
 				previous: $exception
 			);
 		}
+	}
+
+	protected static function profile(Image $image): string
+	{
+		if ($image->typeOf('icc-profile-data') === 0) {
+			return '';
+		}
+
+		return (string)$image->get('icc-profile-data');
 	}
 
 	/**
