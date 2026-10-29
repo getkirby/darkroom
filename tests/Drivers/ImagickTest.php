@@ -15,6 +15,7 @@ use Darkroom\Size;
 use Darkroom\Source;
 use Darkroom\Tools\Icc;
 use Imagick as Image;
+use ImagickException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
@@ -120,6 +121,31 @@ class ImagickTest extends DriverTestCase
 	public function testCanRead(Format $format): void
 	{
 		$this->assertTrue($this->driver->canRead($format));
+	}
+
+	/**
+	 * libheif loads its decoders as plugins, which a system may lack
+	 */
+	public static function canReadDecoderProvider(): array
+	{
+		return [
+			'avif' => ['heif/irot-1.avif', Format::Avif],
+			'heic' => ['heif/exif.heic', Format::Heic],
+		];
+	}
+
+	#[DataProvider('canReadDecoderProvider')]
+	public function testCanReadDecoder(string $fixture, Format $format): void
+	{
+		$image = new Image();
+
+		try {
+			$decodes = $image->readImage(static::FIXTURES . '/' . $fixture);
+		} catch (ImagickException) {
+			$decodes = false;
+		}
+
+		$this->assertSame($decodes, $this->driver->canRead($format));
 	}
 
 	public function testCanReadSourceHdr(): void

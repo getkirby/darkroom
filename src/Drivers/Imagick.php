@@ -77,11 +77,10 @@ final class Imagick extends Driver
 	public function canRead(Format|Source $input): bool
 	{
 		$format = $input instanceof Source ? $input->format() : $input;
-		$name   = static::name($format);
 
 		return $this->cache(
-			'read ' . $name,
-			fn (): bool => static::knows($name)
+			'read ' . $format->name,
+			fn (): bool => static::decodes($format)
 		);
 	}
 
@@ -150,6 +149,26 @@ final class Imagick extends Driver
 		}
 
 		return $image->coalesceImages();
+	}
+
+	/**
+	 * Whether ImageMagick decodes the format: the sample where libheif
+	 * loads the decoder as a plugin, else whether it has a coder
+	 */
+	protected static function decodes(Format $format): bool
+	{
+		$image  = new Image();
+		$sample = self::SAMPLES[$format->name] ?? null;
+
+		try {
+			if ($sample === null) {
+				return $image->setFormat(static::name($format));
+			}
+
+			return $image->readImageBlob(base64_decode($sample));
+		} catch (ImagickException) {
+			return false;
+		}
 	}
 
 	protected function defaults(): array
@@ -338,20 +357,6 @@ final class Imagick extends Driver
 		return
 			extension_loaded('imagick') === true &&
 			defined(Image::class . '::RESOURCETYPE_LISTLENGTH') === true;
-	}
-
-	/**
-	 * @todo not canRead, canWrite?
-	 */
-	protected static function knows(string $name): bool
-	{
-		$image = new Image();
-
-		try {
-			return $image->setFormat($name);
-		} catch (ImagickException) {
-			return false;
-		}
 	}
 
 	/**

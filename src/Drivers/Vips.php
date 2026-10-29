@@ -22,30 +22,6 @@ use Jcupitt\Vips\Target;
 
 final class Vips extends Driver
 {
-	/**
-	 * A white pixel, from libvips 8.18 through libheif 1.23 and aom 3.15
-	 */
-	protected const string AVIF = <<<'BASE64'
-		AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABw
-		aWN0AAAAAAAAAAAAAAAAAAAAACJpbG9jAAAAAERAAAEAAQAAAAAA+gABAAAAAAAAAB8AAAAjaWlu
-		ZgAAAAAAAQAAABVpbmZlAgAAAAABAABhdjAxAAAAAA5waXRtAAAAAAABAAAAVmlwcnAAAAA4aXBj
-		bwAAAAxhdjFDgQAMAAAAABRpc3BlAAAAAAAAAAEAAAABAAAAEHBpeGkAAAAAAwgICAAAABZpcG1h
-		AAAAAAAAAAEAAQOBAgMAAAAnbWRhdBIACggYAAaICGg0IDIRGUeHhiGAAGgAAJBAyRxgimo=
-		BASE64;
-
-	/**
-	 * A white 64×64 image, from libvips 8.18 through libheif 1.23 and x265 4.3
-	 */
-	protected const string HEIC = <<<'BASE64'
-		AAAAHGZ0eXBoZWljAAAAAG1pZjFoZWljbWlhZgAAAUJtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABw
-		aWN0AAAAAAAAAAAAAAAAAAAAACJpbG9jAAAAAERAAAEAAQAAAAABZgABAAAAAAAAABYAAAAjaWlu
-		ZgAAAAAAAQAAABVpbmZlAgAAAAABAABodmMxAAAAAA5waXRtAAAAAAABAAAAwmlwcnAAAACkaXBj
-		bwAAAHhodmNDAQNwAAAAkAAAAAAAHvAA/P34+AAADwNgAAEAGEABDAH//wNwAAADAJAAAAMAAAMA
-		HroCQGEAAQArQgEBA3AAAAMAkAAAAwAAAwAeoCCBBZbqSSmubgIaDAgAAAMAyAAAAwAIQGIAAQAH
-		RAHBcrAiQAAAABRpc3BlAAAAAAAAAEAAAABAAAAAEHBpeGkAAAAAAwgICAAAABZpcG1hAAAAAAAA
-		AAEAAQOBAgMAAAAebWRhdAAAABIoAa8TgObIaFPqH7pl35Rho5g=
-		BASE64;
-
 	protected function animates(Format $format): bool
 	{
 		$pixel  = static::pixel();
@@ -537,11 +513,7 @@ final class Vips extends Driver
 	 */
 	protected static function sample(Format $format): string
 	{
-		$sample = match ($format) {
-			Format::Avif => self::AVIF,
-			Format::Heic => self::HEIC,
-			default      => null
-		};
+		$sample = self::SAMPLES[$format->name] ?? null;
 
 		if ($sample !== null) {
 			return base64_decode($sample);
