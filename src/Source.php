@@ -9,8 +9,7 @@ use Darkroom\Readers\Reader;
 use Darkroom\Tools\Hdr;
 
 /**
- * Source image information facts,
- * read lazily from the file headers
+ * An image's facts, read lazily from its header
  */
 final class Source
 {
@@ -45,7 +44,7 @@ final class Source
 
 	/**
 	 * The color signal:
-	 * primaries, transfer, matrix or full range (H.273)
+	 * primaries, transfer, matrix and full range (H.273)
 	 *
 	 * @internal
 	 * @return array{int, int, int, int}

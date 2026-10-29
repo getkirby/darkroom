@@ -33,7 +33,8 @@ final class Imagick extends Driver
 	protected const int LIMIT = 400;
 
 	/**
-	 * @todo what's the difference to isAnimated? or canAnimate?
+	 * Whether ImageMagick writes two frames in the format
+	 * and reads them back with their delays
 	 */
 	protected static function animates(string $name): bool
 	{

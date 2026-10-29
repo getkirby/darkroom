@@ -177,7 +177,6 @@ final class Vips extends Driver
 			return $image;
 		}
 
-		// in the range of the image's format
 		$white = $image->format === 'ushort' ? 65535 : 255;
 
 		return $image->flatten(['background' => [$white]]);

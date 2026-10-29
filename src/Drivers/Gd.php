@@ -152,7 +152,8 @@ final class Gd extends Driver
 	}
 
 	/**
-	 * @todo seems super specific, needed?
+	 * Whether GD decodes an animated WebP to its first frame,
+	 * as PHP 8.6's bundled libgd does
 	 */
 	protected static function decodesAnimation(): bool
 	{
