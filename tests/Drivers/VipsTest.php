@@ -20,9 +20,6 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 #[CoversClass(Vips::class)]
 class VipsTest extends DriverTestCase
 {
-	// libvips converts CMYK through a press profile, the reference by formula
-	protected const float CMYK = 0.2;
-
 	protected function driver(): Driver
 	{
 		return new Vips();

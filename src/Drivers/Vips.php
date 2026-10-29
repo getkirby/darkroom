@@ -191,13 +191,11 @@ final class Vips extends Driver
 
 	/**
 	 * @throws LimitException If the frames exceed the limit
-	 * @throws VipsException If libvips can't read the source
 	 */
-	protected function frames(Plan $plan): int
+	protected function frames(Plan $plan, Image $header): int
 	{
 		/** @var int|null $limit */
 		$limit  = $this->settings['limit'];
-		$header = Image::newFromFile($plan->source->file);
 		$timed  = $plan->frames === true ? static::timed($header) : 0;
 		$frames = max(1, $timed);
 		$pixels = $header->width * $header->height;
@@ -242,6 +240,26 @@ final class Vips extends Driver
 		];
 	}
 
+	/**
+	 * CMYK as sRGB from the inks alone, as the other drivers
+	 * read it without a profile, where libvips assumes a press
+	 */
+	protected static function inks(Image $image): Image
+	{
+		$max   = $image->format === 'ushort' ? 65535 : 255;
+		$cmy   = $image->extract_band(0, ['n' => 3]);
+		$black = $image->extract_band(3);
+		$light = $cmy->invert();
+		$white = $black->invert();
+		$rgb   = $light->multiply($white);
+
+		// rounded back into the image's format
+		$rgb = $rgb->linear(1 / $max, 0.5);
+		$rgb = $rgb->cast($image->format);
+
+		return $rgb->copy(['interpretation' => 'srgb']);
+	}
+
 	public function isAvailable(): bool
 	{
 		return $this->cache('available', static function (): bool {
@@ -267,24 +285,38 @@ final class Vips extends Driver
 
 	/**
 	 * @throws LimitException If the frames exceed the limit
+	 * @throws VipsException If libvips can't read the source
 	 */
 	protected function load(Plan $plan): Image
 	{
 		$file   = $plan->source->file;
 		$scale  = $plan->scale();
-		$frames = $this->frames($plan);
+		$header = Image::newFromFile($file);
+		$frames = $this->frames($plan, $header);
+
+		// forced, as the plan has already fitted the size
+		$options = [
+			'height'    => $scale->height,
+			'size'      => 'force',
+			'no_rotate' => true,
+		];
+
+		if (
+			$header->interpretation === 'cmyk' &&
+			$header->typeOf('icc-profile-data') === 0
+		) {
+			$image = Image::newFromFile($file, ['access' => 'sequential']);
+			$image = static::inks($image);
+
+			return $image->thumbnail_image($scale->width, $options);
+		}
 
 		// only then, as loaders without frames take no `n`
 		if ($frames > 1) {
 			$file .= '[n=-1]';
 		}
 
-		// forced, as the plan has already fitted the size
-		return Image::thumbnail($file, $scale->width, [
-			'height'    => $scale->height,
-			'size'      => 'force',
-			'no_rotate' => true,
-		]);
+		return Image::thumbnail($file, $scale->width, $options);
 	}
 
 	/**
