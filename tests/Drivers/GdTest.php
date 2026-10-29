@@ -346,13 +346,16 @@ class GdTest extends DriverTestCase
 	}
 
 	#[DataProvider('processSamplingProvider')]
-	public function testProcessSampling(string $fixture): void
-	{
-		if ($this->subsamples() === false) {
-			$this->markTestSkipped('GD keeps chroma whole from quality 90 on');
+	public function testProcessSampling(
+		string $fixture,
+		int $quality,
+		string $expected
+	): void {
+		if ($expected === '1x1,1x1,1x1' && $this->subsamples() === true) {
+			$this->markTestSkipped('GD keeps chroma at half resolution');
 		}
 
-		parent::testProcessSampling($fixture);
+		parent::testProcessSampling($fixture, $quality, $expected);
 	}
 
 	public function testProcessUnwritable(): void

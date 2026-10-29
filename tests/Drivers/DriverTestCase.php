@@ -1143,21 +1143,25 @@ abstract class DriverTestCase extends TestCase
 	public static function processSamplingProvider(): array
 	{
 		return [
-			'4:4:4' => ['sampling-444.jpg'],
-			'4:2:2' => ['sampling-422.jpg'],
-			'4:2:0' => ['orientation/Landscape_1.jpg'],
+			'4:4:4' => ['sampling-444.jpg', 85, '2x2,1x1,1x1'],
+			'4:2:2' => ['sampling-422.jpg', 85, '2x2,1x1,1x1'],
+			'4:2:0' => ['orientation/Landscape_1.jpg', 85, '2x2,1x1,1x1'],
+			'whole' => ['orientation/Landscape_1.jpg', 95, '1x1,1x1,1x1'],
 		];
 	}
 
 	#[DataProvider('processSamplingProvider')]
-	public function testProcessSampling(string $fixture): void
-	{
-		$file  = $this->file('thumb.jpg');
-		$options = [...static::OPTIONS, 'quality' => 90];
+	public function testProcessSampling(
+		string $fixture,
+		int $quality,
+		string $expected
+	): void {
+		$file    = $this->file('thumb.jpg');
+		$options = [...static::OPTIONS, 'quality' => $quality];
 
 		$this->process($fixture, $file, $options);
 
-		$this->assertSame('2x2,1x1,1x1', static::sampling($file));
+		$this->assertSame($expected, static::sampling($file));
 	}
 
 	public function testProcessScreen(): void

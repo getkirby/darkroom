@@ -395,7 +395,7 @@ class DarkroomTest extends TestCase
 		foreach ($plans as $plan) {
 			$this->assertEquals(new Size(90, 60), $plan->size());
 			$this->assertSame(Format::Jpeg, $plan->format);
-			$this->assertSame(90, $plan->quality);
+			$this->assertSame(85, $plan->quality);
 		}
 
 		$this->assertSame([], $driver->plans);

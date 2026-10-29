@@ -11,10 +11,10 @@ readonly class Defaults
 {
 	public const bool ICC = true;
 	public const bool INTERLACE = false;
-	public const int QUALITY = 90;
+	public const int QUALITY = 85;
 
 	/**
-	 * @param $quality 1–100
+	 * @param $quality SSIMULACRA2 score, 1–100
 	 * @param $icc Keep the color profile
 	 */
 	public function __construct(

@@ -10,6 +10,7 @@ use Darkroom\Format;
 use Darkroom\Orientation;
 use Darkroom\Plan;
 use Darkroom\Source;
+use Darkroom\Tools\Quality;
 use Darkroom\Tools\Sharpen;
 use Jcupitt\Vips\Config;
 use Jcupitt\Vips\Exception as VipsException;
@@ -461,16 +462,26 @@ final class Vips extends Driver
 
 			// in sRGB without a profile, which takes LCMS;
 			// else an RGB profile stays for its colors
-			if ($plan->icc === false && substr($profile, 16, 4) === 'RGB ') {
+			if (
+				$plan->icc === false &&
+				substr($profile, 16, 4) === 'RGB '
+			) {
 				$keep = $this->converts() === false;
 
 				if ($keep === false) {
-					$image = $image->icc_transform('srgb', ['embedded' => true]);
+					$image = $image->icc_transform(
+						'srgb',
+						['embedded' => true]
+					);
 				}
 			}
 
 			// frames are stacked, each as high as the scale
-			for ($top = 0; $top < $image->height; $top += $scale->height) {
+			for (
+				$top = 0;
+				$top < $image->height;
+				$top += $scale->height
+			) {
 				$frame = $image->crop($region->x, $top + $region->y, $region->width, $region->height);
 				$frame = static::orient($frame, $plan->orientation);
 				$frame = static::filter($frame, $plan);
@@ -491,17 +502,18 @@ final class Vips extends Driver
 				$image = static::flatten($image);
 			}
 
-			$target = Target::newToFile($file);
+			$target            = Target::newToFile($file);
+			[$quality, $whole] = Quality::for($plan->format, $plan->quality);
 
-			// chroma at half resolution both ways (4:2:0), which libvips writes
-			// whole from quality 90 on, and JPEG's Huffman tables fitted to the image
+			// chroma whole or at half resolution both ways (4:2:0), which libvips
+			// would write whole from quality 90 on, and JPEG's Huffman tables fitted to the image
 			$this->write($image, $target, $plan->format, [
-				'Q'               => $plan->quality,
+				'Q'               => $quality,
 				'interlace'       => $plan->interlace,
 				'keep'            => $keep === true ? ForeignKeep::ICC : ForeignKeep::NONE,
 				'optimize_coding' => true,
 				'page_height'     => $plan->height(),
-				'subsample_mode'  => 'on',
+				'subsample_mode'  => $whole === true ? 'off' : 'on',
 			]);
 		} catch (VipsException $exception) {
 			throw new ProcessException(

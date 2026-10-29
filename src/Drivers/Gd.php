@@ -12,6 +12,7 @@ use Darkroom\Rect;
 use Darkroom\Size;
 use Darkroom\Source;
 use Darkroom\Tools\Icc;
+use Darkroom\Tools\Quality;
 use Darkroom\Tools\Sharpen;
 use ErrorException;
 use GdImage;
@@ -168,7 +169,7 @@ final class Gd extends Driver
 		return @imagecreatefromstring($riff) !== false;
 	}
 
-	protected static function encode(GdImage $image, Plan $plan): string
+	protected function encode(GdImage $image, Plan $plan): string
 	{
 		// encoders without alpha would keep the colors under it; JPEG
 		// decodes opaque, and no step after decoding adds transparency
@@ -193,7 +194,7 @@ final class Gd extends Driver
 		$options = match ($plan->format) {
 			Format::Avif,
 			Format::Jpeg,
-			Format::Webp => [$plan->quality],
+			Format::Webp => [$this->quality($plan)],
 			default      => []
 		};
 
@@ -368,7 +369,7 @@ final class Gd extends Driver
 			$image = static::resample($image, $plan);
 			$image = static::orient($image, $plan->orientation);
 			$image = static::filter($image, $plan);
-			$data  = static::encode($image, $plan);
+			$data  = $this->encode($image, $plan);
 			$data  = Icc::embed($data, $plan->format, $profile);
 
 			static::write($file, $data);
@@ -391,6 +392,30 @@ final class Gd extends Driver
 
 		// the color space in the header
 		return substr($profile, 16, 4) === 'RGB ' ? $profile : '';
+	}
+
+	protected function quality(Plan $plan): int
+	{
+		if ($plan->format === Format::Avif) {
+			return Quality::libgd($plan->quality);
+		}
+
+		$whole =
+			$plan->format === Format::Jpeg &&
+			$this->cache('whole', static::whole(...)) === true;
+
+		[$quality, $kept] = Quality::for(
+			$plan->format,
+			$plan->quality,
+			$whole
+		);
+
+		// libgd would keep the chroma whole from 90 on
+		if ($whole === true && $kept === false) {
+			return min($quality, 89);
+		}
+
+		return $quality;
 	}
 
 	protected static function resample(GdImage $image, Plan $plan): GdImage
@@ -463,6 +488,27 @@ final class Gd extends Driver
 		// and skips the transparent color
 		imagefilledrectangle($image, 0, 0, $width - 1, $height - 1, self::CLEAR);
 		imagecopymerge($image, $cut, 0, 0, 0, 0, $width, $height, 100);
+	}
+
+	/**
+	 * Whether libgd keeps JPEG's chroma whole at quality 90
+	 */
+	protected static function whole(): bool
+	{
+		$image = static::blank(8, 8);
+
+		/** @var resource $stream */
+		$stream = fopen('php://memory', 'w+b');
+
+		imagejpeg($image, $stream, 90);
+		rewind($stream);
+
+		$data  = (string)stream_get_contents($stream);
+		$frame = (int)strpos($data, "\xFF\xC0");
+
+		// the first component's sampling factors, after the marker, length,
+		// precision, height, width, number of components and its id
+		return substr($data, $frame + 11, 1) === "\x11";
 	}
 
 	protected static function write(string $file, string $data): void

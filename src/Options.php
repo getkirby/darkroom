@@ -13,7 +13,7 @@ final readonly class Options extends Defaults
 	 * @param $crop Gravity name, `x% y%` or the part in pixels
 	 * @param $blur Gaussian sigma in output pixels, 1–100
 	 * @param $sharpen Amount, 1–100
-	 * @param $quality 1–100
+	 * @param $quality SSIMULACRA2 score, 1–100
 	 * @param $icc Keep the color profile
 	 * @param $other Keys it doesn't know, such as a plugin's
 	 */

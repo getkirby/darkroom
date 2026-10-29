@@ -13,6 +13,7 @@ use Darkroom\Settings;
 use Darkroom\Size;
 use Darkroom\Source;
 use Darkroom\Tools\Hdr;
+use Darkroom\Tools\Quality;
 use Imagick as Image;
 use ImagickException;
 
@@ -166,23 +167,39 @@ final class Imagick extends Driver
 	): void {
 		// GIF stores only what changes, other encoders need whole frames;
 		// unchanged pixels turn transparent, so their dithering doesn't shimmer
-		if ($plan->frames === true && $plan->format === Format::Gif) {
+		if (
+			$plan->frames === true &&
+			$plan->format === Format::Gif
+		) {
 			$image = $image->optimizeImageLayers();
 			$image->optimizeImageTransparency();
 		}
 
-		$interlace = $plan->interlace === true ? Image::INTERLACE_PLANE : Image::INTERLACE_NO;
+		[$quality, $whole] = Quality::for($plan->format, $plan->quality);
 
 		// JPEG and WebP read the image's quality,
 		// AVIF and JPEG XL the wand's
-		$image->setCompressionQuality($plan->quality);
-		$image->setInterlaceScheme($interlace);
+		$image->setCompressionQuality($quality);
+		$image->setInterlaceScheme($plan->interlace ? Image::INTERLACE_PLANE : Image::INTERLACE_NO);
 
-		// chroma at half resolution both ways (4:2:0),
+		// chroma whole or at half resolution both ways (4:2:0),
 		// where ImageMagick would keep the source's or,
 		// from quality 90 on, write it whole
 		if ($plan->format === Format::Jpeg) {
-			$image->setOption('jpeg:sampling-factor', '2x2,1x1,1x1');
+			$image->setOption(
+				'jpeg:sampling-factor',
+				$whole === true ? '1x1,1x1,1x1' : '2x2,1x1,1x1'
+			);
+		}
+
+		if (
+			$plan->format === Format::Avif ||
+			$plan->format === Format::Heic
+		) {
+			$image->setOption(
+				'heic:chroma',
+				$whole === true ? '444' : '420'
+			);
 		}
 
 		// PNG reads the quality's tens as zlib level;
@@ -193,7 +210,7 @@ final class Imagick extends Driver
 		}
 
 		foreach ($image as $frame) {
-			$frame->setImageCompressionQuality($plan->quality);
+			$frame->setImageCompressionQuality($quality);
 
 			// 16 bits only make thumbs larger
 			if ($plan->format === Format::Png) {

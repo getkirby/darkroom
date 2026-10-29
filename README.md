@@ -63,7 +63,7 @@ Images are never enlarged, not even by a crop: it is exactly `width` × `height`
 
 | Setting | Default | |
 |---|---|---|
-| `quality` | 90 | For thumbs without their own. |
+| `quality` | 85 | For thumbs without their own. |
 | `interlace` | `false` | For thumbs without their own. |
 | `icc` | `true` | Keeps the source's color profile. |
 | `threads` | Imagick 1, vips libvips' choice up to 4 | Threads per thumb; each costs memory. |

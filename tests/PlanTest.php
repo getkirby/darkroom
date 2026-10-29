@@ -265,7 +265,7 @@ class PlanTest extends TestCase
 		$plan = Plan::for($source, $plain);
 
 		$this->assertSame(Format::Jpeg, $plan->format);
-		$this->assertSame(90, $plan->quality);
+		$this->assertSame(85, $plan->quality);
 		$this->assertFalse($plan->interlace);
 		$this->assertTrue($plan->icc);
 
@@ -535,16 +535,16 @@ class PlanTest extends TestCase
 		$square = ['width' => 300, 'height' => 300];
 
 		return [
-			'whole image'      => [[], '1200x800-q90'],
-			'resize'           => [['width' => 300], '300x200-q90'],
-			'larger'           => [['width' => 2000], '1200x800-q90'],
-			'crop'             => [[...$square, 'crop' => 'center'], '300x300-crop200-0-800-800-q90'],
-			'crop left'        => [[...$square, 'crop' => 'left'], '300x300-crop0-0-800-800-q90'],
-			'same crop'        => [[...$square, 'crop' => '10% 50%'], '300x300-crop0-0-800-800-q90'],
-			'crop, same ratio' => [['width' => 600, 'height' => 400, 'crop' => true], '600x400-q90'],
+			'whole image'      => [[], '1200x800-q85'],
+			'resize'           => [['width' => 300], '300x200-q85'],
+			'larger'           => [['width' => 2000], '1200x800-q85'],
+			'crop'             => [[...$square, 'crop' => 'center'], '300x300-crop200-0-800-800-q85'],
+			'crop left'        => [[...$square, 'crop' => 'left'], '300x300-crop0-0-800-800-q85'],
+			'same crop'        => [[...$square, 'crop' => '10% 50%'], '300x300-crop0-0-800-800-q85'],
+			'crop, same ratio' => [['width' => 600, 'height' => 400, 'crop' => true], '600x400-q85'],
 			'filters'          => [
 				['width' => 300, 'blur' => 5, 'grayscale' => true, 'sharpen' => 25],
-				'300x200-blur5-grayscale-sharpen25-q90'
+				'300x200-blur5-grayscale-sharpen25-q85'
 			],
 			'encoding' => [
 				['width' => 300, 'quality' => 80, 'interlace' => true, 'icc' => false],
