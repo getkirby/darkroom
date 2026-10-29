@@ -1,6 +1,10 @@
 <?php
 
-$card = ['resize', 'crop'];
+$card   = ['resize', 'crop'];
+$photos = ['resize', 'effects', 'formats', 'quality'];
+
+// CC0 photos from Wikimedia Commons, taken down to 1600 px
+$commons = ', CC0, commons.wikimedia.org; magick -resize 1600x1600 -strip, its profile kept, -quality 92';
 
 return [
 	'card.jpg' => [
@@ -26,6 +30,28 @@ return [
 		'made'   => 'magick -seed 7 -size 900x600 plasma:fractal -blur 0x2 -modulate 100,130 ' .
 			'-attenuate 0.4 +noise Gaussian -quality 85',
 		'groups' => ['effects', 'quality'],
+	],
+	'headwrap.jpg' => [
+		'text'   => 'A portrait in Adobe RGB: dark skin tones and a soft background, ' .
+			'where banding and blocks show first.',
+		'made'   => '"Woman in a headwrap in Quebec City" by Wilfredor' . $commons,
+		'groups' => $photos,
+	],
+	'sunset.jpg' => [
+		'text'   => 'A smooth sky over the sea, where banding shows.',
+		'made'   => '"Juan Griego Sunset" by Wilfredor' . $commons,
+		'groups' => $photos,
+	],
+	'moss.jpg' => [
+		'text'   => 'Leaves and moss: fine detail that resizing blurs and compression smears.',
+		'made'   => '"Wood sorrel and haircap moss" by W.carter' . $commons,
+		'groups' => $photos,
+	],
+	'neon.jpg' => [
+		'text'   => 'Neon signs at night: saturated colors and small text, ' .
+			'where chroma at half resolution bleeds.',
+		'made'   => '"Hong Kong in the night" by Wilfredor' . $commons,
+		'groups' => $photos,
 	],
 	'orientation-6.jpg' => [
 		'text'   => 'The card stored on its side, turned upright by EXIF orientation 6.',

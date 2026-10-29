@@ -27,10 +27,17 @@ return [
 		'sharpen'   => ['width' => 300, 'sharpen' => 50],
 	],
 	'formats' => $formats,
+	// one score should look alike in every format
 	'quality' => [
-		'q20-jpg'  => ['width' => 300, 'quality' => 20, 'format' => 'jpg'],
-		'q20-webp' => ['width' => 300, 'quality' => 20, 'format' => 'webp'],
-		'q20-avif' => ['width' => 300, 'quality' => 20, 'format' => 'avif'],
+		'q85-jpg'  => ['width' => 600, 'quality' => 85, 'format' => 'jpg'],
+		'q85-webp' => ['width' => 600, 'quality' => 85, 'format' => 'webp'],
+		'q85-avif' => ['width' => 600, 'quality' => 85, 'format' => 'avif'],
+		'q70-jpg'  => ['width' => 600, 'quality' => 70, 'format' => 'jpg'],
+		'q70-webp' => ['width' => 600, 'quality' => 70, 'format' => 'webp'],
+		'q70-avif' => ['width' => 600, 'quality' => 70, 'format' => 'avif'],
+		'q20-jpg'  => ['width' => 600, 'quality' => 20, 'format' => 'jpg'],
+		'q20-webp' => ['width' => 600, 'quality' => 20, 'format' => 'webp'],
+		'q20-avif' => ['width' => 600, 'quality' => 20, 'format' => 'avif'],
 	],
 	'frames' => [
 		'frames-crop' => ['width' => 150, 'height' => 150, 'crop' => 'center'],
