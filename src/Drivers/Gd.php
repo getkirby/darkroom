@@ -382,12 +382,11 @@ final class Gd extends Driver
 		}
 	}
 
+	/**
+	 * Even without `icc`, as GD can't convert the colors to sRGB
+	 */
 	protected static function profile(Plan $plan): string
 	{
-		if ($plan->icc === false) {
-			return '';
-		}
-
 		$profile = $plan->source->icc();
 
 		// the color space in the header

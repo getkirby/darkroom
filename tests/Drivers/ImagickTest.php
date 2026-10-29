@@ -42,6 +42,13 @@ class ImagickTest extends DriverTestCase
 		return $header . $tags . $lut;
 	}
 
+	protected function converts(): bool
+	{
+		$options = Image::getConfigureOptions('DELEGATES');
+
+		return str_contains($options['DELEGATES'] ?? '', 'lcms');
+	}
+
 	protected function driver(): Driver
 	{
 		return new Imagick();
@@ -168,10 +175,7 @@ class ImagickTest extends DriverTestCase
 
 	public function testProcessCmykProfile(): void
 	{
-		$options   = Image::getConfigureOptions('DELEGATES');
-		$delegates = $options['DELEGATES'] ?? '';
-
-		if (str_contains($delegates, 'lcms') === false) {
+		if ($this->converts() === false) {
 			$this->markTestSkipped('ImageMagick has no LCMS');
 		}
 
