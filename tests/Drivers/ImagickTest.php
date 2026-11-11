@@ -245,24 +245,28 @@ class ImagickTest extends DriverTestCase
 
 	public static function processFrameSizeProvider(): array
 	{
-		// a frame of 100×100 on a screen of 2×2
+		// a frame of 100×100 on a smaller screen
 		return [
-			'within' => [10_000, false],
-			'above'  => [9999, true],
+			'within'         => [[2, 2], 10_000, null],
+			'above the side' => [[2, 2], 9999, ProcessException::class],
+			'above the area' => [[100, 1], 2500, LimitException::class],
 		];
 	}
 
 	#[DataProvider('processFrameSizeProvider')]
-	public function testProcessFrameSize(int $limit, bool $throws): void
-	{
+	public function testProcessFrameSize(
+		array $screen,
+		int $limit,
+		string|null $exception
+	): void {
 		$gif      = static::grey(100, 100, 'imagegif');
-		$small    = substr_replace($gif, "\x02\0\x02\0", 6, 4);
+		$small    = substr_replace($gif, pack('vv', ...$screen), 6, 4);
 		$source   = $this->file('frame.gif', $small);
 		$file     = $this->file('thumb.gif');
 		$darkroom = new Darkroom(['imagick'], settings: ['limit' => $limit]);
 
-		if ($throws === true) {
-			$this->expectException(ProcessException::class);
+		if ($exception !== null) {
+			$this->expectException($exception);
 		}
 
 		$darkroom->process($source, $file, static::OPTIONS);

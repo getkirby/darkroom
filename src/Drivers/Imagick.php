@@ -28,9 +28,10 @@ final class Imagick extends Driver
 	];
 
 	/**
-	 * ImageMagick's code for a resource limit error
+	 * ImageMagick's codes for a resource limit error
+	 * and for a pixel cache it can't allocate
 	 */
-	protected const int LIMIT = 400;
+	protected const array LIMITS = [400, 445];
 
 	/**
 	 * Whether ImageMagick writes two frames in the format
@@ -405,6 +406,8 @@ final class Imagick extends Driver
 		return $limits + [
 			Image::RESOURCETYPE_WIDTH      => $side,
 			Image::RESOURCETYPE_HEIGHT     => $side,
+			// a larger frame goes to the disk, within its limit
+			Image::RESOURCETYPE_AREA       => $limit + 1,
 			// ImageMagick refuses a list as long as its limit
 			Image::RESOURCETYPE_LISTLENGTH => intdiv($limit, $pixels) + 1,
 			// spilled onto the disk, the pixel cache
@@ -473,7 +476,7 @@ final class Imagick extends Driver
 		} catch (ImagickException $exception) {
 			$message = 'ImageMagick failed on ' . $plan->source->file . ': ' . $exception->getMessage();
 
-			if ($exception->getCode() === self::LIMIT) {
+			if (in_array($exception->getCode(), self::LIMITS, true) === true) {
 				throw new LimitException(
 					message: $message,
 					previous: $exception
