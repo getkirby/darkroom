@@ -3,7 +3,6 @@
 namespace Darkroom\Readers;
 
 use Darkroom\Orientation;
-use Darkroom\Size;
 
 /**
  * EXIF data, which has TIFF's layout in every container
@@ -32,16 +31,16 @@ final class Exif
 	}
 
 	/**
-	 * Size and orientation from the first IFD
+	 * The orientation from the first IFD
 	 * of the data at the handle
 	 *
 	 * @param resource $handle
 	 */
-	public static function read($handle): Header
+	public static function orientation($handle): Orientation
 	{
-		$start = (int)ftell($handle);
-		$head  = (string)fread($handle, 8);
-		$tags  = [];
+		$start       = (int)ftell($handle);
+		$head        = (string)fread($handle, 8);
+		$orientation = 1;
 
 		// the byte order, little-endian or big-endian
 		$little = match (substr($head, 0, 4)) {
@@ -68,24 +67,22 @@ final class Exif
 			) {
 				/** @var array{tag: int, type: int, value: int} $entry */
 				$entry = unpack($format, $entries, $position);
-				$type  = $entry['type'];
 				$value = $entry['value'];
 
-				// a SHORT value fills the first two bytes, a LONG one all four
-				if ($type === 3) {
-					$tags[$entry['tag']] = $little === true ? $value & 0xFFFF : $value >> 16;
+				if ($entry['tag'] !== 0x0112) {
+					continue;
 				}
 
-				if ($type === 4) {
-					$tags[$entry['tag']] = $value;
-				}
+				// a SHORT value fills the first two bytes, a LONG one all four
+				$orientation = match ($entry['type']) {
+					3       => $little === true ? $value & 0xFFFF : $value >> 16,
+					4       => $value,
+					default => $orientation
+				};
 			}
 		}
 
-		return new Header(
-			new Size($tags[0x0100] ?? 0, $tags[0x0101] ?? 0),
-			Orientation::tryFrom($tags[0x0112] ?? 1) ?? Orientation::None
-		);
+		return Orientation::tryFrom($orientation) ?? Orientation::None;
 	}
 
 	/**

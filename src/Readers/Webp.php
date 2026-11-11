@@ -126,8 +126,8 @@ final class Webp extends Reader
 		// some writers keep JPEG's marker
 		Exif::marker($handle);
 
-		$exif = Exif::read($handle);
-		return new Header($size, $exif->orientation);
+		$orientation = Exif::orientation($handle);
+		return new Header($size, $orientation);
 	}
 
 	/**

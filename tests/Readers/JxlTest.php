@@ -52,11 +52,11 @@ class JxlTest extends ReaderTestCase
 	{
 		$data   = self::fixture('jxl/exif-6.jxl');
 		$exif   = self::exif($data);
-		$handle = self::handle($exif);
-		$header = Exif::read($handle);
+		$handle      = self::handle($exif);
+		$orientation = Exif::orientation($handle);
 
 		$this->assertStringStartsWith("MM\0*", $exif);
-		$this->assertSame(Orientation::Rotate90, $header->orientation);
+		$this->assertSame(Orientation::Rotate90, $orientation);
 
 		$tiff       = self::tiff(3);
 		$codestream = self::jxl(...self::SIZE);

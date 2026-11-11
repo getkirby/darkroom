@@ -20,11 +20,11 @@ class PngTest extends ReaderTestCase
 	{
 		$data   = self::fixture('png/exif-6.png');
 		$exif   = self::exif($data);
-		$handle = self::handle($exif);
-		$header = Exif::read($handle);
+		$handle      = self::handle($exif);
+		$orientation = Exif::orientation($handle);
 
 		$this->assertStringStartsWith("MM\0*", $exif);
-		$this->assertSame(Orientation::Rotate90, $header->orientation);
+		$this->assertSame(Orientation::Rotate90, $orientation);
 
 		$ihdr   = self::ihdr(30, 20);
 		$three  = self::tiff(3);

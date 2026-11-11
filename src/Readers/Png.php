@@ -96,7 +96,7 @@ final class Png extends Reader
 			}
 
 			if ($type === 'eXIf' && $orientation === null) {
-				$orientation = Exif::read($handle)->orientation;
+				$orientation = Exif::orientation($handle);
 			}
 		}
 

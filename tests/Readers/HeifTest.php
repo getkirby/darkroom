@@ -359,11 +359,11 @@ class HeifTest extends ReaderTestCase
 		foreach ($files as $file) {
 			$data   = self::fixture($file);
 			$exif   = self::exif($data);
-			$handle = self::handle($exif);
-			$header = Exif::read($handle);
+			$handle      = self::handle($exif);
+			$orientation = Exif::orientation($handle);
 
 			$this->assertStringStartsWith("MM\0*", $exif);
-			$this->assertSame(Orientation::Rotate90, $header->orientation);
+			$this->assertSame(Orientation::Rotate90, $orientation);
 		}
 
 		$tiff   = self::tiff(3);

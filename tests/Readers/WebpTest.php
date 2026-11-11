@@ -43,11 +43,11 @@ class WebpTest extends ReaderTestCase
 	{
 		$data   = self::fixture('webp/exif-6.webp');
 		$exif   = self::exif($data);
-		$handle = self::handle($exif);
-		$header = Exif::read($handle);
+		$handle      = self::handle($exif);
+		$orientation = Exif::orientation($handle);
 
 		$this->assertStringStartsWith("MM\0*", $exif);
-		$this->assertSame(Orientation::Rotate90, $header->orientation);
+		$this->assertSame(Orientation::Rotate90, $orientation);
 
 		$vp8x = self::extended(0x08);
 		$vp8  = self::lossy();

@@ -121,7 +121,7 @@ final class Jpeg extends Reader
 				$orientation === null &&
 				Exif::marker($handle) === true
 			) {
-				$orientation = Exif::read($handle)->orientation;
+				$orientation = Exif::orientation($handle);
 			}
 
 			// SOF0–SOF15 except DHT, JPG and DAC: precision, height, width

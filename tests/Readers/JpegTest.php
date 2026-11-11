@@ -49,19 +49,19 @@ class JpegTest extends ReaderTestCase
 	{
 		$data   = self::fixture('exif.jpg');
 		$exif   = self::exif($data);
-		$handle = self::handle($exif);
-		$header = Exif::read($handle);
+		$handle      = self::handle($exif);
+		$orientation = Exif::orientation($handle);
 
 		$this->assertStringStartsWith("II*\0", $exif);
-		$this->assertSame(Orientation::Rotate270, $header->orientation);
+		$this->assertSame(Orientation::Rotate270, $orientation);
 
 		$data   = self::fixture('orientation/Landscape_6.jpg');
 		$exif   = self::exif($data);
-		$handle = self::handle($exif);
-		$header = Exif::read($handle);
+		$handle      = self::handle($exif);
+		$orientation = Exif::orientation($handle);
 
 		$this->assertStringStartsWith("MM\0*", $exif);
-		$this->assertSame(Orientation::Rotate90, $header->orientation);
+		$this->assertSame(Orientation::Rotate90, $orientation);
 	}
 
 	public function testExifAfterOtherSegments(): void

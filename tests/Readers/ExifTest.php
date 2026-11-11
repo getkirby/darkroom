@@ -4,9 +4,7 @@ namespace Darkroom\Tests\Readers;
 
 use Darkroom\Orientation;
 use Darkroom\Readers\Exif;
-use Darkroom\Readers\Header;
 use Darkroom\Readers\Reader;
-use Darkroom\Size;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RequiresFunction;
@@ -16,7 +14,12 @@ use Random\Randomizer;
 #[CoversClass(Exif::class)]
 class ExifTest extends ReaderTestCase
 {
-	protected const string READER = Exif::class;
+	protected static function orientation(string $data): Orientation
+	{
+		$handle = self::handle($data);
+
+		return Exif::orientation($handle);
+	}
 
 	public function testMarker(): void
 	{
@@ -37,71 +40,41 @@ class ExifTest extends ReaderTestCase
 		$this->assertFalse(Exif::marker($handle));
 	}
 
-	public static function readProvider(): array
+	public static function orientationProvider(): array
 	{
 		return [
-			'big-endian' => [
-				self::tiff(6),
-				[0, 0, Orientation::Rotate90]
-			],
-			'little-endian' => [
-				self::tiff(6, little: true),
-				[0, 0, Orientation::Rotate90]
-			],
-			'size as SHORT' => [
+			'big-endian'       => [self::tiff(6), Orientation::Rotate90],
+			'little-endian'    => [self::tiff(6, little: true), Orientation::Rotate90],
+			'among other tags' => [
 				self::tiff([[0x0100, 3, 1800], [0x0101, 3, 1200], [0x0112, 3, 3]]),
-				[1800, 1200, Orientation::Rotate180]
+				Orientation::Rotate180
 			],
-			'size as LONG' => [
-				self::tiff([[0x0100, 4, 70000], [0x0101, 4, 1200]], little: true),
-				[70000, 1200, Orientation::None]
-			],
-			'orientation as LONG' => [
-				self::tiff([[0x0112, 4, 8]]),
-				[0, 0, Orientation::Rotate270]
-			],
-			'other types' => [
-				self::tiff([[0x0100, 1, 1800], [0x0112, 2, 6]]),
-				[0, 0, Orientation::None]
-			],
-			'other tags' => [
-				self::tiff([[0x0103, 3, 6], [0x0128, 3, 2]]),
-				[0, 0, Orientation::None]
-			],
-			'no entries' => [
-				self::tiff([]),
-				[0, 0, Orientation::None]
-			],
-			'after the marker' => [
-				"Exif\0\0" . self::tiff(6),
-				[0, 0, Orientation::None]
-			],
+			'as LONG'          => [self::tiff([[0x0112, 4, 8]]), Orientation::Rotate270],
+			'other types'      => [self::tiff([[0x0100, 1, 1800], [0x0112, 2, 6]]), Orientation::None],
+			'other tags'       => [self::tiff([[0x0103, 3, 6], [0x0128, 3, 2]]), Orientation::None],
+			'no entries'       => [self::tiff([]), Orientation::None],
+			'after the marker' => ["Exif\0\0" . self::tiff(6), Orientation::None],
 		];
 	}
 
-	#[DataProvider('readProvider')]
-	public function testRead(string $data, array $expected): void
+	#[DataProvider('orientationProvider')]
+	public function testOrientation(string $data, Orientation $expected): void
 	{
-		[$width, $height, $orientation] = $expected;
-
-		$size   = new Size($width, $height);
-		$header = new Header($size, $orientation);
-
-		$this->assertEquals($header, self::read($data));
+		$this->assertSame($expected, self::orientation($data));
 	}
 
-	public function testReadEveryOrientation(): void
+	public function testOrientationEveryValue(): void
 	{
 		foreach (Orientation::cases() as $orientation) {
 			foreach ([false, true] as $little) {
 				$data = self::tiff($orientation->value, $little);
 
-				$this->assertSame($orientation, self::read($data)->orientation);
+				$this->assertSame($orientation, self::orientation($data));
 			}
 		}
 	}
 
-	public function testReadFromPosition(): void
+	public function testOrientationFromPosition(): void
 	{
 		$tiff   = self::tiff(6);
 		$ifd    = substr($tiff, 8);
@@ -110,10 +83,10 @@ class ExifTest extends ReaderTestCase
 
 		fseek($handle, 6);
 
-		$this->assertSame(Orientation::Rotate90, Exif::read($handle)->orientation);
+		$this->assertSame(Orientation::Rotate90, Exif::orientation($handle));
 	}
 
-	public function testReadGarbage(): void
+	public function testOrientationGarbage(): void
 	{
 		$engine = new Mt19937(42);
 		$random = new Randomizer($engine);
@@ -122,15 +95,13 @@ class ExifTest extends ReaderTestCase
 			for ($run = 0; $run < 500; $run++) {
 				$length = $random->getInt(1, 200);
 				$data   = $order . $random->getBytes($length);
-				$header = self::read($data);
 
-				$this->assertGreaterThanOrEqual(0, $header->size->width);
-				$this->assertGreaterThanOrEqual(0, $header->size->height);
+				$this->assertInstanceOf(Orientation::class, self::orientation($data));
 			}
 		}
 	}
 
-	public static function readInvalidProvider(): array
+	public static function orientationInvalidProvider(): array
 	{
 		return [
 			'empty'       => [''],
@@ -144,44 +115,41 @@ class ExifTest extends ReaderTestCase
 		];
 	}
 
-	#[DataProvider('readInvalidProvider')]
-	public function testReadInvalid(string $data): void
+	#[DataProvider('orientationInvalidProvider')]
+	public function testOrientationInvalid(string $data): void
 	{
-		$this->assertEquals(new Header(), self::read($data));
+		$this->assertSame(Orientation::None, self::orientation($data));
 	}
 
-	public function testReadInvalidOrientation(): void
+	public function testOrientationInvalidValue(): void
 	{
 		foreach ([0, 9, 0xFFFF] as $value) {
 			$data = self::tiff($value);
 
-			$this->assertSame(Orientation::None, self::read($data)->orientation);
+			$this->assertSame(Orientation::None, self::orientation($data));
 		}
 	}
 
-	public function testReadLimit(): void
+	public function testOrientationLimit(): void
 	{
 		$entries = array_fill(0, Reader::STEPS - 1, [0x0103, 3, 1]);
 		$last    = self::tiff([...$entries, [0x0112, 3, 6]]);
 		$beyond  = self::tiff([...$entries, [0x0103, 3, 1], [0x0112, 3, 6]]);
 
-		$this->assertSame(Orientation::Rotate90, self::read($last)->orientation);
-		$this->assertSame(Orientation::None, self::read($beyond)->orientation);
+		$this->assertSame(Orientation::Rotate90, self::orientation($last));
+		$this->assertSame(Orientation::None, self::orientation($beyond));
 	}
 
-	public function testReadTruncated(): void
+	public function testOrientationTruncated(): void
 	{
 		$data = self::tiff([[0x0100, 3, 1800], [0x0101, 3, 1200], [0x0112, 3, 6]]);
 
 		for ($length = 0; $length <= strlen($data); $length++) {
-			$truncated   = substr($data, 0, $length);
-			$header      = self::read($truncated);
-			$entries     = max(0, intdiv($length - 10, 12));
-			$orientation = $entries >= 3 ? Orientation::Rotate90 : Orientation::None;
+			$truncated = substr($data, 0, $length);
+			$entries   = max(0, intdiv($length - 10, 12));
+			$expected  = $entries >= 3 ? Orientation::Rotate90 : Orientation::None;
 
-			$this->assertSame($entries >= 1 ? 1800 : 0, $header->size->width);
-			$this->assertSame($entries >= 2 ? 1200 : 0, $header->size->height);
-			$this->assertSame($orientation, $header->orientation);
+			$this->assertSame($expected, self::orientation($truncated));
 		}
 	}
 
