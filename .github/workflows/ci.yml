@@ -15,7 +15,7 @@ jobs:
     env:
       extensions: exif, ffi, gd, imagick
       # tests for these drivers and formats fail instead of skipping
-      DARKROOM_REQUIRE: "gd:avif,webp imagick vips"
+      DARKROOM_REQUIRE: "gd:avif,webp imagick:avif,heic,jp2,webp vips:avif,heic,jp2,jxl,webp"
 
     steps:
       - name: Checkout
@@ -86,7 +86,7 @@ jobs:
           php -r 'require "vendor/autoload.php"; echo "libvips ", Jcupitt\Vips\Config::version(), PHP_EOL;'
 
       - name: Run tests
-        run: composer test
+        run: composer test -- --display-skipped
 
   analysis:
     name: Analysis
