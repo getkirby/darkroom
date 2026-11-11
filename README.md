@@ -23,7 +23,7 @@ $darkroom->process('photo.jpg', 'thumbs/photo.webp', ['width' => 800]);
 composer require getkirby/darkroom
 ```
 
-PHP 8.3 or newer and one of the [drivers](#drivers).
+PHP 8.4 or newer and one of the [drivers](#drivers).
 
 ## Usage
 

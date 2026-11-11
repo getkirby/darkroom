@@ -13,7 +13,7 @@ composer bench       # time and memory per case
 composer playground  # every driver side by side
 ```
 
-CI runs the tests on PHP 8.3–8.5 with GD, Imagick and libvips 8.15, and Psalm and the style check on 8.4.
+CI runs the tests on PHP 8.4–8.6 with GD, Imagick and libvips 8.15, and Psalm and the style check on 8.4.
 
 ## Driver tests
 
