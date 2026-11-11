@@ -26,6 +26,62 @@ final readonly class Plan
 	) {
 	}
 
+	/**
+	 * The part to cut, as displayed, and the size to scale it to
+	 *
+	 * @return array{Rect, Size}
+	 */
+	protected static function cut(
+		Options $options,
+		Size $original
+	): array {
+		if ($options->crop instanceof Rect) {
+			$crop = static::part($options->crop, $original);
+			$size = new Size($crop->width, $crop->height);
+
+			// a missing side keeps the part's ratio
+			if (
+				$options->width === null ||
+				$options->height === null
+			) {
+				return [
+					$crop,
+					$size->fit($options->width, $options->height)
+				];
+			}
+
+			// both sides as asked, shrunk into the part
+			$size = new Size($options->width, $options->height);
+
+			return [
+				$crop,
+				$size->fit($crop->width, $crop->height)
+			];
+		}
+
+		$focus = $options->focus();
+
+		if ($focus === null) {
+			return [
+				new Rect(0, 0, $original->width, $original->height),
+				$original->fit($options->width, $options->height)
+			];
+		}
+
+		// a missing side makes a square
+		$size = new Size(
+			$options->width ?? $options->height ?? $original->width,
+			$options->height ?? $options->width ?? $original->height
+		);
+		$area = $original->crop($size);
+		$crop = $focus->place($area, $original);
+
+		return [
+			$crop,
+			$size->fit($crop->width, $crop->height)
+		];
+	}
+
 	public static function for(
 		Source $source,
 		Options $options,
@@ -34,33 +90,9 @@ final readonly class Plan
 	): static {
 		$input    = $source->format();
 		$original = $source->size();
-		$focus    = $options->focus();
+		$output   = $options->format ?? $defaults->format ?? $input;
 
-		if ($options->crop instanceof Rect) {
-			$crop = static::part($options->crop, $original);
-
-			if ($options->width === null || $options->height === null) {
-				$cut  = new Size($crop->width, $crop->height);
-				$size = $cut->fit($options->width, $options->height);
-			} else {
-				// both sides as asked, shrunk into the part
-				$size = new Size($options->width, $options->height);
-				$size = $size->fit($crop->width, $crop->height);
-			}
-		} elseif ($focus === null) {
-			$size = $original->fit($options->width, $options->height);
-			$crop = new Rect(0, 0, $original->width, $original->height);
-		} else {
-			$size = new Size(
-				$options->width ?? $options->height ?? $original->width,
-				$options->height ?? $options->width ?? $original->height
-			);
-			$cut  = $original->crop($size);
-			$crop = $focus->place($cut, $original);
-			$size = $size->fit($crop->width, $crop->height);
-		}
-
-		$output = $options->format ?? $defaults->format ?? $input;
+		[$crop, $size] = static::cut($options, $original);
 
 		// the source first, as probing the driver costs more
 		$frames =
