@@ -253,6 +253,7 @@ abstract class DriverTestCase extends TestCase
 		$format = Format::detect($data);
 
 		return match ($format) {
+			Format::Gif  => imageinterlace(imagecreatefromgif($file)),
 			Format::Jpeg => str_contains($data, "\xFF\xC2"),
 			Format::Png  => $data[28] === "\x01",
 		};
@@ -901,6 +902,8 @@ abstract class DriverTestCase extends TestCase
 			'baseline jpeg'    => ['jpg', false],
 			'interlaced png'   => ['png', true],
 			'plain png'        => ['png', false],
+			'interlaced gif'   => ['gif', true],
+			'plain gif'        => ['gif', false],
 		];
 	}
 

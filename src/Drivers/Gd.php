@@ -182,7 +182,6 @@ final class Gd extends Driver
 		}
 
 		imagesavealpha($image, true);
-		imageinterlace($image, $plan->interlace);
 
 		// GIF knows one transparent color instead of alpha
 		if ($plan->format === Format::Gif) {
@@ -190,6 +189,8 @@ final class Gd extends Driver
 
 			$image = static::palette($image);
 		}
+
+		imageinterlace($image, $plan->interlace);
 
 		$encoder = static::encoder($plan->format);
 		$options = match ($plan->format) {
