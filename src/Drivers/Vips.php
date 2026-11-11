@@ -9,6 +9,7 @@ use Darkroom\Exception\ProcessException;
 use Darkroom\Format;
 use Darkroom\Orientation;
 use Darkroom\Plan;
+use Darkroom\Settings;
 use Darkroom\Source;
 use Darkroom\Tools\Quality;
 use Darkroom\Tools\Sharpen;
@@ -135,7 +136,7 @@ final class Vips extends Driver
 	protected function defaults(): array
 	{
 		return [
-			'limit'   => null,
+			'limit'   => Settings::LIMIT,
 			'threads' => null,
 		];
 	}
