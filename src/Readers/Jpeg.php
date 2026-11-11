@@ -86,18 +86,18 @@ final class Jpeg extends Reader
 
 	/**
 	 * The next marker, with the handle after it,
-	 * past at most about `LIMIT` fill bytes
+	 * past fill bytes, at most about `LIMIT` in all
 	 *
 	 * @param resource $handle
 	 */
-	protected static function marker($handle): int|null
+	protected static function marker($handle, int &$fills): int|null
 	{
 		if (fread($handle, 1) !== "\xFF") {
 			return null;
 		}
 
 		// more 0xFF are fill bytes; 0x00 after one is no marker
-		for ($fill = 0; $fill < self::LIMIT; $fill++) {
+		for (; $fills < self::LIMIT; $fills++) {
 			$byte = (string)fread($handle, 1);
 
 			if ($byte !== "\xFF") {
@@ -170,8 +170,10 @@ final class Jpeg extends Reader
 			return;
 		}
 
+		$fills = 0;
+
 		for ($step = 0; $step < self::STEPS; $step++) {
-			$marker = self::marker($handle);
+			$marker = self::marker($handle, $fills);
 
 			// none, start of scan, end of image
 			if (

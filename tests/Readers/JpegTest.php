@@ -353,6 +353,14 @@ class JpegTest extends ReaderTestCase
 
 		$this->assertSame(0, Jpeg::read($handle)->size->width);
 		$this->assertLessThan(1_100_000, ftell($handle));
+
+		// the limit counts the fills of all segments
+		$fills  = str_repeat(str_repeat("\xFF", 100_000) . $app0, 20);
+		$data   = self::jpeg($fills, $frame);
+		$handle = self::handle($data);
+
+		$this->assertSame(0, Jpeg::read($handle)->size->width);
+		$this->assertLessThan(1_100_000, ftell($handle));
 	}
 
 	public function testReadTruncated(): void
