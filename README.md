@@ -1,6 +1,6 @@
 # Darkroom
 
-Thumbnails for PHP. Darkroom resizes, crops, orients and converts images with GD, ImageMagick or libvips, and all three make the same thumb.
+Thumbnails for PHP, built with [Kirby CMS](https://getkirby.com) in mind but ready for any project. Darkroom resizes, crops, orients and converts images with GD, ImageMagick or libvips, and all three make the same thumb.
 
 ```php
 $darkroom = new Darkroom\Darkroom();

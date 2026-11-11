@@ -1,5 +1,7 @@
 # Contributing
 
+Darkroom is maintained by the [Kirby](https://getkirby.com) team but stands on its own: it has no Kirby-specific code and is [MIT](LICENSE.md)-licensed, free for any project to use.
+
 The Composer scripts run their tools through cpx: `composer global require cpx/cpx`.
 
 ```sh
