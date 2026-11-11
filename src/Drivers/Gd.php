@@ -330,11 +330,12 @@ final class Gd extends Driver
 			return;
 		}
 
-		// four bytes a pixel: the source, the resampled image,
-		// a copy of it, and the encoded image, at most about
-		// as large, twice while it is copied
+		// four bytes a pixel: the source (twice for PNG, whose rows GD
+		// reads whole before copying), the resampled image, a copy of it,
+		// and the encoded image, at most about as large, twice while copied
 		$resample = $plan->resample();
-		$pixels   = $plan->source->size()->pixels() + $resample->pixels() * 4;
+		$copies   = $plan->source->format() === Format::Png ? 2 : 1;
+		$pixels   = $plan->source->size()->pixels() * $copies + $resample->pixels() * 4;
 
 		if ($pixels * 4 > $limit - memory_get_usage()) {
 			throw new LimitException(

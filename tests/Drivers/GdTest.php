@@ -213,15 +213,24 @@ class GdTest extends DriverTestCase
 		$this->assertSame([128, 128, 128], [$color['red'], $color['green'], $color['blue']]);
 	}
 
-	public function testProcessLimit(): void
+	public static function processLimitProvider(): array
 	{
-		$png      = static::bare(10000, 10000);
+		// decoding a PNG takes eight bytes a pixel
+		return [
+			'decoded' => [10000, '256M'],
+			'read'    => [6000, '200M'],
+		];
+	}
+
+	#[DataProvider('processLimitProvider')]
+	public function testProcessLimit(int $side, string $limit): void
+	{
+		$png      = static::bare($side, $side);
 		$source   = $this->file('large.png', $png);
 		$file     = $this->file('thumb.png');
 		$darkroom = new Darkroom([$this->driver]);
 
-		// decoding needs 400 MB
-		ini_set('memory_limit', '256M');
+		ini_set('memory_limit', $limit);
 
 		$this->expectException(LimitException::class);
 		$this->expectExceptionMessage('Image too large for the memory limit: ' . $source);
