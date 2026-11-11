@@ -274,7 +274,8 @@ class GdTest extends DriverTestCase
 
 		$peak = $this->peak($source, $file, ['width' => 800]);
 
-		$this->assertLessThan(3_000_000, $peak);
+		// 1.8 MP decode to 1.8 MB as a palette, 7.2 MB as truecolor
+		$this->assertLessThan(7_200_000, $peak);
 	}
 
 	#[RunInSeparateProcess]
