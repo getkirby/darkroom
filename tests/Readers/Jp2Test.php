@@ -86,13 +86,16 @@ class Jp2Test extends ReaderTestCase
 	public static function readInvalidProvider(): array
 	{
 		$other = self::box('jp2h', self::box('colr'));
+		$short = self::box('jp2h', self::box('ihdr', pack('Nn', 20, 30)));
 
 		return [
-			'empty'            => [''],
-			'signature only'   => ["\xFF\x4F\xFF\x51"],
-			'no header'        => [self::container()],
-			'no image header'  => [self::container($other)],
-			'offset too large' => [self::codestream(30, 20, 40, 30)],
+			'empty'              => [''],
+			'signature only'     => ["\xFF\x4F\xFF\x51"],
+			'cut codestream'     => [substr(self::codestream(30, 20), 0, 15)],
+			'no header'          => [self::container()],
+			'no image header'    => [self::container($other)],
+			'short image header' => [self::container($short)],
+			'offset too large'   => [self::codestream(30, 20, 40, 30)],
 		];
 	}
 

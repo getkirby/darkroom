@@ -22,7 +22,7 @@ final class Jp2 extends Reader
 		$data = (string)fread($handle, 24);
 
 		// SOC, then SIZ: the reference grid and the image's offset on it
-		if (str_starts_with($data, "\xFF\x4F\xFF\x51") === true) {
+		if (str_starts_with($data, "\xFF\x4F\xFF\x51") === true && strlen($data) === 24) {
 			$width  = self::int(substr($data, 8, 4)) - self::int(substr($data, 16, 4));
 			$height = self::int(substr($data, 12, 4)) - self::int(substr($data, 20, 4));
 			$size   = new Size(max(0, $width), max(0, $height));
@@ -38,7 +38,13 @@ final class Jp2 extends Reader
 		$boxes  = self::walk($handle, 'box', $length);
 		$length = self::find($boxes, 'ihdr');
 		$data   = self::bytes($handle, min($length, 8));
-		$size   = new Size(
+
+		// not from an image header that is cut off
+		if (strlen($data) < 8) {
+			return new Header();
+		}
+
+		$size = new Size(
 			self::int(substr($data, 4, 4)),
 			self::int(substr($data, 0, 4))
 		);
