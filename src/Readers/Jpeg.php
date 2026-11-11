@@ -19,11 +19,7 @@ final class Jpeg extends Reader
 	public static function exif($handle): string
 	{
 		foreach (self::segments($handle) as $marker => $length) {
-			if (
-				$marker === 0xE1 &&
-				$length > 6 &&
-				Exif::marker($handle) === true
-			) {
+			if ($marker === 0xE1 && Exif::marker($handle) === true) {
 				return self::bytes($handle, $length - 6);
 			}
 		}
