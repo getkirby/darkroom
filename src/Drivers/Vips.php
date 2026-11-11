@@ -172,17 +172,6 @@ final class Vips extends Driver
 		return $image;
 	}
 
-	protected static function flatten(Image $image): Image
-	{
-		if ($image->hasAlpha() === false) {
-			return $image;
-		}
-
-		$white = $image->format === 'ushort' ? 65535 : 255;
-
-		return $image->flatten(['background' => [$white]]);
-	}
-
 	/**
 	 * @throws LimitException If the frames exceed the limit
 	 */
@@ -473,18 +462,15 @@ final class Vips extends Driver
 				$image->remove('orientation');
 			}
 
-			// savers without alpha would flatten onto black
-			if ($plan->format->isOpaque() === true) {
-				$image = static::flatten($image);
-			}
-
 			$target            = Target::newToFile($file);
 			[$quality, $whole] = Quality::for($plan->format, $plan->quality);
 
-			// chroma whole or at half resolution both ways (4:2:0), which libvips
-			// would write whole from quality 90 on, and JPEG's Huffman tables fitted to the image
+			// savers without alpha flatten onto the background; chroma whole or at half
+			// resolution both ways (4:2:0), which libvips would write whole from quality
+			// 90 on; JPEG's Huffman tables fitted to the image
 			$this->write($image, $target, $plan->format, [
 				'Q'               => $quality,
+				'background'      => [$image->format === 'ushort' ? 65535 : 255],
 				'interlace'       => $plan->interlace,
 				'keep'            => $keep === true ? ForeignKeep::ICC : ForeignKeep::NONE,
 				'optimize_coding' => true,
