@@ -1,10 +1,11 @@
 <?php
 
-namespace Darkroom\Tests\Readers;
+namespace Darkroom\Tests\Tools;
 
 use Darkroom\Orientation;
-use Darkroom\Readers\Exif;
 use Darkroom\Readers\Reader;
+use Darkroom\Tests\Readers\ReaderTestCase;
+use Darkroom\Tools\Exif;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RequiresFunction;

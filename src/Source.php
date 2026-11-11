@@ -3,9 +3,9 @@
 namespace Darkroom;
 
 use Darkroom\Exception\UnsupportedException;
-use Darkroom\Readers\Exif;
 use Darkroom\Readers\Header;
 use Darkroom\Readers\Reader;
+use Darkroom\Tools\Exif;
 use Darkroom\Tools\Hdr;
 
 /**

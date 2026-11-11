@@ -4,6 +4,7 @@ namespace Darkroom\Readers;
 
 use Darkroom\Orientation;
 use Darkroom\Size;
+use Darkroom\Tools\Exif;
 use Generator;
 
 /**

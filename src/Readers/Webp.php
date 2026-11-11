@@ -3,6 +3,7 @@
 namespace Darkroom\Readers;
 
 use Darkroom\Size;
+use Darkroom\Tools\Exif;
 
 /**
  * @internal

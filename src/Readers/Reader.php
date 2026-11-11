@@ -5,6 +5,7 @@ namespace Darkroom\Readers;
 use Closure;
 use Darkroom\Format;
 use Darkroom\Rect;
+use Darkroom\Tools\Exif;
 use Generator;
 
 /**

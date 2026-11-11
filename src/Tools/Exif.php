@@ -1,8 +1,9 @@
 <?php
 
-namespace Darkroom\Readers;
+namespace Darkroom\Tools;
 
 use Darkroom\Orientation;
+use Darkroom\Readers\Reader;
 
 /**
  * EXIF data, which has TIFF's layout in every container

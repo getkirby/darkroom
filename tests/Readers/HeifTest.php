@@ -3,12 +3,12 @@
 namespace Darkroom\Tests\Readers;
 
 use Darkroom\Orientation;
-use Darkroom\Readers\Exif;
 use Darkroom\Readers\Header;
 use Darkroom\Readers\Heif;
 use Darkroom\Readers\Reader;
 use Darkroom\Rect;
 use Darkroom\Size;
+use Darkroom\Tools\Exif;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
