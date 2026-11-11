@@ -30,7 +30,7 @@ jobs:
 
       - name: Setup PHP cache environment
         id: ext-cache
-        uses: shivammathur/cache-extensions@22e24453af1bf3851994136f122ce065ab828a74 # 1.15.2
+        uses: shivammathur/cache-extensions@695b1b465eba861efe67cbbc31252c27f5ed253d # 1.15.11
         with:
           php-version: ${{ matrix.php }}
           extensions: ${{ env.extensions }}
@@ -56,7 +56,7 @@ jobs:
           echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
       - name: Install cpx
-        run: composer global require cpx/cpx:1.0.4
+        run: composer global require cpx/cpx:2.1.0
 
       - name: Cache cpx tools
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -109,7 +109,7 @@ jobs:
           coverage: none
 
       - name: Install cpx
-        run: composer global require cpx/cpx:1.0.4
+        run: composer global require cpx/cpx:2.1.0
 
       - name: Cache cpx tools
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
