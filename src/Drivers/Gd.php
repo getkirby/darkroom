@@ -36,14 +36,6 @@ final class Gd extends Driver
 		}
 
 		imagealphablending($image, enable: false);
-		imagefilledrectangle(
-			image: $image,
-			x1:    0,
-			y1:    0,
-			x2:    $width - 1,
-			y2:    $height - 1,
-			color: self::CLEAR
-		);
 
 		return $image;
 	}
@@ -483,6 +475,7 @@ final class Gd extends Driver
 		// at least half transparent becomes fully transparent,
 		// which blending leaves as the clear canvas under it
 		imagefilter($image, IMG_FILTER_COLORIZE, 0, 0, 0, 63);
+		imagefilledrectangle($cut, 0, 0, $width - 1, $height - 1, self::CLEAR);
 		imagealphablending($cut, true);
 		imagecopy($cut, $image, 0, 0, 0, 0, $width, $height);
 		imagecolortransparent($cut, self::CLEAR);
