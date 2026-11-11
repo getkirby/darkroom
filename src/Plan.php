@@ -62,13 +62,19 @@ final readonly class Plan
 
 		$output = $options->format ?? $defaults->format ?? $input;
 
+		// the source first, as probing the driver costs more
+		$frames =
+			$driver !== null &&
+			$source->isAnimated() === true &&
+			$driver->canAnimate($output) === true;
+
 		return new static(
 			source:      $source,
 			options:     $options,
 			crop:        $crop,
 			size:        $size,
 			orientation: $driver?->orients($source) === true ? Orientation::None : $source->orientation(),
-			frames:      $driver?->canAnimate($output) === true && $source->isAnimated() === true,
+			frames:      $frames,
 			format:      $output,
 			quality:     $options->quality ?? $defaults->quality ?? Defaults::QUALITY,
 			interlace:   $options->interlace ?? $defaults->interlace ?? Defaults::INTERLACE,

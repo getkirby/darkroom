@@ -326,21 +326,25 @@ class PlanTest extends TestCase
 
 	public function testForFrames(): void
 	{
-		$source    = $this->source(1200, 768);
-		$options     = new Options(format: Format::Webp);
+		$still     = $this->source(1200, 768);
+		$animated  = new Source(self::FIXTURES . '/gif/animated.gif');
+		$options   = new Options(format: Format::Webp);
 		$driver    = new FakeDriver();
 		$animating = new FakeDriver(['animate' => Format::cases()]);
 
-		$plain  = Plan::for($source, $options);
-		$asked  = Plan::for($source, $options, driver: $driver);
-		$single = Plan::for($source, $options, driver: $animating);
+		$plain  = Plan::for($still, $options);
+		$asked  = Plan::for($still, $options, driver: $driver);
+		$single = Plan::for($still, $options, driver: $animating);
+		$frames = Plan::for($animated, $options, driver: $animating);
 
 		$this->assertFalse($plain->frames);
-
 		$this->assertFalse($asked->frames);
-		$this->assertSame(['animate:Webp'], $driver->runs);
-
 		$this->assertFalse($single->frames);
+		$this->assertTrue($frames->frames);
+
+		// probed only for an animated source
+		$this->assertSame([], $driver->runs);
+		$this->assertSame(['animate:Webp'], $animating->runs);
 	}
 
 	public function testForOptions(): void
