@@ -43,11 +43,11 @@ $darkroom->process($plan, $file);
 
 | Method | Returns |
 |---|---|
-| `open($file)` | A `Source`, from the file's header: `format()`, `size()`, `orientation()`, `exif()`, `icc()`, `isAnimated()`, `isHdr()` |
-| `plan($source, $options)` | A `Plan`: the thumb's `width()`, `height()`, `format`, `quality` and `key()`; throws what `process()` would |
+| `open($file)` | A [`Source`](src/Source.php), from the file's header: `format()`, `size()`, `orientation()`, `exif()`, `icc()`, `isAnimated()`, `isHdr()` |
+| `plan($source, $options)` | A [`Plan`](src/Plan.php): the thumb's `width()`, `height()`, `format`, `quality` and `key()`; throws what `process()` would |
 | `tryPlan($source, $options)` | The same, or `null` for a source that is unreadable or above the limit |
 | `process($source, $file, $options)` | Writes the thumb in the format of the file's extension, creating directories; returns the `Plan`; takes a `Plan` instead of source and options |
-| `format($source, $format, $allowed)` | The format a plan gets: `$format` if a driver writes it, else the source's if allowed, else the first allowed one a driver writes; `$allowed` defaults to `Format::VIEWABLE`: WebP, JPEG, PNG, GIF, AVIF |
+| `format($source, $format, $allowed)` | The format a plan gets: `$format` if a driver writes it, else the source's if allowed, else the first allowed one a driver writes; `$allowed` defaults to [`Format::VIEWABLE`](src/Format.php): WebP, JPEG, PNG, GIF, AVIF |
 | `info()` | Each driver's library, version and the formats it reads and writes |
 
 `Options::from($plan->key())` reads a key back, so a thumb can be made later from its file name alone.
@@ -57,7 +57,7 @@ $darkroom->process($plan, $file);
 | Option | Value |
 |---|---|
 | `width`, `height` | Pixels; without `crop`, the thumb fits into both |
-| `crop` | `true`, a position (`center`, `top`, `top left`, … `bottom right`), a focus point (`'70% 30%'`) or a `Darkroom\Rect` in pixels |
+| `crop` | `true`, a position (`center`, `top`, `top left`, … `bottom right`), a focus point (`'70% 30%'`) or a [`Darkroom\Rect`](src/Rect.php) in pixels |
 | `quality` | 1–100, see [Quality](#quality) |
 | `format` | An extension or MIME type; with `process()`, it must match the file's extension |
 | `blur` | Gaussian sigma in output pixels, 1–100; `true` is 10 |
@@ -80,7 +80,7 @@ Thumbs are never enlarged, not even by a crop: it is exactly `width` × `height`
 | 70 | high | barely side by side, not without the source |
 | 50 | medium | as slightly annoying artifacts |
 
-Each driver turns the score into its encoder's quality and chroma subsampling, so that the median [CID22](https://cloudinary.com/labs/cid22) validation image reaches it.
+Each driver turns the score into [its encoder's quality and chroma subsampling](src/Tools/Quality.php), so that the median [CID22](https://cloudinary.com/labs/cid22) validation image reaches it.
 
 <details>
 <summary>Encoder settings and sizes</summary>
@@ -120,11 +120,11 @@ $darkroom = new Darkroom(
 
 | Driver | Needs | Good at |
 |---|---|---|
-| `gd` | `ext-gd` | Runs almost everywhere |
-| `imagick` | `ext-imagick`, ImageMagick 6.9.10 or 7.0.8 or newer | Animations, color profiles, CMYK and HDR |
-| `vips` | libvips 8.15 or newer, `ext-ffi`, `jcupitt/vips` | Speed and memory on large images |
+| [`gd`](src/Drivers/Gd.php) | `ext-gd` | Runs almost everywhere |
+| [`imagick`](src/Drivers/Imagick.php) | `ext-imagick`, ImageMagick 6.9.10 or 7.0.8 or newer | Animations, color profiles, CMYK and HDR |
+| [`vips`](src/Drivers/Vips.php) | libvips 8.15 or newer, `ext-ffi`, `jcupitt/vips` | Speed and memory on large images |
 
-`drivers` takes aliases, class names or `Darkroom\Driver` instances, by default `['imagick', 'gd', 'vips']`. Each thumb goes to the first available one that reads the source and writes the format. One that can't animate the format writes the first frame.
+`drivers` takes aliases, class names or [`Darkroom\Driver`](src/Driver.php) instances, by default `['imagick', 'gd', 'vips']`. Each thumb goes to the first available one that reads the source and writes the format. One that can't animate the format writes the first frame.
 
 
 <details>
