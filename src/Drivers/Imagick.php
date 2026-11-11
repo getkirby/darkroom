@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Darkroom\Drivers;
 
 use Closure;
@@ -331,7 +333,7 @@ final class Imagick extends Driver
 
 		// gray is written without chroma, which the identity
 		// matrix (0) doesn't allow; 2 leaves it unspecified
-		$cicp = explode('/', $frame->getImageProperty('heic:cicp'));
+		$cicp = explode('/', $frame->getImageProperty('heic:cicp') ?: '');
 
 		if (count($cicp) === 4 && $cicp[2] === '0') {
 			$cicp[2] = '2';

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Darkroom\Tools;
 
 use Darkroom\Format;
