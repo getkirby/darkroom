@@ -336,8 +336,8 @@ class OptionsTest extends TestCase
 				['width' => 300, 'height' => 300, 'crop' => new Rect(200, 0, 800, 800), ...$encoding]
 			],
 			'filters' => [
-				'300x200-blur5-grayscale-sharpen25-q90',
-				['width' => 300, 'height' => 200, 'blur' => 5, 'grayscale' => true, 'sharpen' => 25, ...$encoding]
+				'300x200-blur5-sharpen25-grayscale-q90',
+				['width' => 300, 'height' => 200, 'blur' => 5, 'sharpen' => 25, 'grayscale' => true, ...$encoding]
 			],
 			'encoding' => [
 				'300x200-q80-interlace-noicc',

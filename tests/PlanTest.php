@@ -548,7 +548,7 @@ class PlanTest extends TestCase
 			'crop, same ratio' => [['width' => 600, 'height' => 400, 'crop' => true], '600x400-q85'],
 			'filters'          => [
 				['width' => 300, 'blur' => 5, 'grayscale' => true, 'sharpen' => 25],
-				'300x200-blur5-grayscale-sharpen25-q85'
+				'300x200-blur5-sharpen25-grayscale-q85'
 			],
 			'encoding' => [
 				['width' => 300, 'quality' => 80, 'interlace' => true, 'icc' => false],

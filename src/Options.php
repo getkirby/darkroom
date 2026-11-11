@@ -98,7 +98,7 @@ final readonly class Options extends Defaults
 	 */
 	protected static function key(string $key): array
 	{
-		$pattern = '/^(\d+)x(\d+)(?:-crop(\d+)-(\d+)-(\d+)-(\d+))?(?:-blur(\d+))?(-grayscale)?(?:-sharpen(\d+))?-q(\d+)(-interlace)?(-noicc)?$/';
+		$pattern = '/^(\d+)x(\d+)(?:-crop(\d+)-(\d+)-(\d+)-(\d+))?(?:-blur(\d+))?(?:-sharpen(\d+))?(-grayscale)?-q(\d+)(-interlace)?(-noicc)?$/';
 
 		if (preg_match($pattern, $key, $match, PREG_UNMATCHED_AS_NULL) !== 1) {
 			throw new InvalidArgumentException(
@@ -122,8 +122,8 @@ final readonly class Options extends Defaults
 			'height'    => $match[2],
 			'crop'      => $crop,
 			'blur'      => $match[7],
-			'grayscale' => $match[8] !== null,
-			'sharpen'   => $match[9],
+			'sharpen'   => $match[8],
+			'grayscale' => $match[9] !== null,
 			'quality'   => $match[10],
 			'interlace' => $match[11] !== null,
 			'icc'       => $match[12] === null,

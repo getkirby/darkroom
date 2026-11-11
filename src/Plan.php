@@ -117,24 +117,44 @@ final readonly class Plan
 	public function key(): string
 	{
 		$original = $this->source->size();
+		$options  = $this->options;
 		$crop     = $this->crop;
-		$cut      = sprintf('crop%d-%d-%d-%d', $crop->x, $crop->y, $crop->width, $crop->height);
-		$whole    =
-			$crop->width === $original->width &&
-			$crop->height === $original->height;
+		$parts    = [$this->size->width . 'x' . $this->size->height];
 
-		$parts = [
-			$this->size->width . 'x' . $this->size->height,
-			$whole === true ? null : $cut,
-			$this->options->blur !== null ? 'blur' . $this->options->blur : null,
-			$this->options->grayscale === true ? 'grayscale' : null,
-			$this->options->sharpen !== null ? 'sharpen' . $this->options->sharpen : null,
-			'q' . $this->quality,
-			$this->interlace === true ? 'interlace' : null,
-			$this->icc === false ? 'noicc' : null,
-		];
+		if (
+			$crop->width !== $original->width ||
+			$crop->height !== $original->height
+		) {
+			$parts[] = sprintf(
+				'crop%d-%d-%d-%d',
+				$crop->x,
+				$crop->y,
+				$crop->width,
+				$crop->height
+			);
+		}
 
-		$parts = array_filter($parts, fn ($part) => $part !== null);
+		if ($options->blur !== null) {
+			$parts[] = 'blur' . $options->blur;
+		}
+
+		if ($options->sharpen !== null) {
+			$parts[] = 'sharpen' . $options->sharpen;
+		}
+
+		if ($options->grayscale === true) {
+			$parts[] = 'grayscale';
+		}
+
+		$parts[] = 'q' . $this->quality;
+
+		if ($this->interlace === true) {
+			$parts[] = 'interlace';
+		}
+
+		if ($this->icc === false) {
+			$parts[] = 'noicc';
+		}
 
 		return implode('-', $parts);
 	}
