@@ -451,6 +451,7 @@ class SourceTest extends TestCase
 			'zero.gif'      => 'GIF89a' . pack('vv', 300, 0) . "\0\0\0",
 			'zero.png'      => self::bare(0, 200),
 			'signature.jpg' => "\xFF\xD8\xFF\xE0",
+			'text.gif'      => 'GIF is not an image',
 		];
 
 		$sources = $this->invalid();

@@ -111,10 +111,14 @@ final class Source
 			return $this->header = $header;
 		}
 
-		// PHP knows the size of more images, such as BMP or TIFF
+		// PHP knows the size of more images, such as BMP or TIFF;
+		// a format with a reader failed its stricter signature check
 		$size = $this->file === '' ? false : @getimagesize($this->file);
 
-		if ($size === false) {
+		if (
+			$size === false ||
+			Format::tryFrom($size['mime']) !== null
+		) {
 			return $this->header = new Header();
 		}
 
