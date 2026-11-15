@@ -476,7 +476,7 @@ final class Vips extends Driver
 				'interlace'       => $plan->interlace,
 				'keep'            => $keep === true ? ForeignKeep::ICC : ForeignKeep::NONE,
 				'optimize_coding' => true,
-				'page_height'     => $plan->height(),
+				'page_height'     => $plan->size()->height,
 				'subsample_mode'  => $whole === true ? 'off' : 'on',
 			]);
 		} catch (VipsException $exception) {

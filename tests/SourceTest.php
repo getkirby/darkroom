@@ -433,12 +433,6 @@ class SourceTest extends TestCase
 		$size   = new Size($width, $height);
 
 		$this->assertEquals($size, $source->size());
-		$this->assertSame($width, $source->width());
-		$this->assertSame($height, $source->height());
-		$this->assertSame($size->ratio(), $source->ratio());
-		$this->assertSame($size->isLandscape(), $source->isLandscape());
-		$this->assertSame($size->isPortrait(), $source->isPortrait());
-		$this->assertSame($size->isSquare(), $source->isSquare());
 	}
 
 	public function testSizeUnreadable(): void

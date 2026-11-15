@@ -831,12 +831,6 @@ class PlanTest extends TestCase
 		$plan    = Plan::for($source, $options);
 
 		$this->assertEquals(new Size(300, 200), $plan->size());
-		$this->assertSame(300, $plan->width());
-		$this->assertSame(200, $plan->height());
-		$this->assertSame(1.5, $plan->ratio());
-		$this->assertTrue($plan->isLandscape());
-		$this->assertFalse($plan->isPortrait());
-		$this->assertFalse($plan->isSquare());
 	}
 
 	public function testToArray(): void

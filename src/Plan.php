@@ -12,8 +12,6 @@ use InvalidArgumentException;
  */
 final readonly class Plan
 {
-	use HasSize;
-
 	protected function __construct(
 		public Source $source,
 		public Options $options,

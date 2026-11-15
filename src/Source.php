@@ -14,8 +14,6 @@ use Darkroom\Tools\Exif;
  */
 final class Source
 {
-	use HasSize;
-
 	protected Rect|false|null $canvas = null;
 
 	/**
