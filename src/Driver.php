@@ -12,9 +12,12 @@ use Closure;
 abstract class Driver
 {
 	/**
-	 * Samples of the formats whose decoders libheif loads as plugins:
-	 * a white pixel from libvips 8.18 through libheif 1.23 and aom 3.15,
-	 * a white 64×64 image through x265 4.3
+	 * Rec. 601 luma weights, which GD's grayscale filter uses
+	 */
+	protected const array LUMA = [0.299, 0.587, 0.114];
+
+	/**
+	 * White images of the formats whose decoders libheif loads as plugins
 	 */
 	protected const array SAMPLES = [
 		'Avif' => <<<'BASE64'

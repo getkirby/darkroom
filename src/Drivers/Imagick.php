@@ -115,8 +115,8 @@ final class Imagick extends Driver
 	}
 
 	/**
-	 * Whether ImageMagick decodes the format: the sample where libheif
-	 * loads the decoder as a plugin, else whether it has a coder
+	 * The sample where libheif loads the decoder
+	 * as a plugin, else whether there is a coder
 	 */
 	protected function decodes(Format $format): bool
 	{
@@ -184,9 +184,8 @@ final class Imagick extends Driver
 			);
 		}
 
-		// PNG reads the quality's tens as zlib level;
-		// 9 takes two to five times as long as zlib's
-		// default for files a few percent smaller
+		// zlib's default, where PNG would read
+		// the quality's tens as the level
 		if ($plan->format === Format::Png) {
 			$image->setOption('png:compression-level', '6');
 		}
@@ -238,7 +237,7 @@ final class Imagick extends Driver
 			$frame->blurImage(0, $plan->options->blur);
 		}
 
-		// the kernel the other drivers use, which is faster too
+		// the kernel the other drivers use
 		if ($plan->options->sharpen !== null) {
 			$matrix = Sharpen::kernel($plan->options->sharpen);
 			$kernel = ImagickKernel::fromMatrix($matrix);
@@ -280,7 +279,7 @@ final class Imagick extends Driver
 
 	protected static function gray(Image $frame): void
 	{
-		$luma = [0.299, 0.587, 0.114, 0.0, 0.0];
+		$luma = [...self::LUMA, 0.0, 0.0];
 
 		$frame->colorMatrixImage([
 			...$luma,

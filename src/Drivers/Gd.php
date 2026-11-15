@@ -100,8 +100,7 @@ final class Gd extends Driver
 	}
 
 	/**
-	 * Whether GD decodes an animated WebP to its first frame,
-	 * as PHP 8.6's bundled libgd does
+	 * Whether GD decodes an animated WebP to its first frame
 	 */
 	protected static function decodesAnimation(): bool
 	{
@@ -307,8 +306,8 @@ final class Gd extends Driver
 		// throw on warnings readers silence
 		$profile = static::profile($plan);
 
-		// GD reports failures as warnings; libpng's own warnings,
-		// such as about a profile that doesn't fit, it recovers from
+		// GD reports failures as warnings,
+		// except libpng's, which it recovers from
 		set_error_handler(static function (int $level, string $message): bool {
 			if (str_contains($message, 'libpng warning: ') === true) {
 				return true;

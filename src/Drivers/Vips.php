@@ -198,8 +198,7 @@ final class Vips extends Driver
 			return $image;
 		}
 
-		$luma   = [0.299, 0.587, 0.114];
-		$rows   = $image->hasAlpha() === true ? [[...$luma, 0], [0, 0, 0, 1]] : [$luma];
+		$rows   = $image->hasAlpha() === true ? [[...self::LUMA, 0], [0, 0, 0, 1]] : [self::LUMA];
 		$matrix = Image::newFromArray($rows);
 		$gray   = $image->recomb($matrix);
 		$gray   = $gray->cast($image->format);
