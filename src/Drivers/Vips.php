@@ -55,32 +55,6 @@ final class Vips extends Driver
 	}
 
 	/**
-	 * In sRGB without a profile, which takes LCMS, else with an RGB
-	 * profile kept for its colors; and whether the profile stays
-	 *
-	 * @return array{Image, bool}
-	 */
-	protected function colors(Image $image, Plan $plan): array
-	{
-		$profile = static::profile($image);
-
-		if (
-			$plan->icc === true ||
-			static::isRgb($profile) === false
-		) {
-			return [$image, $plan->icc];
-		}
-
-		if ($this->converts() === false) {
-			return [$image, true];
-		}
-
-		$image = $image->icc_transform('srgb', ['embedded' => true]);
-
-		return [$image, false];
-	}
-
-	/**
 	 * For every thumb, as other instances share libvips' settings
 	 */
 	protected function configure(): void
@@ -94,23 +68,6 @@ final class Vips extends Driver
 		// libvips' error buffer keeps what earlier calls left,
 		// even successful ones, for the next exception's message
 		FFI::vips()->vips_error_clear();
-	}
-
-	/**
-	 * Whether libvips converts between profiles, which takes LCMS
-	 */
-	protected function converts(): bool
-	{
-		return $this->cache('lcms', static function (): bool {
-			// php-vips declares no binding,
-			// so it is found in the loaded libvips
-			$vips = \FFI::cdef('int vips_icc_present(void);');
-
-			/** @var int $present */
-			$present = $vips->vips_icc_present();
-
-			return $present === 1;
-		});
 	}
 
 	protected function decodes(Format $format): bool
@@ -422,26 +379,16 @@ final class Vips extends Driver
 		$this->configure();
 
 		try {
-			$image          = $this->load($plan);
-			[$image, $keep] = $this->colors($image, $plan);
-			$image          = static::frames($image, $plan);
+			$image = $this->load($plan);
+			$image = static::frames($image, $plan);
 
-			$this->save($image, $plan, $file, $keep);
+			$this->save($image, $plan, $file);
 		} catch (VipsException $exception) {
 			throw new ProcessException(
 				message: 'libvips failed on ' . $plan->source->file . ': ' . $exception->getMessage(),
 				previous: $exception
 			);
 		}
-	}
-
-	protected static function profile(Image $image): string
-	{
-		if ($image->typeOf('icc-profile-data') === 0) {
-			return '';
-		}
-
-		return (string)$image->get('icc-profile-data');
 	}
 
 	protected function reads(Source $source): bool
@@ -482,8 +429,7 @@ final class Vips extends Driver
 	protected function save(
 		Image $image,
 		Plan $plan,
-		string $file,
-		bool $keep
+		string $file
 	): void {
 		// the pixels are oriented; HEIF savers would
 		// write the source's orientation regardless
@@ -501,7 +447,7 @@ final class Vips extends Driver
 			'Q'               => $quality,
 			'background'      => [$image->format === 'ushort' ? 65535 : 255],
 			'interlace'       => $plan->interlace,
-			'keep'            => $keep === true ? ForeignKeep::ICC : ForeignKeep::NONE,
+			'keep'            => ForeignKeep::ICC,
 			'optimize_coding' => true,
 			'page_height'     => $plan->size()->height,
 			'subsample_mode'  => $whole === true ? 'off' : 'on',

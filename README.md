@@ -48,7 +48,7 @@ $darkroom->process($plan, $file);
 | `plan($source, $options)` | A [`Plan`](src/Plan.php): the thumb's `size()`, `format`, `quality` and `key()`; throws what `process()` would |
 | `tryPlan($source, $options)` | The same, or `null` for a source that is unreadable or above the limit |
 | `process($source, $file, $options)` | Writes the thumb in the format of the file's extension, creating directories; returns the `Plan`; takes a `Plan` instead of source and options |
-| `strip($source, $file, $meta)` | Copies the image without its meta, but with its color profile, orientation and the EXIF tags of `$meta`, else of the defaults; without decoding it |
+| `strip($source, $file, $strip)` | Copies the image without decoding it and removes its EXIF tags based on `$strip` (`true`, `false` or a list of [categories](#meta); default: `true`). It always keeps the color profile and orientation |
 | `format($source, $format, $allowed)` | The format a plan gets: `$format` if a driver writes it, else the source's if allowed, else the first allowed one a driver writes; `$allowed` defaults to [`Format::VIEWABLE`](src/Format.php): WebP, JPEG, PNG, GIF, AVIF |
 | `info()` | Each driver's library, version and the formats it reads and writes |
 
@@ -66,24 +66,29 @@ $darkroom->process($plan, $file);
 | `sharpen` | 1–100; `true` is 50 |
 | `grayscale` | `true`; also `greyscale` or `bw` |
 | `interlace` | `true` for progressive JPEG, interlaced PNG and GIF |
-| `meta` | What the thumb keeps of its source, see [Meta](#meta) |
+| `strip` | Which EXIF tags the thumb removes, see [Meta](#meta) |
 
 Thumbs are never enlarged, not even by a crop: it is exactly `width` × `height`, or the largest part of that ratio a smaller source has. A crop with one side is a square.
 
 ## Meta
 
-`meta` lists the categories a thumb or `strip()` keeps, by default `['color']`:
+`strip` decides which EXIF tags a thumb or `strip()` removes:
+
+- `true` removes all of them (default)
+- `false` removes none
+- a list removes the categories listed and keeps the rest
 
 | Category | |
 |---|---|
 | `camera` | Make, model, lens and exposure settings |
-| `color` | The color profile; without it, thumbs are converted to sRGB |
 | `description` | Caption and title |
 | `location` | GPS |
 | `rights` | Artist, copyright and photographer |
 | `time` | When taken, digitized and changed |
 
-Each keeps its EXIF tags; XMP and IPTC go. JPEG, PNG, WebP and JPEG XL thumbs carry them, GIF, AVIF and HEIC thumbs none. `strip()` always keeps the color profile, and the meta of HEIC's depth and gain maps.
+Only EXIF tags in these categories can be kept. XMP, IPTC, maker notes and EXIF tags outside the categories are always removed. A list keeps any category added in a later version.
+
+JPEG, PNG, WebP and JPEG XL thumbs can carry EXIF tags; GIF, AVIF and HEIC thumbs can't. In HEIC files, `strip()` keeps the meta of the depth and gain maps.
 
 ## Quality
 
@@ -129,7 +134,7 @@ $darkroom = new Darkroom(
 | `quality` | `defaults` | 85 | For thumbs without their own |
 | `format` | `defaults` | | For plans without their own; else as `format()` picks |
 | `interlace` | `defaults` | `false` | For thumbs without their own |
-| `meta` | `defaults` | `['color']` | For thumbs and strips without their own |
+| `strip` | `defaults` | `true` | For thumbs and strips without their own |
 | `limit` | `settings` | 200 million | The most pixels of a source, all frames together; `null` for none |
 | `threads` | `settings` | ImageMagick 1, libvips its own up to 4 | Threads per thumb; each costs memory |
 
@@ -147,14 +152,14 @@ $darkroom = new Darkroom(
 <details>
 <summary>GD</summary>
 
-Keeps only RGB color profiles, in JPEG, PNG and WebP, and keeps them even without `color`, as it can't convert to sRGB. Checks the image against `memory_limit` before decoding and throws a `LimitException` instead of trying the next driver, so list it after `imagick` and `vips`. Sources it would get wrong, such as GIFs whose first frame is off the screen, go to the next driver.
+Keeps only RGB color profiles, in JPEG, PNG and WebP. Checks the image against `memory_limit` before decoding and throws a `LimitException` instead of trying the next driver, so list it after `imagick` and `vips`. Sources it would get wrong, such as GIFs whose first frame is off the screen, go to the next driver.
 
 </details>
 
 <details>
 <summary>ImageMagick</summary>
 
-Converts to sRGB without `color` only when built with LCMS; without it, the profile stays. Reads and writes AVIF and HEIC through libheif's plugins, e.g. on Debian and Ubuntu `libheif-plugin-libde265`, `-x265`, `-dav1d` and `-aomenc`. ImageMagick 6.9.12-84 to 6.9.13-0 (Ubuntu 24.04) writes WebP at quality 75, whatever the setting.
+Reads and writes AVIF and HEIC through libheif's plugins, e.g. on Debian and Ubuntu `libheif-plugin-libde265`, `-x265`, `-dav1d` and `-aomenc`. ImageMagick 6.9.12-84 to 6.9.13-0 (Ubuntu 24.04) writes WebP at quality 75, whatever the setting.
 
 </details>
 

@@ -16,7 +16,7 @@ final readonly class Options extends Defaults
 	 * @param $blur Gaussian sigma in output pixels, 1–100
 	 * @param $sharpen Amount, 1–100
 	 * @param $quality SSIMULACRA2 score, 1–100
-	 * @param list<Meta>|null $meta What the thumb keeps of its source
+	 * @param bool|list<Meta>|null $strip The EXIF categories the thumb strips; `true` all, `false` none
 	 * @param $other Keys it doesn't know, such as a plugin's
 	 */
 	public function __construct(
@@ -29,14 +29,14 @@ final readonly class Options extends Defaults
 		int|null $quality = null,
 		Format|null $format = null,
 		bool|null $interlace = null,
-		array|null $meta = null,
+		bool|array|null $strip = null,
 		public array $other = [],
 	) {
 		parent::__construct(
 			quality:   $quality,
 			format:    $format,
 			interlace: $interlace,
-			meta:      $meta
+			strip:     $strip
 		);
 	}
 
@@ -91,7 +91,7 @@ final readonly class Options extends Defaults
 			quality:   $defaults->quality,
 			format:    $defaults->format,
 			interlace: $defaults->interlace,
-			meta:      $defaults->meta,
+			strip:     $defaults->strip,
 			other:     $other
 		);
 	}

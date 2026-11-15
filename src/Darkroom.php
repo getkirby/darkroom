@@ -196,7 +196,8 @@ final class Darkroom
 		string $file,
 		string|null $icc
 	): void {
-		$exif = $plan->source->keep($plan->meta);
+		$kept = Meta::kept($plan->strip);
+		$exif = $plan->source->keep($kept);
 
 		if ($exif === '' && $icc === null) {
 			return;
@@ -339,26 +340,27 @@ final class Darkroom
 	}
 
 	/**
-	 * Copies the image atomically without its meta, but with
-	 * its color profile and orientation, and with the EXIF data
-	 * of `$meta`, else of the defaults; without decoding it
+	 * Copies the image atomically without decoding it and removes its
+	 * EXIF tags based on `$strip`, else the defaults; it always keeps
+	 * the color profile and orientation
 	 *
-	 * @param list<Meta|string>|null $meta
+	 * @param bool|list<Meta|string>|null $strip
 	 *
 	 * @throws UnsupportedException For an unreadable source
-	 * @throws InvalidArgumentException For invalid meta
+	 * @throws InvalidArgumentException For an invalid strip
 	 */
 	public function strip(
 		Source|string $src,
 		string $dst,
-		array|null $meta = null
+		bool|array|null $strip = null
 	): void {
 		$source      = $src instanceof Source ? $src : $this->open($src);
 		$format      = $source->format();
 		$writer      = Writer::for($format);
-		$defaults    = $meta === null ? $this->defaults : Defaults::from(['meta' => $meta]);
+		$options     = Defaults::from(['strip' => $strip]);
+		$kept        = Meta::kept($options->strip ?? $this->defaults->strip ?? Defaults::STRIP);
 		$orientation = $writer::ORIENTS === true ? $source->orientation() : Orientation::None;
-		$exif        = $source->keep($defaults->meta ?? Defaults::META, $orientation);
+		$exif        = $source->keep($kept, $orientation);
 		$blocks      = new Blocks(exif: $exif);
 
 		$this->write($dst, function (string $temp) use ($source, $writer, $blocks): void {

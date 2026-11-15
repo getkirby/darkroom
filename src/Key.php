@@ -63,10 +63,16 @@ final readonly class Key implements Stringable
 			$parts[] = 'interlace';
 		}
 
-		// what it keeps of the source, unless the default
-		if ($plan->meta !== Defaults::META) {
-			$meta    = array_column($plan->meta, 'value');
-			$parts[] = $meta === [] ? 'nometa' : 'meta-' . implode('-', $meta);
+		// the EXIF categories it keeps: none, all as `exif`, else by code
+		$kept  = Meta::kept($plan->strip);
+		$codes = array_map(fn (Meta $category) => $category->code(), $kept);
+
+		if ($kept === Meta::cases()) {
+			$codes = [];
+		}
+
+		if ($kept !== []) {
+			$parts[] = implode('-', ['exif', ...$codes]);
 		}
 
 		return new static(implode('-', $parts));
@@ -95,9 +101,10 @@ final readonly class Key implements Stringable
 	 */
 	protected static function pattern(): string
 	{
-		$names = implode('|', array_column(Meta::cases(), 'value'));
+		$codes = array_map(fn (Meta $category) => $category->code(), Meta::cases());
+		$codes = implode('|', $codes);
 
-		return '/^(\d+)x(\d+)(?:-crop(\d+)-(\d+)-(\d+)-(\d+))?(?:-blur(\d+))?(?:-sharpen(\d+))?(-grayscale)?-q(\d+)(-interlace)?(-nometa|-meta(?:-(?:' . $names . '))+)?$/';
+		return '/^(\d+)x(\d+)(?:-crop(\d+)-(\d+)-(\d+)-(\d+))?(?:-blur(\d+))?(?:-sharpen(\d+))?(-grayscale)?-q(\d+)(-interlace)?(-exif(?:-(?:' . $codes . '))*)?$/';
 	}
 
 	/**
@@ -120,11 +127,15 @@ final readonly class Key implements Stringable
 			);
 		}
 
-		// none for the default, else after `-meta-`
-		$meta = match ($match[12]) {
-			null      => array_column(Defaults::META, 'value'),
-			'-nometa' => [],
-			default   => explode('-', substr($match[12], 6))
+		// strips what a list doesn't name, so that it keeps no category added since
+		$codes = explode('-', substr((string)$match[12], 6));
+		$strip = match ($match[12]) {
+			null    => true,
+			'-exif' => false,
+			default => array_values(array_filter(
+				Meta::cases(),
+				fn (Meta $category) => in_array($category->code(), $codes, true) === false
+			))
 		};
 
 		return Options::from([
@@ -136,7 +147,7 @@ final readonly class Key implements Stringable
 			'grayscale' => $match[9] !== null,
 			'quality'   => $match[10],
 			'interlace' => $match[11] !== null,
-			'meta'      => $meta,
+			'strip'     => $strip,
 		]);
 	}
 

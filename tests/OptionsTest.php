@@ -30,7 +30,7 @@ class OptionsTest extends TestCase
 		$this->assertNull($options->quality);
 		$this->assertNull($options->format);
 		$this->assertNull($options->interlace);
-		$this->assertNull($options->meta);
+		$this->assertNull($options->strip);
 	}
 
 	public static function focusProvider(): array
@@ -362,7 +362,7 @@ class OptionsTest extends TestCase
 			quality:   80,
 			format:    Format::Jpeg,
 			interlace: false,
-			meta:      [Meta::Camera],
+			strip:     [Meta::Camera],
 			other:     ['watermark' => 'logo.png']
 		);
 
@@ -373,7 +373,7 @@ class OptionsTest extends TestCase
 			'quality'   => 80,
 			'format'    => 'jpg',
 			'interlace' => false,
-			'meta'      => ['camera'],
+			'strip'     => ['camera'],
 			'width'     => 300,
 			'height'    => 200,
 			'crop'      => 'top left',

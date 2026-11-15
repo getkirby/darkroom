@@ -72,16 +72,6 @@ final class Imagick extends Driver
 		}
 	}
 
-	/**
-	 * Whether ImageMagick converts between profiles, which takes LCMS
-	 */
-	protected static function converts(): bool
-	{
-		$options = Image::getConfigureOptions('DELEGATES');
-
-		return str_contains((string)($options['DELEGATES'] ?? ''), 'lcms');
-	}
-
 	protected static function decode(Plan $plan): Image
 	{
 		$size  = $plan->jpegSize();
@@ -274,7 +264,7 @@ final class Imagick extends Driver
 
 		static::orient($frame, $plan->orientation);
 		static::filter($frame, $plan);
-		$this->strip($frame, $plan);
+		static::strip($frame);
 	}
 
 	protected static function gray(Image $frame): void
@@ -458,25 +448,12 @@ final class Imagick extends Driver
 	}
 
 	/**
-	 * Without meta, and without the profile unless `icc`
+	 * Without meta but the color profile
 	 */
-	protected function strip(Image $frame, Plan $plan): void
+	protected static function strip(Image $frame): void
 	{
-		$profile = static::profile($frame);
-		$keep    = $plan->icc;
-
-		// in sRGB without a profile, which takes LCMS;
-		// else an RGB profile stays for its colors
-		if ($plan->icc === false && static::isRgb($profile) === true) {
-			$keep = $this->cache('lcms', static::converts(...)) === false;
-
-			if ($keep === false) {
-				$frame->profileImage('icc', static::srgb());
-			}
-		}
-
 		foreach ($frame->getImageProfiles('*', false) as $name) {
-			if ($keep === false || $name !== 'icc') {
+			if ($name !== 'icc') {
 				$frame->removeImageProfile((string)$name);
 			}
 		}

@@ -77,11 +77,11 @@ class DarkroomTest extends TestCase
 	public static function constructInvalidDefaultsProvider(): array
 	{
 		return [
-			'quality'   => [['quality' => 'high'], 'Invalid quality: \'high\''],
-			'negative'  => [['quality' => -1], 'Invalid quality: -1'],
-			'interlace' => [['interlace' => 'flase'], 'Invalid interlace: \'flase\''],
-			'meta'      => [['meta' => 'color'], 'Invalid meta: \'color\''],
-			'meta name' => [['meta' => ['icc']], 'Invalid meta: \'icc\''],
+			'quality'    => [['quality' => 'high'], 'Invalid quality: \'high\''],
+			'negative'   => [['quality' => -1], 'Invalid quality: -1'],
+			'interlace'  => [['interlace' => 'flase'], 'Invalid interlace: \'flase\''],
+			'strip'      => [['strip' => 'all'], 'Invalid strip: \'all\''],
+			'strip name' => [['strip' => ['color']], 'Invalid strip: \'color\''],
 		];
 	}
 
@@ -137,7 +137,7 @@ class DarkroomTest extends TestCase
 		$defaults = [
 			'quality'   => '80',
 			'interlace' => 'on',
-			'meta'      => ['camera'],
+			'strip'     => ['camera'],
 		];
 
 		$settings = [
@@ -408,15 +408,14 @@ class DarkroomTest extends TestCase
 	public function testPlanDefaults(): void
 	{
 		$driver   = new FakeDriver();
-		$defaults = ['quality' => '80', 'interlace' => 'on', 'meta' => ['time']];
+		$defaults = ['quality' => '80', 'interlace' => 'on', 'strip' => ['time']];
 		$darkroom = new Darkroom([$driver], $defaults);
 
 		$plan = $darkroom->plan(self::JPEG, []);
 
 		$this->assertSame(80, $plan->quality);
 		$this->assertTrue($plan->interlace);
-		$this->assertSame([Meta::Time], $plan->meta);
-		$this->assertFalse($plan->icc);
+		$this->assertSame([Meta::Time], $plan->strip);
 	}
 
 	public function testPlanEmpty(): void
@@ -678,14 +677,14 @@ class DarkroomTest extends TestCase
 		$darkroom = new Darkroom([$driver]);
 		$dst      = $this->file('thumb.jpg');
 
-		$plan = $darkroom->process(self::EXIF, $dst, ['width' => 20, 'meta' => ['camera', 'color']]);
+		$plan = $darkroom->process(self::EXIF, $dst, ['width' => 20, 'strip' => ['location']]);
 
 		$source = $darkroom->open($dst);
 		$tags   = $source->exif();
 		$key    = $plan->key();
 
 		// without the orientation, which the driver applies
-		$this->assertStringEndsWith('-meta-camera-color', $key->toString());
+		$this->assertStringEndsWith('-exif-cam-desc-rights-time', $key->toString());
 		$this->assertArrayHasKey('Make', $tags['IFD0']);
 		$this->assertArrayNotHasKey('Orientation', $tags['IFD0']);
 		$this->assertArrayNotHasKey('GPS', $tags);
@@ -875,6 +874,31 @@ class DarkroomTest extends TestCase
 	}
 
 	#[RequiresFunction('exif_read_data')]
+	public function testStripCategories(): void
+	{
+		$darkroom = new Darkroom([], ['strip' => ['camera']]);
+		$all      = $this->file('all.jpg');
+		$place    = $this->file('place.jpg');
+		$none     = $this->file('none.jpg');
+
+		$darkroom->strip(self::EXIF, $all, false);
+		$darkroom->strip(self::EXIF, $place);
+		$darkroom->strip(self::EXIF, $none, true);
+
+		$all   = $darkroom->open($all);
+		$place = $darkroom->open($place);
+		$none  = $darkroom->open($none);
+
+		$this->assertArrayHasKey('Make', $all->exif()['IFD0']);
+		$this->assertArrayHasKey('GPS', $all->exif());
+		$this->assertArrayHasKey('GPS', $place->exif());
+		$this->assertArrayNotHasKey('Make', $place->exif()['IFD0']);
+		$this->assertArrayNotHasKey('Make', $none->exif()['IFD0']);
+		$this->assertArrayNotHasKey('GPS', $none->exif());
+		$this->assertSame(Orientation::Rotate270, $none->orientation());
+	}
+
+	#[RequiresFunction('exif_read_data')]
 	public function testStripExif(): void
 	{
 		$darkroom = new Darkroom([]);
@@ -929,35 +953,15 @@ class DarkroomTest extends TestCase
 		$this->assertLessThan(strlen($data), filesize($file));
 	}
 
-	#[RequiresFunction('exif_read_data')]
-	public function testStripMeta(): void
-	{
-		$darkroom = new Darkroom([], ['meta' => ['location']]);
-		$camera   = $this->file('camera.jpg');
-		$place    = $this->file('place.jpg');
-
-		$darkroom->strip(self::EXIF, $camera, ['camera']);
-		$darkroom->strip(self::EXIF, $place);
-
-		$camera = $darkroom->open($camera);
-		$place  = $darkroom->open($place);
-
-		$this->assertArrayHasKey('Make', $camera->exif()['IFD0']);
-		$this->assertArrayNotHasKey('GPS', $camera->exif());
-		$this->assertArrayHasKey('GPS', $place->exif());
-		$this->assertArrayNotHasKey('Make', $place->exif()['IFD0']);
-		$this->assertSame(Orientation::Rotate270, $place->orientation());
-	}
-
-	public function testStripMetaInvalid(): void
+	public function testStripInvalid(): void
 	{
 		$darkroom = new Darkroom([]);
 		$dst      = $this->file('photo.jpg');
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('Invalid meta: \'colour\'');
+		$this->expectExceptionMessage('Invalid strip: \'color\'');
 
-		$darkroom->strip(self::EXIF, $dst, ['colour']);
+		$darkroom->strip(self::EXIF, $dst, ['color']);
 	}
 
 	public function testStripSource(): void

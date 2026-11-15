@@ -238,31 +238,29 @@ class PlanTest extends TestCase
 	{
 		$source   = $this->source(1200, 768);
 		$plain    = new Options();
-		$own      = new Options(quality: 30, format: Format::Png, interlace: false, meta: [Meta::Color]);
-		$defaults = new Defaults(quality: 20, format: Format::Webp, interlace: true, meta: [Meta::Time]);
+		$own      = new Options(quality: 30, format: Format::Png, interlace: false, strip: false);
+		$defaults = new Defaults(quality: 20, format: Format::Webp, interlace: true, strip: [Meta::Time]);
 
 		$plan = Plan::for($source, $plain);
 
 		$this->assertSame(Format::Jpeg, $plan->format);
 		$this->assertSame(85, $plan->quality);
 		$this->assertFalse($plan->interlace);
-		$this->assertSame([Meta::Color], $plan->meta);
-		$this->assertTrue($plan->icc);
+		$this->assertTrue($plan->strip);
 
 		$plan = Plan::for($source, $plain, $defaults);
 
 		$this->assertSame(Format::Webp, $plan->format);
 		$this->assertSame(20, $plan->quality);
 		$this->assertTrue($plan->interlace);
-		$this->assertSame([Meta::Time], $plan->meta);
-		$this->assertFalse($plan->icc);
+		$this->assertSame([Meta::Time], $plan->strip);
 
 		$plan = Plan::for($source, $own, $defaults);
 
 		$this->assertSame(Format::Png, $plan->format);
 		$this->assertSame(30, $plan->quality);
 		$this->assertFalse($plan->interlace);
-		$this->assertTrue($plan->icc);
+		$this->assertFalse($plan->strip);
 	}
 
 	public function testForEmpty(): void
@@ -761,7 +759,7 @@ class PlanTest extends TestCase
 	{
 		$source   = $this->source(1200, 800);
 		$options  = new Options(width: 300, crop: 'top left');
-		$defaults = new Defaults(quality: 80, meta: [Meta::Rights]);
+		$defaults = new Defaults(quality: 80, strip: [Meta::Rights]);
 		$plan     = Plan::for($source, $options, $defaults);
 
 		$array  = $plan->toArray();
@@ -772,7 +770,7 @@ class PlanTest extends TestCase
 			'quality'   => 80,
 			'format'    => 'jpg',
 			'interlace' => false,
-			'meta'      => ['rights'],
+			'strip'     => ['rights'],
 			'width'     => 300,
 			'crop'      => 'top left',
 		], $array);

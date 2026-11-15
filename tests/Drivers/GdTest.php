@@ -21,11 +21,6 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 #[CoversClass(Gd::class)]
 class GdTest extends DriverTestCase
 {
-	protected function converts(): bool
-	{
-		return false;
-	}
-
 	protected function driver(): Driver
 	{
 		return new Gd();

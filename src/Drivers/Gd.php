@@ -206,13 +206,14 @@ final class Gd extends Driver
 	}
 
 	/**
-	 * Even without `icc`, as GD can't convert the colors to sRGB
+	 * The source's profile if it describes RGB colors,
+	 * by the color space in its header
 	 */
 	public function icc(Plan $plan): string|null
 	{
 		$profile = $plan->source->icc();
 
-		return static::isRgb($profile) === true ? $profile : null;
+		return substr($profile, 16, 4) === 'RGB ' ? $profile : null;
 	}
 
 	public function info(): array

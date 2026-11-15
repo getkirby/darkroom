@@ -19,7 +19,7 @@ class DefaultsTest extends TestCase
 		$this->assertNull($defaults->quality);
 		$this->assertNull($defaults->format);
 		$this->assertNull($defaults->interlace);
-		$this->assertNull($defaults->meta);
+		$this->assertNull($defaults->strip);
 	}
 
 	public static function fromProvider(): array
@@ -29,35 +29,49 @@ class DefaultsTest extends TestCase
 			'clamped'    => [['quality' => 150], 100, null, null, null],
 			'other keys' => [['threads' => 4, 'width' => 100], null, null, null, null],
 			'set' => [
-				['quality' => 20, 'format' => 'webp', 'interlace' => true, 'meta' => ['time', Meta::Camera]],
+				['quality' => 20, 'format' => 'webp', 'interlace' => true, 'strip' => ['time', Meta::Camera]],
 				20,
 				Format::Webp,
 				true,
 				[Meta::Camera, Meta::Time]
 			],
 			'strings' => [
-				['quality' => '80', 'format' => 'JPEG', 'interlace' => 'yes', 'meta' => ['color', 'color']],
+				['quality' => '80', 'format' => 'JPEG', 'interlace' => 'yes', 'strip' => ['rights', 'rights']],
 				80,
 				Format::Jpeg,
 				true,
-				[Meta::Color]
+				[Meta::Rights]
 			],
-			'false' => [
-				['quality' => false, 'format' => false, 'interlace' => false, 'meta' => []],
+			'flags' => [
+				['interlace' => 'off', 'strip' => 'on'],
 				null,
 				null,
 				false,
+				true
+			],
+			'false' => [
+				['quality' => false, 'format' => false, 'interlace' => false, 'strip' => false],
+				null,
+				null,
+				false,
+				false
+			],
+			'empty list' => [
+				['strip' => []],
+				null,
+				null,
+				null,
 				[]
 			],
 			'not set' => [
-				['quality' => 0, 'format' => null, 'interlace' => null, 'meta' => null],
+				['quality' => 0, 'format' => null, 'interlace' => null, 'strip' => null],
 				null,
 				null,
 				null,
 				null
 			],
 			'empty strings' => [
-				['quality' => '', 'format' => '', 'interlace' => '', 'meta' => ''],
+				['quality' => '', 'format' => '', 'interlace' => '', 'strip' => ''],
 				null,
 				null,
 				null,
@@ -72,14 +86,14 @@ class DefaultsTest extends TestCase
 		int|null $quality,
 		Format|null $format,
 		bool|null $interlace,
-		array|null $meta
+		bool|array|null $strip
 	): void {
 		$defaults = Defaults::from($values);
 
 		$this->assertSame($quality, $defaults->quality);
 		$this->assertSame($format, $defaults->format);
 		$this->assertSame($interlace, $defaults->interlace);
-		$this->assertSame($meta, $defaults->meta);
+		$this->assertSame($strip, $defaults->strip);
 	}
 
 	public function testFromDefaults(): void
@@ -92,13 +106,14 @@ class DefaultsTest extends TestCase
 	public static function fromInvalidProvider(): array
 	{
 		return [
-			'quality'   => [['quality' => 'high'], 'Invalid quality: \'high\''],
-			'negative'  => [['quality' => -1], 'Invalid quality: -1'],
-			'format'    => [['format' => 'svg'], 'Unknown image format: svg'],
-			'interlace' => [['interlace' => 'flase'], 'Invalid interlace: \'flase\''],
-			'meta'      => [['meta' => 2], 'Invalid meta: 2'],
-			'meta name' => [['meta' => ['colour']], 'Invalid meta: \'colour\''],
-			'meta type' => [['meta' => [true]], 'Invalid meta: true'],
+			'quality'     => [['quality' => 'high'], 'Invalid quality: \'high\''],
+			'negative'    => [['quality' => -1], 'Invalid quality: -1'],
+			'format'      => [['format' => 'svg'], 'Unknown image format: svg'],
+			'interlace'   => [['interlace' => 'flase'], 'Invalid interlace: \'flase\''],
+			'strip'       => [['strip' => 2], 'Invalid strip: 2'],
+			'strip name'  => [['strip' => ['color']], 'Invalid strip: \'color\''],
+			'strip type'  => [['strip' => [true]], 'Invalid strip: true'],
+			'strip alone' => [['strip' => 'location'], 'Invalid strip: \'location\''],
 		];
 	}
 
@@ -117,7 +132,7 @@ class DefaultsTest extends TestCase
 			quality:   80,
 			format:    Format::Webp,
 			interlace: false,
-			meta:      [Meta::Camera]
+			strip:     [Meta::Camera]
 		);
 
 		$array = $defaults->toArray();
@@ -127,7 +142,7 @@ class DefaultsTest extends TestCase
 			'quality'   => 80,
 			'format'    => 'webp',
 			'interlace' => false,
-			'meta'      => ['camera'],
+			'strip'     => ['camera'],
 		], $array);
 
 		$this->assertEquals($defaults, $back);

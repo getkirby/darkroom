@@ -44,6 +44,9 @@ class ImagickTest extends DriverTestCase
 		return $header . $tags . $lut;
 	}
 
+	/**
+	 * Whether ImageMagick converts between profiles, which takes LCMS
+	 */
 	protected function converts(): bool
 	{
 		$options = Image::getConfigureOptions('DELEGATES');

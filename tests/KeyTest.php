@@ -31,16 +31,20 @@ class KeyTest extends TestCase
 				'300x200-blur5-sharpen25-grayscale-q85'
 			],
 			'encoding' => [
-				['width' => 300, 'quality' => 80, 'interlace' => true, 'meta' => []],
-				'300x200-q80-interlace-nometa'
+				['width' => 300, 'quality' => 80, 'interlace' => true, 'strip' => true],
+				'300x200-q80-interlace'
 			],
-			'meta' => [
-				['width' => 300, 'meta' => ['time', 'color', 'camera']],
-				'300x200-q85-meta-camera-color-time'
+			'strip none' => [
+				['width' => 300, 'strip' => false],
+				'300x200-q85-exif'
 			],
-			'meta without color' => [
-				['width' => 300, 'meta' => ['location']],
-				'300x200-q85-meta-location'
+			'strip some' => [
+				['width' => 300, 'strip' => ['rights', 'location', 'description']],
+				'300x200-q85-exif-cam-time'
+			],
+			'strip every' => [
+				['width' => 300, 'strip' => ['camera', 'description', 'location', 'rights', 'time']],
+				'300x200-q85'
 			],
 		];
 	}
@@ -67,8 +71,10 @@ class KeyTest extends TestCase
 			'half a crop'    => ['300x200-crop1-2-q90'],
 			'unknown part'   => ['300x200-sepia-q90'],
 			'trailing space' => ['300x200-q90 '],
-			'unknown meta'   => ['300x200-q90-meta-colour'],
-			'meta, no list'  => ['300x200-q90-meta'],
+			'unknown code'   => ['300x200-q90-exif-color'],
+			'joined codes'   => ['300x200-q90-exif-camtime'],
+			'trailing dash'  => ['300x200-q90-exif-'],
+			'full name'      => ['300x200-q90-exif-camera'],
 		];
 	}
 
@@ -94,8 +100,8 @@ class KeyTest extends TestCase
 			['width' => 301, 'height' => 199, 'crop' => '70% 30%'],
 			['width' => 120, 'crop' => 'bottom right'],
 			['width' => 400, 'blur' => 5, 'grayscale' => true, 'sharpen' => 25],
-			['width' => 400, 'quality' => 70, 'interlace' => true, 'meta' => []],
-			['width' => 400, 'meta' => ['rights', 'color', 'description']],
+			['width' => 400, 'quality' => 70, 'interlace' => true, 'strip' => false],
+			['width' => 400, 'strip' => ['rights', 'description']],
 		];
 
 		foreach ($sources as $size) {
@@ -119,7 +125,7 @@ class KeyTest extends TestCase
 
 	public static function toOptionsProvider(): array
 	{
-		$encoding = ['quality' => 90, 'interlace' => false, 'meta' => [Meta::Color]];
+		$encoding = ['quality' => 90, 'interlace' => false, 'strip' => true];
 
 		return [
 			'size' => [
@@ -135,16 +141,16 @@ class KeyTest extends TestCase
 				['width' => 300, 'height' => 200, 'blur' => 5, 'sharpen' => 25, 'grayscale' => true, ...$encoding]
 			],
 			'encoding' => [
-				'300x200-q80-interlace-nometa',
-				['width' => 300, 'height' => 200, 'quality' => 80, 'interlace' => true, 'meta' => []]
+				'300x200-q80-interlace',
+				['width' => 300, 'height' => 200, 'quality' => 80, 'interlace' => true, 'strip' => true]
 			],
-			'meta' => [
-				'300x200-q90-meta-camera-color-location',
-				['width' => 300, 'height' => 200, 'quality' => 90, 'interlace' => false, 'meta' => [Meta::Camera, Meta::Color, Meta::Location]]
+			'keep all' => [
+				'300x200-q90-exif',
+				['width' => 300, 'height' => 200, 'quality' => 90, 'interlace' => false, 'strip' => false]
 			],
-			'meta without color' => [
-				'300x200-q90-meta-time',
-				['width' => 300, 'height' => 200, 'quality' => 90, 'interlace' => false, 'meta' => [Meta::Time]]
+			'keep some' => [
+				'300x200-q90-exif-cam-loc',
+				['width' => 300, 'height' => 200, 'quality' => 90, 'interlace' => false, 'strip' => [Meta::Description, Meta::Rights, Meta::Time]]
 			],
 		];
 	}

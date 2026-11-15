@@ -75,14 +75,6 @@ abstract class DriverTestCase extends TestCase
 		return $file;
 	}
 
-	/**
-	 * Whether the driver converts colors between profiles
-	 */
-	protected function converts(): bool
-	{
-		return true;
-	}
-
 	protected function detail(string $file): float
 	{
 		$image  = $this->image($file);
@@ -979,47 +971,41 @@ abstract class DriverTestCase extends TestCase
 	public static function processProfileProvider(): array
 	{
 		return [
-			'jpeg'          => ['jpg', true],
-			'jpeg stripped' => ['jpg', false],
-			'png'           => ['png', true],
-			'png stripped'  => ['png', false],
-			'webp'          => ['webp', true],
-			'webp stripped' => ['webp', false],
+			'jpeg'           => ['jpg', true],
+			'jpeg, no strip' => ['jpg', false],
+			'png'            => ['png', true],
+			'png, no strip'  => ['png', false],
+			'webp'           => ['webp', true],
+			'webp, no strip' => ['webp', false],
 		];
 	}
 
 	#[DataProvider('processProfileProvider')]
-	public function testProcessProfile(string $extension, bool $icc): void
+	public function testProcessProfile(string $extension, bool $strip): void
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process('icc.jpg', $file, static::OPTIONS, ['meta' => $icc === true ? ['color'] : []]);
+		$this->process('icc.jpg', $file, static::OPTIONS, ['strip' => $strip]);
 
-		// a profile other than sRGB stays where its colors can't be converted
-		$expected =
-			static::ICC === true &&
-			($icc === true || $this->converts() === false);
-
-		$this->assertSame($expected, static::profile($file));
+		$this->assertSame(static::ICC, static::profile($file));
 	}
 
 	/**
 	 * `magick -size 16x16 'xc:rgb(180,120,60)' -profile p3.icc PNG24:p3.png`
 	 */
-	public function testProcessProfileConversion(): void
+	public function testProcessProfileColors(): void
 	{
 		$file = $this->file('thumb.png');
 
-		$this->process('p3.png', $file, static::OPTIONS, ['meta' => []]);
+		$this->process('p3.png', $file, static::OPTIONS);
 
-		$image    = $this->image($file);
-		$color    = static::rgb(imagecolorat($image, 8, 8));
-		$expected = $this->converts() === true ? [190, 117, 45] : [180, 120, 60];
+		$image = $this->image($file);
+		$color = static::rgb(imagecolorat($image, 8, 8));
 
-		// Display P3's color in sRGB, else kept with its profile
-		$this->assertSame($this->converts() === false, static::profile($file));
+		// Display P3's color, kept with its profile
+		$this->assertSame(static::ICC, static::profile($file));
 
-		foreach ($expected as $channel => $value) {
+		foreach ([180, 120, 60] as $channel => $value) {
 			$this->assertEqualsWithDelta($value, $color[$channel], 2);
 		}
 	}
