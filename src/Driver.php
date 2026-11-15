@@ -125,6 +125,15 @@ abstract class Driver
 	abstract public function isAvailable(): bool;
 
 	/**
+	 * Whether a profile describes RGB colors,
+	 * by the color space in its header
+	 */
+	protected static function isRgb(string $profile): bool
+	{
+		return substr($profile, 16, 4) === 'RGB ';
+	}
+
+	/**
 	 * Whether the library applies the source's orientation while loading
 	 */
 	public function orients(Source $source): bool

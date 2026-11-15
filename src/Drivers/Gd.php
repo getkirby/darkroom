@@ -344,7 +344,7 @@ final class Gd extends Driver
 		$profile = $plan->source->icc();
 
 		// the color space in the header
-		return substr($profile, 16, 4) === 'RGB ' ? $profile : '';
+		return static::isRgb($profile) === true ? $profile : '';
 	}
 
 	protected function quality(Plan $plan): int

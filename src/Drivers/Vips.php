@@ -55,6 +55,48 @@ final class Vips extends Driver
 	}
 
 	/**
+	 * In sRGB without a profile, which takes LCMS, else with an RGB
+	 * profile kept for its colors; and whether the profile stays
+	 *
+	 * @return array{Image, bool}
+	 */
+	protected function colors(Image $image, Plan $plan): array
+	{
+		$profile = static::profile($image);
+
+		if (
+			$plan->icc === true ||
+			static::isRgb($profile) === false
+		) {
+			return [$image, $plan->icc];
+		}
+
+		if ($this->converts() === false) {
+			return [$image, true];
+		}
+
+		$image = $image->icc_transform('srgb', ['embedded' => true]);
+
+		return [$image, false];
+	}
+
+	/**
+	 * For every thumb, as other instances share libvips' settings
+	 */
+	protected function configure(): void
+	{
+		// a cache would serve a replaced source from memory
+		Config::cacheSetMax(0);
+
+		$threads = $this->threads();
+		Config::concurrencySet($threads);
+
+		// libvips' error buffer keeps what earlier calls left,
+		// even successful ones, for the next exception's message
+		FFI::vips()->vips_error_clear();
+	}
+
+	/**
 	 * Whether libvips converts between profiles, which takes LCMS
 	 */
 	protected function converts(): bool
@@ -126,23 +168,28 @@ final class Vips extends Driver
 	}
 
 	/**
-	 * @throws LimitException If the frames exceed the limit
+	 * Crops, orients and filters each frame of the stack
 	 */
-	protected function frames(Plan $plan, Image $header): int
+	protected static function frames(Image $image, Plan $plan): Image
 	{
-		/** @var int|null $limit */
-		$limit  = $this->settings['limit'];
-		$timed  = $plan->frames === true ? static::timed($header) : 0;
-		$frames = max(1, $timed);
-		$pixels = $header->width * $header->height;
+		$scale  = $plan->scale();
+		$region = $plan->region($scale);
+		$frames = [];
 
-		if ($limit !== null && $frames * $pixels > $limit) {
-			throw new LimitException(
-				message: 'Frames above the limit of ' . $limit . ' pixels: ' . $plan->source->file
-			);
+		// frames are stacked, each as high as the scale
+		for (
+			$top = 0;
+			$top < $image->height;
+			$top += $scale->height
+		) {
+			$frame = $image->crop($region->x, $top + $region->y, $region->width, $region->height);
+			$frame = static::orient($frame, $plan->orientation);
+			$frame = static::filter($frame, $plan);
+
+			$frames[] = $frame;
 		}
 
-		return $frames;
+		return Image::arrayjoin($frames, ['across' => 1]);
 	}
 
 	protected static function gray(Image $image): Image
@@ -228,7 +275,7 @@ final class Vips extends Driver
 		$file   = $plan->source->file;
 		$scale  = $plan->scale();
 		$header = Image::newFromFile($file);
-		$frames = $this->frames($plan, $header);
+		$pages  = $this->pages($plan, $header);
 
 		// forced, as the plan has already fitted the size
 		$options = [
@@ -248,7 +295,7 @@ final class Vips extends Driver
 		}
 
 		// only then, as loaders without frames take no `n`
-		if ($frames > 1) {
+		if ($pages > 1) {
 			$file .= '[n=-1]';
 		}
 
@@ -318,6 +365,28 @@ final class Vips extends Driver
 		};
 	}
 
+	/**
+	 * The frames to load
+	 *
+	 * @throws LimitException If they exceed the limit
+	 */
+	protected function pages(Plan $plan, Image $header): int
+	{
+		/** @var int|null $limit */
+		$limit  = $this->settings['limit'];
+		$timed  = $plan->frames === true ? static::timed($header) : 0;
+		$pages  = max(1, $timed);
+		$pixels = $header->width * $header->height;
+
+		if ($limit !== null && $pages * $pixels > $limit) {
+			throw new LimitException(
+				message: 'Frames above the limit of ' . $limit . ' pixels: ' . $plan->source->file
+			);
+		}
+
+		return $pages;
+	}
+
 	protected static function pixel(): Image
 	{
 		$black = Image::black(1, 1, ['bands' => 3]);
@@ -351,77 +420,14 @@ final class Vips extends Driver
 	 */
 	public function process(Plan $plan, string $file): void
 	{
-		// a cache would serve a replaced source from memory
-		Config::cacheSetMax(0);
-
-		// for every thumb, as another instance may have set its own
-		$threads = $this->threads();
-		Config::concurrencySet($threads);
-
-		// libvips' error buffer keeps what earlier calls left,
-		// even successful ones, for the next exception's message
-		FFI::vips()->vips_error_clear();
+		$this->configure();
 
 		try {
-			$image   = $this->load($plan);
-			$profile = static::profile($image);
-			$keep    = $plan->icc;
-			$scale   = $plan->scale();
-			$region  = $plan->region($scale);
-			$frames  = [];
+			$image          = $this->load($plan);
+			[$image, $keep] = $this->colors($image, $plan);
+			$image          = static::frames($image, $plan);
 
-			// in sRGB without a profile, which takes LCMS;
-			// else an RGB profile stays for its colors
-			if (
-				$plan->icc === false &&
-				substr($profile, 16, 4) === 'RGB '
-			) {
-				$keep = $this->converts() === false;
-
-				if ($keep === false) {
-					$image = $image->icc_transform(
-						'srgb',
-						['embedded' => true]
-					);
-				}
-			}
-
-			// frames are stacked, each as high as the scale
-			for (
-				$top = 0;
-				$top < $image->height;
-				$top += $scale->height
-			) {
-				$frame = $image->crop($region->x, $top + $region->y, $region->width, $region->height);
-				$frame = static::orient($frame, $plan->orientation);
-				$frame = static::filter($frame, $plan);
-
-				$frames[] = $frame;
-			}
-
-			$image = Image::arrayjoin($frames, ['across' => 1]);
-
-			// the pixels are oriented; HEIF savers would
-			// write the source's orientation regardless
-			if ($image->typeOf('orientation') !== 0) {
-				$image->remove('orientation');
-			}
-
-			$target            = Target::newToFile($file);
-			[$quality, $whole] = Quality::for($plan->format, $plan->quality);
-
-			// savers without alpha flatten onto the background; chroma whole or at half
-			// resolution both ways (4:2:0), which libvips would write whole from quality
-			// 90 on; JPEG's Huffman tables fitted to the image
-			$this->write($image, $target, $plan->format, [
-				'Q'               => $quality,
-				'background'      => [$image->format === 'ushort' ? 65535 : 255],
-				'interlace'       => $plan->interlace,
-				'keep'            => $keep === true ? ForeignKeep::ICC : ForeignKeep::NONE,
-				'optimize_coding' => true,
-				'page_height'     => $plan->size()->height,
-				'subsample_mode'  => $whole === true ? 'off' : 'on',
-			]);
+			$this->save($image, $plan, $file, $keep);
 		} catch (VipsException $exception) {
 			throw new ProcessException(
 				message: 'libvips failed on ' . $plan->source->file . ': ' . $exception->getMessage(),
@@ -469,6 +475,38 @@ final class Vips extends Driver
 		$pixel = static::pixel();
 
 		return $pixel->writeToBuffer('.' . $format->extension());
+	}
+
+	/**
+	 * @throws VipsException If libvips fails
+	 */
+	protected function save(
+		Image $image,
+		Plan $plan,
+		string $file,
+		bool $keep
+	): void {
+		// the pixels are oriented; HEIF savers would
+		// write the source's orientation regardless
+		if ($image->typeOf('orientation') !== 0) {
+			$image->remove('orientation');
+		}
+
+		$target            = Target::newToFile($file);
+		[$quality, $whole] = Quality::for($plan->format, $plan->quality);
+
+		// savers without alpha flatten onto the background; chroma whole or at half
+		// resolution both ways (4:2:0), which libvips would write whole from quality
+		// 90 on; JPEG's Huffman tables fitted to the image
+		$this->write($image, $target, $plan->format, [
+			'Q'               => $quality,
+			'background'      => [$image->format === 'ushort' ? 65535 : 255],
+			'interlace'       => $plan->interlace,
+			'keep'            => $keep === true ? ForeignKeep::ICC : ForeignKeep::NONE,
+			'optimize_coding' => true,
+			'page_height'     => $plan->size()->height,
+			'subsample_mode'  => $whole === true ? 'off' : 'on',
+		]);
 	}
 
 	protected static function sharpen(Image $image, int $amount): Image
