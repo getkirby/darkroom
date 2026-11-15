@@ -88,7 +88,6 @@ abstract class Reader
 			Format::Avif,
 			Format::Heic => Heif::class,
 			Format::Gif  => Gif::class,
-			Format::Jp2  => Jp2::class,
 			Format::Jpeg => Jpeg::class,
 			Format::Jxl  => Jxl::class,
 			Format::Png  => Png::class,
