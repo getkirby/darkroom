@@ -858,6 +858,135 @@ class DarkroomTest extends TestCase
 		$darkroom->process(self::JPEG, $webp, []);
 	}
 
+	public function testStrip(): void
+	{
+		$darkroom = new Darkroom([]);
+		$original = $darkroom->open(self::EXIF);
+		$dst      = $this->file('a/photo.jpg');
+
+		$darkroom->strip(self::EXIF, $dst);
+
+		$source = $darkroom->open($dst);
+
+		$this->assertSame(['photo.jpg'], $this->files('/a'));
+		$this->assertSame(Orientation::Rotate270, $source->orientation());
+		$this->assertEquals($original->size(), $source->size());
+		$this->assertLessThan(filesize(self::EXIF), filesize($dst));
+	}
+
+	#[RequiresFunction('exif_read_data')]
+	public function testStripExif(): void
+	{
+		$darkroom = new Darkroom([]);
+		$dst      = $this->file('photo.jpg');
+
+		$darkroom->strip(self::EXIF, $dst);
+
+		$source = $darkroom->open($dst);
+
+		$this->assertSame(['IFD0' => ['Orientation' => 8]], $source->exif());
+	}
+
+	public static function stripFormatProvider(): array
+	{
+		return [
+			'avif' => [Format::Avif, 'heif/exif.avif'],
+			'gif'  => [Format::Gif, 'gif/animated.gif'],
+			'heic' => [Format::Heic, 'heif/exif.heic'],
+			'jpeg' => [Format::Jpeg, 'exif.jpg'],
+			'jxl'  => [Format::Jxl, 'jxl/exif-6.jxl'],
+			'png'  => [Format::Png, 'png/exif-6.png'],
+			'webp' => [Format::Webp, 'webp/exif-6.webp'],
+		];
+	}
+
+	#[DataProvider('stripFormatProvider')]
+	public function testStripFormat(Format $format, string $file): void
+	{
+		$darkroom = new Darkroom([]);
+		$src      = __DIR__ . '/fixtures/' . $file;
+		$original = $darkroom->open($src);
+		$dst      = $this->file('photo.' . $format->extension());
+
+		$darkroom->strip($src, $dst);
+
+		$source = $darkroom->open($dst);
+
+		$this->assertSame($format, $source->format());
+		$this->assertEquals($original->size(), $source->size());
+		$this->assertSame($original->orientation(), $source->orientation());
+	}
+
+	public function testStripInPlace(): void
+	{
+		$darkroom = new Darkroom([]);
+		$data     = file_get_contents(__DIR__ . '/fixtures/meta.jpg');
+		$file     = $this->file('photo.jpg', $data);
+
+		$darkroom->strip($file, $file);
+
+		$this->assertSame(['photo.jpg'], $this->files());
+		$this->assertLessThan(strlen($data), filesize($file));
+	}
+
+	#[RequiresFunction('exif_read_data')]
+	public function testStripMeta(): void
+	{
+		$darkroom = new Darkroom([], ['meta' => ['location']]);
+		$camera   = $this->file('camera.jpg');
+		$place    = $this->file('place.jpg');
+
+		$darkroom->strip(self::EXIF, $camera, ['camera']);
+		$darkroom->strip(self::EXIF, $place);
+
+		$camera = $darkroom->open($camera);
+		$place  = $darkroom->open($place);
+
+		$this->assertArrayHasKey('Make', $camera->exif()['IFD0']);
+		$this->assertArrayNotHasKey('GPS', $camera->exif());
+		$this->assertArrayHasKey('GPS', $place->exif());
+		$this->assertArrayNotHasKey('Make', $place->exif()['IFD0']);
+		$this->assertSame(Orientation::Rotate270, $place->orientation());
+	}
+
+	public function testStripMetaInvalid(): void
+	{
+		$darkroom = new Darkroom([]);
+		$dst      = $this->file('photo.jpg');
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Invalid meta: \'colour\'');
+
+		$darkroom->strip(self::EXIF, $dst, ['colour']);
+	}
+
+	public function testStripSource(): void
+	{
+		$darkroom = new Darkroom([]);
+		$source   = $darkroom->open(self::PNG);
+		$dst      = $this->file('photo.png');
+
+		$darkroom->strip($source, $dst);
+
+		$this->assertFileExists($dst);
+	}
+
+	public function testStripUnrecognised(): void
+	{
+		$darkroom = new Darkroom([]);
+		$src      = $this->file('text.jpg', 'text');
+		$dst      = $this->file('photo.jpg');
+
+		$this->expectException(UnsupportedException::class);
+		$this->expectExceptionMessage('Unsupported or unreadable image: ' . $src);
+
+		try {
+			$darkroom->strip($src, $dst);
+		} finally {
+			$this->assertSame(['text.jpg'], $this->files());
+		}
+	}
+
 	public function testTryPlan(): void
 	{
 		$driver   = new FakeDriver();

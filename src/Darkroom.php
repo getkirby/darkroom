@@ -310,6 +310,74 @@ final class Darkroom
 		return $plan;
 	}
 
+	/**
+	 * Writes the image from the handle into the file
+	 * through the writer
+	 *
+	 * @param class-string<Writer> $writer
+	 * @param resource $in
+	 */
+	protected function rewrite(
+		string $writer,
+		$in,
+		string $file,
+		Blocks $blocks
+	): void {
+		$out = @fopen($file, 'wb');
+
+		if ($out === false) {
+			throw new Exception(
+				message: 'Can\'t write the image: ' . $file
+			);
+		}
+
+		try {
+			$writer::write($in, $out, $blocks);
+		} finally {
+			fclose($out);
+		}
+	}
+
+	/**
+	 * Copies the image atomically without its meta, but with
+	 * its color profile and orientation, and with the EXIF data
+	 * of `$meta`, else of the defaults; without decoding it
+	 *
+	 * @param list<Meta|string>|null $meta
+	 *
+	 * @throws UnsupportedException For an unreadable source
+	 * @throws InvalidArgumentException For invalid meta
+	 */
+	public function strip(
+		Source|string $src,
+		string $dst,
+		array|null $meta = null
+	): void {
+		$source      = $src instanceof Source ? $src : $this->open($src);
+		$format      = $source->format();
+		$writer      = Writer::for($format);
+		$defaults    = $meta === null ? $this->defaults : Defaults::from(['meta' => $meta]);
+		$orientation = $writer::ORIENTS === true ? $source->orientation() : Orientation::None;
+		$exif        = $source->keep($defaults->meta ?? Defaults::META, $orientation);
+		$blocks      = new Blocks(exif: $exif);
+
+		$this->write($dst, function (string $temp) use ($source, $writer, $blocks): void {
+			$in = @fopen($source->file, 'rb');
+
+			if ($in === false) {
+				throw new Exception(
+					message: 'Can\'t read the image: ' . $source->file
+				);
+			}
+
+			try {
+				$this->rewrite($writer, $in, $temp, $blocks);
+			} finally {
+				fclose($in);
+			}
+		});
+	}
+
 	public function tryPlan(
 		Source|string $source,
 		Options|array $options = []
