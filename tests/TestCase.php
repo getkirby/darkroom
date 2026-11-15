@@ -2,8 +2,10 @@
 
 namespace Darkroom\Tests;
 
+use Darkroom\Orientation;
 use Darkroom\Rect;
 use Darkroom\Size;
+use Darkroom\Source;
 use FilesystemIterator;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use RecursiveDirectoryIterator;
@@ -103,6 +105,22 @@ abstract class TestCase extends BaseTestCase
 		string $data = ''
 	): string {
 		return pack('N', $size) . $type . $data;
+	}
+
+	protected function source(
+		int $width,
+		int $height,
+		Orientation $orientation = Orientation::None
+	): Source {
+		$size   = new Size($width, $height);
+		$stored = $orientation->apply($size);
+		$frame  = "\x08" . pack('nn', $stored->height, $stored->width) . "\x01\x01\x11\0";
+		$sof    = self::segment(0xC0, $frame);
+		$data   = "\xFF\xD8" . self::app1($orientation->value) . $sof;
+		$name   = $width . 'x' . $height . '-' . $orientation->value . '.jpg';
+		$file   = $this->file($name, $data);
+
+		return new Source($file);
 	}
 
 	protected function tearDown(): void

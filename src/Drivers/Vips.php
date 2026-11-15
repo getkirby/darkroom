@@ -566,7 +566,7 @@ final class Vips extends Driver
 		$known  = $this->options($suffix);
 
 		// `keep` passes unchecked,
-		// so a saver that can't strip metadata fails
+		// so a saver that can't strip meta fails
 		$options = [
 			...array_intersect_key($options, array_flip($known)),
 			'keep' => $options['keep'] ?? ForeignKeep::NONE,

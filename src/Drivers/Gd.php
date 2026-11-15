@@ -8,12 +8,13 @@ use Darkroom\Driver;
 use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
 use Darkroom\Format;
+use Darkroom\Formats\Writer;
+use Darkroom\Meta\Blocks;
 use Darkroom\Orientation;
 use Darkroom\Plan;
 use Darkroom\Rect;
 use Darkroom\Size;
 use Darkroom\Source;
-use Darkroom\Tools\Icc;
 use Darkroom\Tools\Quality;
 use Darkroom\Tools\Sharpen;
 use ErrorException;
@@ -322,7 +323,11 @@ final class Gd extends Driver
 			$image = static::orient($image, $plan->orientation);
 			$image = static::filter($image, $plan);
 			$data  = $this->encode($image, $plan);
-			$data  = Icc::embed($data, $plan->format, $profile);
+
+			if ($profile !== '') {
+				$blocks = new Blocks(icc: $profile);
+				$data   = Writer::embed($data, $plan->format, $blocks);
+			}
 
 			static::write($file, $data);
 		} catch (ErrorException|ValueError $exception) {

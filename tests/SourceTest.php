@@ -4,8 +4,8 @@ namespace Darkroom\Tests;
 
 use Darkroom\Exception\UnsupportedException;
 use Darkroom\Format;
+use Darkroom\Formats\Reader;
 use Darkroom\Orientation;
-use Darkroom\Readers\Reader;
 use Darkroom\Rect;
 use Darkroom\Size;
 use Darkroom\Source;

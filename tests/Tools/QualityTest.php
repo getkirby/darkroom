@@ -36,7 +36,9 @@ class QualityTest extends TestCase
 		bool $whole,
 		array $expected
 	): void {
-		$this->assertSame($expected, Quality::for($format, $score, $whole));
+		$quality = Quality::for($format, $score, $whole);
+
+		$this->assertSame($expected, $quality);
 	}
 
 	public static function forRisingProvider(): array

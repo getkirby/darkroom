@@ -458,7 +458,7 @@ final class Imagick extends Driver
 	}
 
 	/**
-	 * Without metadata, and without the profile unless `icc`
+	 * Without meta, and without the profile unless `icc`
 	 */
 	protected function strip(Image $frame, Plan $plan): void
 	{
@@ -467,7 +467,7 @@ final class Imagick extends Driver
 
 		// in sRGB without a profile, which takes LCMS;
 		// else an RGB profile stays for its colors
-		if ($plan->icc === false && substr($profile, 16, 4) === 'RGB ') {
+		if ($plan->icc === false && static::isRgb($profile) === true) {
 			$keep = $this->cache('lcms', static::converts(...)) === false;
 
 			if ($keep === false) {

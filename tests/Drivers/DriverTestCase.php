@@ -870,7 +870,7 @@ abstract class DriverTestCase extends TestCase
 		}
 	}
 
-	public static function processMetadataProvider(): array
+	public static function processMetaProvider(): array
 	{
 		return [
 			'jpeg' => ['jpg'],
@@ -882,17 +882,17 @@ abstract class DriverTestCase extends TestCase
 	}
 
 	/**
-	 * `exiftool -o metadata.jpg -GPSLatitude=52.5
+	 * `exiftool -o meta.jpg -GPSLatitude=52.5
 	 * -GPSLatitudeRef=N -GPSLongitude=13.4 -GPSLongitudeRef=E
 	 * -XMP-dc:Title=Darkroom -IPTC:Caption-Abstract=Darkroom icc.jpg`
 	 */
-	#[DataProvider('processMetadataProvider')]
-	public function testProcessMetadata(string $extension): void
+	#[DataProvider('processMetaProvider')]
+	public function testProcessMeta(string $extension): void
 	{
-		$source = static::FIXTURES . '/metadata.jpg';
+		$source = static::FIXTURES . '/meta.jpg';
 		$file   = $this->file('thumb.' . $extension);
 
-		$this->process('metadata.jpg', $file, static::OPTIONS);
+		$this->process('meta.jpg', $file, static::OPTIONS);
 
 		$data = file_get_contents($file);
 

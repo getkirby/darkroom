@@ -8,12 +8,13 @@ use Darkroom\Drivers\Imagick;
 use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
 use Darkroom\Format;
+use Darkroom\Formats\Writer;
+use Darkroom\Meta\Blocks;
 use Darkroom\Options;
 use Darkroom\Orientation;
 use Darkroom\Plan;
 use Darkroom\Size;
 use Darkroom\Source;
-use Darkroom\Tools\Icc;
 use Imagick as Image;
 use ImagickException;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -188,7 +189,8 @@ class ImagickTest extends DriverTestCase
 
 		$jpeg     = file_get_contents(static::FIXTURES . '/cmyk.jpg');
 		$cmyk     = static::cmyk();
-		$tagged   = Icc::embed($jpeg, Format::Jpeg, $cmyk);
+		$blocks   = new Blocks(icc: $cmyk);
+		$tagged   = Writer::embed($jpeg, Format::Jpeg, $blocks);
 		$source   = $this->file('cmyk.jpg', $tagged);
 		$file     = $this->file('thumb.jpg');
 		$darkroom = new Darkroom([$this->driver]);

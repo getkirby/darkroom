@@ -5,9 +5,9 @@ declare(strict_types = 1);
 namespace Darkroom;
 
 use Darkroom\Exception\UnsupportedException;
-use Darkroom\Readers\Header;
-use Darkroom\Readers\Reader;
-use Darkroom\Tools\Exif;
+use Darkroom\Formats\Header;
+use Darkroom\Formats\Reader;
+use Darkroom\Meta\Exif;
 
 /**
  * An image's facts, read lazily from its header
@@ -25,6 +25,7 @@ final class Source
 	protected string|null $icc = null;
 	protected bool|null $isAnimated = null;
 	protected Size|null $size = null;
+	protected string|null $tiff = null;
 
 	public function __construct(
 		public readonly string $file
@@ -33,10 +34,7 @@ final class Source
 
 	public function canvas(): Rect|null
 	{
-		$this->canvas ??= Reader::open(
-			$this->file,
-			fn (string $reader, $handle) => $reader::canvas($handle)
-		) ?? false;
+		$this->canvas ??= Reader::open($this->file)?->canvas() ?? false;
 
 		return $this->canvas === false ? null : $this->canvas;
 	}
@@ -50,10 +48,7 @@ final class Source
 	 */
 	public function cicp(): array
 	{
-		return $this->cicp ??= Reader::open(
-			$this->file,
-			fn (string $reader, $handle) => $reader::cicp($handle)
-		) ?? Reader::UNSPECIFIED;
+		return $this->cicp ??= Reader::open($this->file)?->cicp() ?? Reader::UNSPECIFIED;
 	}
 
 	/**
@@ -65,12 +60,9 @@ final class Source
 			return $this->exif;
 		}
 
-		$data = Reader::open(
-			$this->file,
-			fn (string $reader, $handle) => $reader::exif($handle)
-		);
+		$tiff = $this->tiff();
 
-		return $this->exif = Exif::tags($data ?? '');
+		return $this->exif = Exif::tags($tiff);
 	}
 
 	/**
@@ -89,25 +81,16 @@ final class Source
 			return $this->header;
 		}
 
-		$header = Reader::open(
-			$this->file,
-			function (
-				string $reader,
-				$handle,
-				Format $format
-			): Header {
-				$header = $reader::read($handle);
+		$reader = Reader::open($this->file);
 
-				return new Header(
-					$header->size,
-					$header->orientation,
-					$format
-				);
-			}
-		);
+		if ($reader !== null) {
+			$header = $reader->header();
 
-		if ($header !== null) {
-			return $this->header = $header;
+			return $this->header = new Header(
+				$header->size,
+				$header->orientation,
+				$reader->format
+			);
 		}
 
 		// PHP knows the size of more images, such as BMP or TIFF;
@@ -128,18 +111,12 @@ final class Source
 
 	public function icc(): string
 	{
-		return $this->icc ??= Reader::open(
-			$this->file,
-			fn (string $reader, $handle) => $reader::icc($handle)
-		) ?? '';
+		return $this->icc ??= Reader::open($this->file)?->icc() ?? '';
 	}
 
 	public function isAnimated(): bool
 	{
-		return $this->isAnimated ??= Reader::open(
-			$this->file,
-			fn (string $reader, $handle) => $reader::isAnimated($handle)
-		) === true;
+		return $this->isAnimated ??= Reader::open($this->file)?->isAnimated() === true;
 	}
 
 	public function isHdr(): bool
@@ -171,5 +148,15 @@ final class Source
 		}
 
 		return $this->size = $header->orientation->apply($header->size);
+	}
+
+	/**
+	 * The EXIF data as stored, in TIFF's layout
+	 *
+	 * @internal
+	 */
+	public function tiff(): string
+	{
+		return $this->tiff ??= Reader::open($this->file)?->exif() ?? '';
 	}
 }

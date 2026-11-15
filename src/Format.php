@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace Darkroom;
 
-use Darkroom\Readers\Reader;
+use Darkroom\Containers\Bytes;
 use InvalidArgumentException;
 
 enum Format
@@ -38,13 +38,14 @@ enum Format
 		$brands = [];
 
 		if (substr($bytes, 4, 4) === 'ftyp') {
-			$size   = Reader::int(substr($bytes, 0, 4));
+			$size   = Bytes::int(substr($bytes, 0, 4));
 			$brands = [
 				substr($bytes, 8, 4),
 				...str_split(substr($bytes, 16, max(0, $size - 16)), 4)
 			];
 		}
 
+		// as literals, as the readers' constants would load their classes
 		return match (true) {
 			str_starts_with($bytes, "\xFF\xD8\xFF") => self::Jpeg,
 			str_starts_with($bytes, "\x89PNG\r\n\x1A\n") => self::Png,
