@@ -4,7 +4,6 @@ declare(strict_types = 1);
 
 namespace Darkroom\Drivers;
 
-use Closure;
 use Darkroom\Driver;
 use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
@@ -55,54 +54,6 @@ final class Vips extends Driver
 		return count($delays) === 2;
 	}
 
-	public function canAnimate(Format $format): bool
-	{
-		return $this->probe(
-			'animate ' . $format->name,
-			fn (): bool => $this->animates($format)
-		);
-	}
-
-	public function canRead(Format|Source $input): bool
-	{
-		$format = $input instanceof Source ? $input->format() : $input;
-		$reads  = $this->probe(
-			'read ' . $format->name,
-			fn (): bool => static::decodes($format)
-		);
-
-		if ($reads === false || $input instanceof Format) {
-			return $reads;
-		}
-
-		// libvips reads no CICP,
-		// so it would write HDR as 8-bit sRGB
-		if ($input->isHdr() === true) {
-			return false;
-		}
-
-		// libvips' HEIF loader doesn't know AVIF sequences,
-		// ImageMagick's may
-		if (
-			$format === Format::Avif &&
-			Image::findLoad($input->file) === null
-		) {
-			return false;
-		}
-
-		return
-			$input->isAnimated() === false ||
-			$this->plays($input) === true;
-	}
-
-	public function canWrite(Format $format): bool
-	{
-		return $this->probe(
-			'write ' . $format->name,
-			fn (): bool => $this->encodes($format)
-		);
-	}
-
 	/**
 	 * Whether libvips converts between profiles, which takes LCMS
 	 */
@@ -120,7 +71,7 @@ final class Vips extends Driver
 		});
 	}
 
-	protected static function decodes(Format $format): bool
+	protected function decodes(Format $format): bool
 	{
 		try {
 			$data    = static::sample($format);
@@ -380,7 +331,7 @@ final class Vips extends Driver
 		$format = $source->format();
 
 		try {
-			return $this->probe(
+			return $this->cache(
 				'play ' . $format->name,
 				static function () use ($source): bool {
 					$image = Image::newFromFile($source->file);
@@ -392,14 +343,6 @@ final class Vips extends Driver
 			// a file libvips can't read tells nothing about its format
 			return false;
 		}
-	}
-
-	protected function probe(string $key, Closure $probe): bool
-	{
-		return $this->cache(
-			$key,
-			fn (): bool => $this->isAvailable() === true && $probe() === true
-		);
 	}
 
 	/**
@@ -494,6 +437,22 @@ final class Vips extends Driver
 		}
 
 		return (string)$image->get('icc-profile-data');
+	}
+
+	protected function reads(Source $source): bool
+	{
+		// libvips' HEIF loader doesn't know AVIF sequences,
+		// ImageMagick's may
+		if (
+			$source->format() === Format::Avif &&
+			Image::findLoad($source->file) === null
+		) {
+			return false;
+		}
+
+		return
+			$source->isAnimated() === false ||
+			$this->plays($source) === true;
 	}
 
 	/**

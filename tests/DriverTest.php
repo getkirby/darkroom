@@ -52,6 +52,51 @@ class DriverTest extends TestCase
 		$this->assertSame(['read:Jpeg', 'read:Png'], $driver->runs);
 	}
 
+	public function testCacheProbesWrite(): void
+	{
+		$driver = new FakeDriver(['animate' => [Format::Gif]]);
+
+		$driver->canAnimate(Format::Gif);
+		$driver->canAnimate(Format::Gif);
+		$driver->canWrite(Format::Gif);
+		$driver->canWrite(Format::Gif);
+
+		$this->assertSame(['animate:Gif', 'write:Gif'], $driver->runs);
+	}
+
+	public function testCanReadSource(): void
+	{
+		$file   = __DIR__ . '/fixtures/exif.jpg';
+		$driver = new FakeDriver(['refuse' => [$file]]);
+		$source = new Source($file);
+
+		$format = $driver->canRead(Format::Jpeg);
+		$read   = $driver->canRead($source);
+
+		$this->assertTrue($format);
+		$this->assertFalse($read);
+	}
+
+	public function testCanReadSourceFormat(): void
+	{
+		$driver = new FakeDriver(['read' => []]);
+		$source = new Source(__DIR__ . '/fixtures/exif.jpg');
+
+		$read = $driver->canRead($source);
+
+		$this->assertFalse($read);
+	}
+
+	public function testCanReadSourceHdr(): void
+	{
+		$driver = new FakeDriver();
+		$source = new Source(__DIR__ . '/fixtures/heif/hdr.avif');
+
+		$read = $driver->canRead($source);
+
+		$this->assertFalse($read);
+	}
+
 	public function testConstruct(): void
 	{
 		$driver   = new FakeDriver();

@@ -112,7 +112,6 @@ class VipsTest extends DriverTestCase
 			'png'           => ['png/plain.png', true],
 			'heic sequence' => ['heif/animated.heic', true],
 			'apng'          => ['png/animated.png', true],
-			'hdr'           => ['heif/hdr.avif', false],
 		];
 	}
 

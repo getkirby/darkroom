@@ -224,8 +224,9 @@ class DarkroomTest extends TestCase
 			$this->skip('libvips reads no AVIF', $vips, Format::Avif);
 		}
 
+		// none for HDR
 		$this->assertSame($vips, $darkroom->driver($still, Format::Png));
-		$this->assertSame($next, $darkroom->driver($hdr, Format::Png));
+		$this->assertNull($darkroom->driver($hdr, Format::Png));
 	}
 
 	public static function formatProvider(): array

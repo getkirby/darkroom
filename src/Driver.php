@@ -35,7 +35,7 @@ abstract class Driver
 			BASE64,
 	];
 
-	protected array $probes = [];
+	protected array $cache = [];
 	protected readonly array $settings;
 
 	public function __construct(array $settings = [])
@@ -48,30 +48,68 @@ abstract class Driver
 	}
 
 	/**
+	 * Whether the library writes frames of the format and reads them back with their delays
+	 */
+	protected function animates(Format $format): bool
+	{
+		return false;
+	}
+
+	/**
 	 * @template T
-	 * @param Closure(): T $probe
+	 * @param Closure(): T $compute
 	 * @return T
 	 */
-	protected function cache(string $key, Closure $probe): mixed
+	protected function cache(string $key, Closure $compute): mixed
 	{
-		if (array_key_exists($key, $this->probes) === false) {
-			$this->probes[$key] = $probe();
+		if (array_key_exists($key, $this->cache) === false) {
+			$this->cache[$key] = $compute();
 		}
 
 		/** @var T */
-		return $this->probes[$key];
+		return $this->cache[$key];
 	}
 
-	abstract public function canAnimate(Format $format): bool;
+	final public function canAnimate(Format $format): bool
+	{
+		return $this->cache(
+			'animate ' . $format->name,
+			fn (): bool => $this->animates($format)
+		);
+	}
 
-	abstract public function canRead(Format|Source $input): bool;
+	final public function canRead(Format|Source $input): bool
+	{
+		$format  = $input instanceof Source ? $input->format() : $input;
+		$decodes = $this->cache(
+			'read ' . $format->name,
+			fn (): bool => $this->decodes($format)
+		);
 
-	abstract public function canWrite(Format $format): bool;
+		if ($decodes === false || $input instanceof Format) {
+			return $decodes;
+		}
+
+		// no library maps PQ or HLG to sRGB
+		return $input->isHdr() === false && $this->reads($input);
+	}
+
+	final public function canWrite(Format $format): bool
+	{
+		return $this->cache(
+			'write ' . $format->name,
+			fn (): bool => $this->encodes($format)
+		);
+	}
+
+	abstract protected function decodes(Format $format): bool;
 
 	protected function defaults(): array
 	{
 		return [];
 	}
+
+	abstract protected function encodes(Format $format): bool;
 
 	/**
 	 * @return array{library: string|null, version: string|null}
@@ -95,4 +133,12 @@ abstract class Driver
 	}
 
 	abstract public function process(Plan $plan, string $file): void;
+
+	/**
+	 * Whether the driver reads a source of a format it decodes
+	 */
+	protected function reads(Source $source): bool
+	{
+		return true;
+	}
 }

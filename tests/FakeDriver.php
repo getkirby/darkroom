@@ -14,29 +14,19 @@ final class FakeDriver extends Driver
 	public array $plans = [];
 	public array $runs = [];
 
-	public function cache(string $key, Closure $probe): mixed
-	{
-		return parent::cache($key, $probe);
-	}
-
-	public function canAnimate(Format $format): bool
+	protected function animates(Format $format): bool
 	{
 		return $this->probe('animate', $format);
 	}
 
-	public function canRead(Format|Source $input): bool
+	public function cache(string $key, Closure $compute): mixed
 	{
-		$format = $input instanceof Source ? $input->format() : $input;
-		$file   = $input instanceof Source ? $input->file : null;
-
-		return
-			in_array($file, $this->settings['refuse'], true) === false &&
-			$this->probe('read', $format) === true;
+		return parent::cache($key, $compute);
 	}
 
-	public function canWrite(Format $format): bool
+	protected function decodes(Format $format): bool
 	{
-		return $this->probe('write', $format);
+		return $this->probe('read', $format);
 	}
 
 	protected function defaults(): array
@@ -55,6 +45,11 @@ final class FakeDriver extends Driver
 		];
 	}
 
+	protected function encodes(Format $format): bool
+	{
+		return $this->probe('write', $format);
+	}
+
 	public function isAvailable(): bool
 	{
 		return $this->settings['available'];
@@ -67,12 +62,9 @@ final class FakeDriver extends Driver
 
 	protected function probe(string $key, Format $format): bool
 	{
-		$name = $key . ':' . $format->name;
+		$this->runs[] = $key . ':' . $format->name;
 
-		return $this->cache($name, function () use ($key, $format, $name): bool {
-			$this->runs[] = $name;
-			return in_array($format, $this->settings[$key], true);
-		});
+		return in_array($format, $this->settings[$key], true);
 	}
 
 	public function process(Plan $plan, string $file): void
@@ -89,6 +81,11 @@ final class FakeDriver extends Driver
 		if ($this->settings['throw'] !== null) {
 			throw $this->settings['throw'];
 		}
+	}
+
+	protected function reads(Source $source): bool
+	{
+		return in_array($source->file, $this->settings['refuse'], true) === false;
 	}
 
 	public function settings(): array

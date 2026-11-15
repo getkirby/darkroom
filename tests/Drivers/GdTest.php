@@ -152,19 +152,6 @@ class GdTest extends DriverTestCase
 		$this->assertTrue($this->driver->canRead($still));
 	}
 
-	public function testCanReadSourceHdr(): void
-	{
-		$hdr   = new Source(static::FIXTURES . '/heif/hdr.avif');
-		$plain = new Source(static::FIXTURES . '/heif/plain.avif');
-
-		if ($this->driver->canRead(Format::Avif) === false) {
-			$this->markTestSkipped('GD reads no AVIF');
-		}
-
-		$this->assertFalse($this->driver->canRead($hdr));
-		$this->assertTrue($this->driver->canRead($plain));
-	}
-
 	#[DataProvider('canReadProvider')]
 	public function testCanWrite(Format $format, bool $expected): void
 	{

@@ -27,12 +27,9 @@ final class Imagick extends Driver
 	 */
 	protected const array LIMITS = [400, 445];
 
-	/**
-	 * Whether ImageMagick writes two frames in the format
-	 * and reads them back with their delays
-	 */
-	protected static function animates(string $name): bool
+	protected function animates(Format $format): bool
 	{
+		$name  = static::name($format);
 		$image = new Image();
 
 		try {
@@ -58,41 +55,6 @@ final class Imagick extends Driver
 		} catch (ImagickException) {
 			return false;
 		}
-	}
-
-	public function canAnimate(Format $format): bool
-	{
-		$name = static::name($format);
-
-		return $this->cache(
-			'animate ' . $name,
-			fn (): bool => static::animates($name)
-		);
-	}
-
-	public function canRead(Format|Source $input): bool
-	{
-		// ImageMagick maps no PQ or HLG to sRGB
-		if ($input instanceof Source && $input->isHdr() === true) {
-			return false;
-		}
-
-		$format = $input instanceof Source ? $input->format() : $input;
-
-		return $this->cache(
-			'read ' . $format->name,
-			fn (): bool => static::decodes($format)
-		);
-	}
-
-	public function canWrite(Format $format): bool
-	{
-		$name = static::name($format);
-
-		return $this->cache(
-			'write ' . $name,
-			fn (): bool => static::encodes($name)
-		);
 	}
 
 	protected static function cmyk(Image $frame): void
@@ -156,7 +118,7 @@ final class Imagick extends Driver
 	 * Whether ImageMagick decodes the format: the sample where libheif
 	 * loads the decoder as a plugin, else whether it has a coder
 	 */
-	protected static function decodes(Format $format): bool
+	protected function decodes(Format $format): bool
 	{
 		$image  = new Image();
 		$sample = self::SAMPLES[$format->name] ?? null;
@@ -253,12 +215,12 @@ final class Imagick extends Driver
 		);
 	}
 
-	protected static function encodes(string $name): bool
+	protected function encodes(Format $format): bool
 	{
 		$image = new Image();
 
 		try {
-			$image->newImage(1, 1, 'white', $name);
+			$image->newImage(1, 1, 'white', static::name($format));
 
 			return $image->getImageBlob() !== '';
 		} catch (ImagickException) {

@@ -140,17 +140,6 @@ class ImagickTest extends DriverTestCase
 		$this->assertSame($decodes, $this->driver->canRead($format));
 	}
 
-	public function testCanReadSourceHdr(): void
-	{
-		$source = new Source(static::FIXTURES . '/heif/hdr.avif');
-
-		if ($this->driver->canRead(Format::Avif) === false) {
-			$this->skip('Can\'t read avif', $this->driver, Format::Avif);
-		}
-
-		$this->assertFalse($this->driver->canRead($source));
-	}
-
 	#[DataProvider('canReadProvider')]
 	public function testCanWrite(Format $format): void
 	{

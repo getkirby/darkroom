@@ -69,59 +69,6 @@ final class Gd extends Driver
 		return $image;
 	}
 
-	public function canAnimate(Format $format): bool
-	{
-		return false;
-	}
-
-	public function canRead(Format|Source $input): bool
-	{
-		$format  = $input instanceof Source ? $input->format() : $input;
-		$decoder = static::decoder($format);
-
-		if (function_exists($decoder) === false) {
-			return false;
-		}
-
-		if ($input instanceof Format) {
-			return true;
-		}
-
-		// libavif hands over PQ or HLG values,
-		// which GD would write as sRGB
-		if ($input->isHdr() === true) {
-			return false;
-		}
-
-		// GD returns a GIF's first frame off its screen
-		// and AVIF's coded image around its clean aperture
-		if ($input->canvas() !== null) {
-			return false;
-		}
-
-		// few builds decode an animated WebP
-		if ($format === Format::Webp) {
-			return
-				$this->cache(
-					'animation',
-					static::decodesAnimation(...)
-				) === true ||
-				$input->isAnimated() === false;
-		}
-
-		return true;
-	}
-
-	public function canWrite(Format $format): bool
-	{
-		$encoder = static::encoder($format);
-
-		return $this->cache(
-			$encoder,
-			fn (): bool => static::encodes($encoder)
-		);
-	}
-
 	/**
 	 * Decodes the first frame
 	 */
@@ -143,6 +90,13 @@ final class Gd extends Driver
 	protected static function decoder(Format $format): string
 	{
 		return 'imagecreatefrom' . strtolower($format->name);
+	}
+
+	protected function decodes(Format $format): bool
+	{
+		$decoder = static::decoder($format);
+
+		return function_exists($decoder);
 	}
 
 	/**
@@ -213,8 +167,10 @@ final class Gd extends Driver
 		return 'image' . strtolower($format->name);
 	}
 
-	protected static function encodes(string $encoder): bool
+	protected function encodes(Format $format): bool
 	{
+		$encoder = static::encoder($format);
+
 		if (function_exists($encoder) === false) {
 			return false;
 		}
@@ -413,6 +369,24 @@ final class Gd extends Driver
 		}
 
 		return $quality;
+	}
+
+	protected function reads(Source $source): bool
+	{
+		// GD returns a GIF's first frame off its screen
+		// and AVIF's coded image around its clean aperture
+		if ($source->canvas() !== null) {
+			return false;
+		}
+
+		// few builds decode an animated WebP
+		if ($source->format() === Format::Webp) {
+			return
+				$this->cache('animation', static::decodesAnimation(...)) === true ||
+				$source->isAnimated() === false;
+		}
+
+		return true;
 	}
 
 	protected static function resample(GdImage $image, Plan $plan): GdImage
