@@ -10,11 +10,12 @@ $darkroom->process('photo.jpg', 'thumbs/photo.webp', ['width' => 800]);
 > [!WARNING]
 > Work in progress: the API may change without notice until 1.0.
 
-- **Formats**: JPEG, PNG, GIF, WebP, AVIF, HEIC, JPEG XL and JPEG 2000, as long as the [driver](#drivers) supports them
+- **Formats**: JPEG, PNG, GIF, WebP, AVIF, HEIC and JPEG XL, as long as the [driver](#drivers) supports them
 - **Quality**: one perceptual [scale](#quality), the same look in every format
-- **Color**: color profiles kept, CMYK converted to sRGB, HDR tone-mapped
+- **Color**: color profiles kept, CMYK converted to sRGB
 - **Orientation**: EXIF, HEIF and JPEG XL orientation applied to the pixels
 - **Animation**: frames of GIF, WebP and JPEG XL kept where the driver can
+- **Meta**: EXIF tags kept by [category](#meta), the rest removed; `strip()` does so without re-encoding
 - **Safety**: a pixel limit before decoding, resource limits, atomic writes
 
 ## Install
@@ -35,7 +36,7 @@ $source   = $darkroom->open('photo.jpg');
 $plan     = $darkroom->plan($source, ['width' => 400, 'height' => 300, 'crop' => true]);
 
 // size, format and name are known before any pixel is decoded
-$width = $plan->width();
+$width = $plan->size()->width;
 $file  = 'thumbs/photo-' . $plan->key() . '.' . $plan->format->extension();
 
 $darkroom->process($plan, $file);
@@ -44,9 +45,10 @@ $darkroom->process($plan, $file);
 | Method | Returns |
 |---|---|
 | `open($file)` | A [`Source`](src/Source.php), from the file's header: `format()`, `size()`, `orientation()`, `exif()`, `icc()`, `isAnimated()`, `isHdr()` |
-| `plan($source, $options)` | A [`Plan`](src/Plan.php): the thumb's `width()`, `height()`, `format`, `quality` and `key()`; throws what `process()` would |
+| `plan($source, $options)` | A [`Plan`](src/Plan.php): the thumb's `size()`, `format`, `quality` and `key()`; throws what `process()` would |
 | `tryPlan($source, $options)` | The same, or `null` for a source that is unreadable or above the limit |
 | `process($source, $file, $options)` | Writes the thumb in the format of the file's extension, creating directories; returns the `Plan`; takes a `Plan` instead of source and options |
+| `strip($source, $file, $meta)` | Copies the image without its meta, but with its color profile, orientation and the EXIF tags of `$meta`, else of the defaults; without decoding it |
 | `format($source, $format, $allowed)` | The format a plan gets: `$format` if a driver writes it, else the source's if allowed, else the first allowed one a driver writes; `$allowed` defaults to [`Format::VIEWABLE`](src/Format.php): WebP, JPEG, PNG, GIF, AVIF |
 | `info()` | Each driver's library, version and the formats it reads and writes |
 
@@ -64,9 +66,24 @@ $darkroom->process($plan, $file);
 | `sharpen` | 1–100; `true` is 50 |
 | `grayscale` | `true`; also `greyscale` or `bw` |
 | `interlace` | `true` for progressive JPEG, interlaced PNG and GIF |
-| `icc` | `false` converts to sRGB, without a profile |
+| `meta` | What the thumb keeps of its source, see [Meta](#meta) |
 
 Thumbs are never enlarged, not even by a crop: it is exactly `width` × `height`, or the largest part of that ratio a smaller source has. A crop with one side is a square.
+
+## Meta
+
+`meta` lists the categories a thumb or `strip()` keeps, by default `['color']`:
+
+| Category | |
+|---|---|
+| `camera` | Make, model, lens and exposure settings |
+| `color` | The color profile; without it, thumbs are converted to sRGB |
+| `description` | Caption and title |
+| `location` | GPS |
+| `rights` | Artist, copyright and photographer |
+| `time` | When taken, digitized and changed |
+
+Each keeps its EXIF tags; XMP and IPTC go. JPEG, PNG, WebP and JPEG XL thumbs carry them, GIF, AVIF and HEIC thumbs none. `strip()` always keeps the color profile, and the meta of HEIC's depth and gain maps.
 
 ## Quality
 
@@ -112,7 +129,7 @@ $darkroom = new Darkroom(
 | `quality` | `defaults` | 85 | For thumbs without their own |
 | `format` | `defaults` | | For plans without their own; else as `format()` picks |
 | `interlace` | `defaults` | `false` | For thumbs without their own |
-| `icc` | `defaults` | `true` | Keeps the color profile |
+| `meta` | `defaults` | `['color']` | For thumbs and strips without their own |
 | `limit` | `settings` | 200 million | The most pixels of a source, all frames together; `null` for none |
 | `threads` | `settings` | ImageMagick 1, libvips its own up to 4 | Threads per thumb; each costs memory |
 
@@ -121,30 +138,30 @@ $darkroom = new Darkroom(
 | Driver | Needs | Good at |
 |---|---|---|
 | [`gd`](src/Drivers/Gd.php) | `ext-gd` | Runs almost everywhere |
-| [`imagick`](src/Drivers/Imagick.php) | `ext-imagick`, ImageMagick 6.9.10 or 7.0.8 or newer | Animations, color profiles, CMYK and HDR |
+| [`imagick`](src/Drivers/Imagick.php) | `ext-imagick`, ImageMagick 6.9.10 or 7.0.8 or newer | Animations, color profiles and CMYK |
 | [`vips`](src/Drivers/Vips.php) | libvips 8.15 or newer, `ext-ffi`, `jcupitt/vips` | Speed and memory on large images |
 
-`drivers` takes aliases, class names or [`Darkroom\Driver`](src/Driver.php) instances, by default `['imagick', 'gd', 'vips']`. Each thumb goes to the first available one that reads the source and writes the format. One that can't animate the format writes the first frame.
+`drivers` takes aliases, class names or [`Darkroom\Driver`](src/Driver.php) instances, by default `['imagick', 'gd', 'vips']`. Each thumb goes to the first available one that reads the source and writes the format. One that can't animate the format writes the first frame. None reads HDR sources (PQ or HLG); phone HDR photos are thumbed from their SDR image.
 
 
 <details>
 <summary>GD</summary>
 
-Keeps only RGB color profiles, in JPEG, PNG and WebP, and keeps them even with `icc: false`, as it can't convert to sRGB. Checks the image against `memory_limit` before decoding and throws a `LimitException` instead of trying the next driver, so list it after `imagick` and `vips`. Sources it would get wrong, such as HDR ones, go to the next driver.
+Keeps only RGB color profiles, in JPEG, PNG and WebP, and keeps them even without `color`, as it can't convert to sRGB. Checks the image against `memory_limit` before decoding and throws a `LimitException` instead of trying the next driver, so list it after `imagick` and `vips`. Sources it would get wrong, such as GIFs whose first frame is off the screen, go to the next driver.
 
 </details>
 
 <details>
 <summary>ImageMagick</summary>
 
-Converts to sRGB for `icc: false` only when built with LCMS; without it, the profile stays. Reads and writes AVIF and HEIC through libheif's plugins, e.g. on Debian and Ubuntu `libheif-plugin-libde265`, `-x265`, `-dav1d` and `-aomenc`. ImageMagick 6.9.12-84 to 6.9.13-0 (Ubuntu 24.04) writes WebP at quality 75, whatever the setting.
+Converts to sRGB without `color` only when built with LCMS; without it, the profile stays. Reads and writes AVIF and HEIC through libheif's plugins, e.g. on Debian and Ubuntu `libheif-plugin-libde265`, `-x265`, `-dav1d` and `-aomenc`. ImageMagick 6.9.12-84 to 6.9.13-0 (Ubuntu 24.04) writes WebP at quality 75, whatever the setting.
 
 </details>
 
 <details>
 <summary>libvips</summary>
 
-Needs `ffi.enable = true` for web requests, as PHP allows FFI by default only on the command line. A new PHP-FPM worker starts libvips with its first thumb, in about 20–60 ms, so put `vips` first only where its speed matters. Hands HDR sources to the next driver, and JPEG XL animations before libvips 8.16.
+Needs `ffi.enable = true` for web requests, as PHP allows FFI by default only on the command line. A new PHP-FPM worker starts libvips with its first thumb, in about 20–60 ms, so put `vips` first only where its speed matters. Hands JPEG XL animations to the next driver before libvips 8.16.
 
 </details>
 
@@ -153,7 +170,7 @@ Needs `ffi.enable = true` for web requests, as PHP allows FFI by default only on
 | | GD | ImageMagick | libvips |
 |---|:-:|:-:|:-:|
 | JPEG, PNG, GIF, WebP, AVIF | ✓ | ✓ | ✓ |
-| HEIC, JPEG XL, JPEG 2000 | | ✓ | ✓ |
+| HEIC, JPEG XL | | ✓ | ✓ |
 | Animation | | GIF, WebP, JPEG XL, AVIF | GIF, WebP, JPEG XL |
 
 
@@ -163,7 +180,7 @@ Needs `ffi.enable = true` for web requests, as PHP allows FFI by default only on
 2. **Plan**: the size is fitted, the crop placed, format and encoder settings chosen.
 3. **Decode**: JPEGs at a reduced size where the driver can (ImageMagick, libvips).
 4. **Process**: crop, resize, convert to sRGB where needed, orient, filter.
-5. **Encode**: without metadata but the color profile; JPEG flattened on white.
+5. **Encode**: without meta but the color profile and the kept EXIF tags; JPEG flattened on white.
 6. **Write**: to a temporary file, renamed once complete.
 
 ## Scope
