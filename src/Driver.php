@@ -115,6 +115,15 @@ abstract class Driver
 	abstract protected function encodes(Format $format): bool;
 
 	/**
+	 * A color profile for the thumb, where the
+	 * library writes none; none to keep the thumb
+	 */
+	public function icc(Plan $plan): string|null
+	{
+		return null;
+	}
+
+	/**
 	 * @return array{library: string|null, version: string|null}
 	 */
 	public function info(): array

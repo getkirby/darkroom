@@ -4,6 +4,7 @@ namespace Darkroom\Tests;
 
 use Darkroom\Defaults;
 use Darkroom\Format;
+use Darkroom\Meta;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -18,7 +19,7 @@ class DefaultsTest extends TestCase
 		$this->assertNull($defaults->quality);
 		$this->assertNull($defaults->format);
 		$this->assertNull($defaults->interlace);
-		$this->assertNull($defaults->icc);
+		$this->assertNull($defaults->meta);
 	}
 
 	public static function fromProvider(): array
@@ -28,35 +29,35 @@ class DefaultsTest extends TestCase
 			'clamped'    => [['quality' => 150], 100, null, null, null],
 			'other keys' => [['threads' => 4, 'width' => 100], null, null, null, null],
 			'set' => [
-				['quality' => 20, 'format' => 'webp', 'interlace' => true, 'icc' => false],
+				['quality' => 20, 'format' => 'webp', 'interlace' => true, 'meta' => ['time', Meta::Camera]],
 				20,
 				Format::Webp,
 				true,
-				false
+				[Meta::Camera, Meta::Time]
 			],
 			'strings' => [
-				['quality' => '80', 'format' => 'JPEG', 'interlace' => 'yes', 'icc' => 'off'],
+				['quality' => '80', 'format' => 'JPEG', 'interlace' => 'yes', 'meta' => ['color', 'color']],
 				80,
 				Format::Jpeg,
 				true,
-				false
+				[Meta::Color]
 			],
 			'false' => [
-				['quality' => false, 'format' => false, 'interlace' => false, 'icc' => false],
+				['quality' => false, 'format' => false, 'interlace' => false, 'meta' => []],
 				null,
 				null,
 				false,
-				false
+				[]
 			],
 			'not set' => [
-				['quality' => 0, 'format' => null, 'interlace' => null, 'icc' => null],
+				['quality' => 0, 'format' => null, 'interlace' => null, 'meta' => null],
 				null,
 				null,
 				null,
 				null
 			],
 			'empty strings' => [
-				['quality' => '', 'format' => '', 'interlace' => '', 'icc' => ''],
+				['quality' => '', 'format' => '', 'interlace' => '', 'meta' => ''],
 				null,
 				null,
 				null,
@@ -71,14 +72,14 @@ class DefaultsTest extends TestCase
 		int|null $quality,
 		Format|null $format,
 		bool|null $interlace,
-		bool|null $icc
+		array|null $meta
 	): void {
 		$defaults = Defaults::from($values);
 
 		$this->assertSame($quality, $defaults->quality);
 		$this->assertSame($format, $defaults->format);
 		$this->assertSame($interlace, $defaults->interlace);
-		$this->assertSame($icc, $defaults->icc);
+		$this->assertSame($meta, $defaults->meta);
 	}
 
 	public function testFromDefaults(): void
@@ -95,7 +96,9 @@ class DefaultsTest extends TestCase
 			'negative'  => [['quality' => -1], 'Invalid quality: -1'],
 			'format'    => [['format' => 'svg'], 'Unknown image format: svg'],
 			'interlace' => [['interlace' => 'flase'], 'Invalid interlace: \'flase\''],
-			'icc'       => [['icc' => 2], 'Invalid icc: 2'],
+			'meta'      => [['meta' => 2], 'Invalid meta: 2'],
+			'meta name' => [['meta' => ['colour']], 'Invalid meta: \'colour\''],
+			'meta type' => [['meta' => [true]], 'Invalid meta: true'],
 		];
 	}
 
@@ -114,7 +117,7 @@ class DefaultsTest extends TestCase
 			quality:   80,
 			format:    Format::Webp,
 			interlace: false,
-			icc:       false
+			meta:      [Meta::Camera]
 		);
 
 		$array = $defaults->toArray();
@@ -124,7 +127,7 @@ class DefaultsTest extends TestCase
 			'quality'   => 80,
 			'format'    => 'webp',
 			'interlace' => false,
-			'icc'       => false,
+			'meta'      => ['camera'],
 		], $array);
 
 		$this->assertEquals($defaults, $back);

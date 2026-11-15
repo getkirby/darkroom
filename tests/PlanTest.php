@@ -5,6 +5,8 @@ namespace Darkroom\Tests;
 use Darkroom\Defaults;
 use Darkroom\Exception\UnsupportedException;
 use Darkroom\Format;
+use Darkroom\Key;
+use Darkroom\Meta;
 use Darkroom\Options;
 use Darkroom\Orientation;
 use Darkroom\Plan;
@@ -39,29 +41,6 @@ class PlanTest extends TestCase
 			abs($size->width * $ratio->height / $ratio->width - $size->height),
 			abs($size->height * $ratio->width / $ratio->height - $size->width)
 		);
-	}
-
-	protected static function jpeg(Size $stored, Orientation $orientation): string
-	{
-		$app1  = self::app1($orientation->value);
-		$frame = "\x08" . pack('nn', $stored->height, $stored->width) . "\x01\x01\x11\0";
-		$sof   = self::segment(0xC0, $frame);
-
-		return "\xFF\xD8" . $app1 . $sof;
-	}
-
-	protected function source(
-		int $width,
-		int $height,
-		Orientation $orientation = Orientation::None
-	): Source {
-		$size   = new Size($width, $height);
-		$stored = $orientation->apply($size);
-		$data   = self::jpeg($stored, $orientation);
-		$name   = $width . 'x' . $height . '-' . $orientation->value . '.jpg';
-		$file   = $this->file($name, $data);
-
-		return new Source($file);
 	}
 
 	public static function forCropProvider(): array
@@ -259,14 +238,15 @@ class PlanTest extends TestCase
 	{
 		$source   = $this->source(1200, 768);
 		$plain    = new Options();
-		$own      = new Options(quality: 30, format: Format::Png, interlace: false, icc: true);
-		$defaults = new Defaults(quality: 20, format: Format::Webp, interlace: true, icc: false);
+		$own      = new Options(quality: 30, format: Format::Png, interlace: false, meta: [Meta::Color]);
+		$defaults = new Defaults(quality: 20, format: Format::Webp, interlace: true, meta: [Meta::Time]);
 
 		$plan = Plan::for($source, $plain);
 
 		$this->assertSame(Format::Jpeg, $plan->format);
 		$this->assertSame(85, $plan->quality);
 		$this->assertFalse($plan->interlace);
+		$this->assertSame([Meta::Color], $plan->meta);
 		$this->assertTrue($plan->icc);
 
 		$plan = Plan::for($source, $plain, $defaults);
@@ -274,6 +254,7 @@ class PlanTest extends TestCase
 		$this->assertSame(Format::Webp, $plan->format);
 		$this->assertSame(20, $plan->quality);
 		$this->assertTrue($plan->interlace);
+		$this->assertSame([Meta::Time], $plan->meta);
 		$this->assertFalse($plan->icc);
 
 		$plan = Plan::for($source, $own, $defaults);
@@ -534,71 +515,14 @@ class PlanTest extends TestCase
 		$this->assertEquals(new Size(...$size), $plan->jpegSize());
 	}
 
-	public static function keyProvider(): array
-	{
-		$square = ['width' => 300, 'height' => 300];
-
-		return [
-			'whole image'      => [[], '1200x800-q85'],
-			'resize'           => [['width' => 300], '300x200-q85'],
-			'larger'           => [['width' => 2000], '1200x800-q85'],
-			'crop'             => [[...$square, 'crop' => 'center'], '300x300-crop200-0-800-800-q85'],
-			'crop left'        => [[...$square, 'crop' => 'left'], '300x300-crop0-0-800-800-q85'],
-			'same crop'        => [[...$square, 'crop' => '10% 50%'], '300x300-crop0-0-800-800-q85'],
-			'crop, same ratio' => [['width' => 600, 'height' => 400, 'crop' => true], '600x400-q85'],
-			'filters'          => [
-				['width' => 300, 'blur' => 5, 'grayscale' => true, 'sharpen' => 25],
-				'300x200-blur5-sharpen25-grayscale-q85'
-			],
-			'encoding' => [
-				['width' => 300, 'quality' => 80, 'interlace' => true, 'icc' => false],
-				'300x200-q80-interlace-noicc'
-			],
-		];
-	}
-
-	#[DataProvider('keyProvider')]
-	public function testKey(array $options, string $key): void
+	public function testKey(): void
 	{
 		$source  = $this->source(1200, 800);
-		$options = Options::from($options);
+		$options = Options::from([]);
 		$plan    = Plan::for($source, $options);
+		$for     = Key::for($plan);
 
-		$this->assertSame($key, $plan->key());
-	}
-
-	public function testKeyRoundTrip(): void
-	{
-		$sources = [[1200, 800], [4000, 2667], [200, 403], [1000, 333], [800, 1200]];
-		$requests = [
-			['width' => 300],
-			['height' => 287],
-			['width' => 142, 'height' => 287],
-			['width' => 800, 'height' => 533],
-			['width' => 300, 'height' => 300, 'crop' => 'center'],
-			['width' => 700, 'height' => 300, 'crop' => 'top left'],
-			['width' => 301, 'height' => 199, 'crop' => '70% 30%'],
-			['width' => 120, 'crop' => 'bottom right'],
-			['width' => 400, 'blur' => 5, 'grayscale' => true, 'sharpen' => 25],
-			['width' => 400, 'quality' => 70, 'interlace' => true, 'icc' => false],
-		];
-
-		foreach ($sources as $size) {
-			$source = $this->source(...$size);
-
-			foreach ($requests as $request) {
-				$options = Options::from($request);
-				$plan    = Plan::for($source, $options);
-				$key     = $plan->key();
-
-				$options = Options::from($key);
-				$again   = Plan::for($source, $options);
-
-				$this->assertSame($key, $again->key());
-				$this->assertEquals($plan->size(), $again->size());
-				$this->assertEquals($plan->crop, $again->crop);
-			}
-		}
+		$this->assertEquals($for, $plan->key());
 	}
 
 	public function testRegion(): void
@@ -837,7 +761,7 @@ class PlanTest extends TestCase
 	{
 		$source   = $this->source(1200, 800);
 		$options  = new Options(width: 300, crop: 'top left');
-		$defaults = new Defaults(quality: 80, icc: false);
+		$defaults = new Defaults(quality: 80, meta: [Meta::Rights]);
 		$plan     = Plan::for($source, $options, $defaults);
 
 		$array  = $plan->toArray();
@@ -848,7 +772,7 @@ class PlanTest extends TestCase
 			'quality'   => 80,
 			'format'    => 'jpg',
 			'interlace' => false,
-			'icc'       => false,
+			'meta'      => ['rights'],
 			'width'     => 300,
 			'crop'      => 'top left',
 		], $array);

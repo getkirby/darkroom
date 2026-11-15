@@ -11,19 +11,19 @@ use InvalidArgumentException;
  */
 readonly class Defaults
 {
-	public const bool ICC = true;
 	public const bool INTERLACE = false;
+	public const array META = [Meta::Color];
 	public const int QUALITY = 85;
 
 	/**
 	 * @param $quality SSIMULACRA2 score, 1–100
-	 * @param $icc Keep the color profile
+	 * @param list<Meta>|null $meta What thumbs keep of their source
 	 */
 	public function __construct(
 		public int|null $quality = null,
 		public Format|null $format = null,
 		public bool|null $interlace = null,
-		public bool|null $icc = null,
+		public array|null $meta = null,
 	) {
 	}
 
@@ -80,8 +80,41 @@ readonly class Defaults
 			quality:   static::number('quality', $options['quality'] ?? null, 100),
 			format:    self::format($options['format'] ?? null),
 			interlace: static::flag('interlace', $options['interlace'] ?? null),
-			icc:       static::flag('icc', $options['icc'] ?? null)
+			meta:      static::meta($options['meta'] ?? null)
 		);
+	}
+
+	/**
+	 * Cases or their values, in the order of the cases, each once
+	 *
+	 * @return list<Meta>|null
+	 */
+	protected static function meta(mixed $meta): array|null
+	{
+		if ($meta === null || $meta === '') {
+			return null;
+		}
+
+		if (is_array($meta) === false) {
+			static::error('meta', $meta);
+		}
+
+		$list = [];
+
+		foreach ($meta as $category) {
+			$list[] = match (true) {
+				$category instanceof Meta => $category,
+				is_string($category) === true => Meta::tryFrom($category) ?? static::error('meta', $category),
+				default                       => static::error('meta', $category)
+			};
+		}
+
+		$cases = array_filter(
+			Meta::cases(),
+			fn (Meta $case) => in_array($case, $list, true)
+		);
+
+		return array_values($cases);
 	}
 
 	protected static function number(
@@ -114,7 +147,7 @@ readonly class Defaults
 			'quality'   => $this->quality,
 			'format'    => $this->format?->extension(),
 			'interlace' => $this->interlace,
-			'icc'       => $this->icc,
+			'meta'      => $this->meta === null ? null : array_column($this->meta, 'value'),
 		];
 
 		return array_filter($array, fn ($value) => $value !== null);

@@ -35,6 +35,7 @@ final class FakeDriver extends Driver
 			'animate'   => [],
 			'available' => true,
 			'fatal'     => false,
+			'image'     => null,
 			'limit'     => null,
 			'orients'   => false,
 			'read'      => Format::cases(),
@@ -72,7 +73,7 @@ final class FakeDriver extends Driver
 		$this->plans[] = $plan;
 		$this->files[] = $file;
 
-		file_put_contents($file, $plan->format->name);
+		file_put_contents($file, $this->settings['image'] ?? $plan->format->name);
 
 		if ($this->settings['fatal'] === true) {
 			str_repeat('x', PHP_INT_MAX);

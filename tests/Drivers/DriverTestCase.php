@@ -993,7 +993,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.' . $extension);
 
-		$this->process('icc.jpg', $file, static::OPTIONS, ['icc' => $icc]);
+		$this->process('icc.jpg', $file, static::OPTIONS, ['meta' => $icc === true ? ['color'] : []]);
 
 		// a profile other than sRGB stays where its colors can't be converted
 		$expected =
@@ -1010,7 +1010,7 @@ abstract class DriverTestCase extends TestCase
 	{
 		$file = $this->file('thumb.png');
 
-		$this->process('p3.png', $file, static::OPTIONS, ['icc' => false]);
+		$this->process('p3.png', $file, static::OPTIONS, ['meta' => []]);
 
 		$image    = $this->image($file);
 		$color    = static::rgb(imagecolorat($image, 8, 8));

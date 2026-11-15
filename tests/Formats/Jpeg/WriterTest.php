@@ -3,6 +3,7 @@
 namespace Darkroom\Tests\Formats\Jpeg;
 
 use Darkroom\Formats\Jpeg\Writer;
+use Darkroom\Meta;
 use Darkroom\Meta\Blocks;
 use Darkroom\Meta\Exif;
 use Darkroom\Orientation;
@@ -142,6 +143,23 @@ class WriterTest extends JpegTestCase
 	}
 
 	#[RequiresFunction('exif_read_data')]
+	public function testStripTags(): void
+	{
+		$data     = self::fixture('exif.jpg');
+		$exif     = self::exif($data);
+		$original = Exif::tags($exif);
+		$tags     = Meta::exif([Meta::Camera, Meta::Time]);
+
+		$stripped = self::strip($data, $tags);
+		$exif     = self::exif($stripped);
+		$kept     = Exif::tags($exif);
+
+		$this->assertSame(['IFD0', 'EXIF'], array_keys($kept));
+		$this->assertSame($original['IFD0']['Make'], $kept['IFD0']['Make']);
+		$this->assertSame($original['EXIF']['DateTimeOriginal'], $kept['EXIF']['DateTimeOriginal']);
+		$this->assertSame(8, $kept['IFD0']['Orientation']);
+	}
+
 	public static function stripUnchangedProvider(): array
 	{
 		return [

@@ -6,6 +6,8 @@ use Darkroom\Defaults;
 use Darkroom\Focus;
 use Darkroom\Format;
 use Darkroom\Gravity;
+use Darkroom\Key;
+use Darkroom\Meta;
 use Darkroom\Options;
 use Darkroom\Rect;
 use InvalidArgumentException;
@@ -28,7 +30,7 @@ class OptionsTest extends TestCase
 		$this->assertNull($options->quality);
 		$this->assertNull($options->format);
 		$this->assertNull($options->interlace);
-		$this->assertNull($options->icc);
+		$this->assertNull($options->meta);
 	}
 
 	public static function focusProvider(): array
@@ -322,59 +324,13 @@ class OptionsTest extends TestCase
 		Options::from($values);
 	}
 
-	public static function fromKeyProvider(): array
+	public function testFromKey(): void
 	{
-		$encoding = ['quality' => 90, 'interlace' => false, 'icc' => true];
+		$key      = Key::from('300x200-q90');
+		$expected = $key->toOptions();
 
-		return [
-			'size' => [
-				'1200x800-q90',
-				['width' => 1200, 'height' => 800, ...$encoding]
-			],
-			'crop' => [
-				'300x300-crop200-0-800-800-q90',
-				['width' => 300, 'height' => 300, 'crop' => new Rect(200, 0, 800, 800), ...$encoding]
-			],
-			'filters' => [
-				'300x200-blur5-sharpen25-grayscale-q90',
-				['width' => 300, 'height' => 200, 'blur' => 5, 'sharpen' => 25, 'grayscale' => true, ...$encoding]
-			],
-			'encoding' => [
-				'300x200-q80-interlace-noicc',
-				['width' => 300, 'height' => 200, 'quality' => 80, 'interlace' => true, 'icc' => false]
-			],
-		];
-	}
-
-	#[DataProvider('fromKeyProvider')]
-	public function testFromKey(string $key, array $expected): void
-	{
-		$expected = new Options(...$expected);
-
-		$options = Options::from($key);
-
-		$this->assertEquals($expected, $options);
-	}
-
-	public static function fromKeyInvalidProvider(): array
-	{
-		return [
-			'empty'          => [''],
-			'no quality'     => ['300x200'],
-			'other order'    => ['300x200-q90-blur5'],
-			'half a crop'    => ['300x200-crop1-2-q90'],
-			'unknown part'   => ['300x200-sepia-q90'],
-			'trailing space' => ['300x200-q90 '],
-		];
-	}
-
-	#[DataProvider('fromKeyInvalidProvider')]
-	public function testFromKeyInvalid(string $key): void
-	{
-		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessage('Invalid key: ' . $key);
-
-		Options::from($key);
+		$this->assertEquals($expected, Options::from('300x200-q90'));
+		$this->assertEquals($expected, Options::from($key));
 	}
 
 	public function testFromOptions(): void
@@ -406,7 +362,7 @@ class OptionsTest extends TestCase
 			quality:   80,
 			format:    Format::Jpeg,
 			interlace: false,
-			icc:       false,
+			meta:      [Meta::Camera],
 			other:     ['watermark' => 'logo.png']
 		);
 
@@ -417,7 +373,7 @@ class OptionsTest extends TestCase
 			'quality'   => 80,
 			'format'    => 'jpg',
 			'interlace' => false,
-			'icc'       => false,
+			'meta'      => ['camera'],
 			'width'     => 300,
 			'height'    => 200,
 			'crop'      => 'top left',

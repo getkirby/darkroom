@@ -12,6 +12,9 @@ use InvalidArgumentException;
  */
 final readonly class Plan
 {
+	/**
+	 * @param list<Meta> $meta
+	 */
 	protected function __construct(
 		public Source $source,
 		public Options $options,
@@ -22,6 +25,7 @@ final readonly class Plan
 		public Format $format,
 		public int $quality,
 		public bool $interlace,
+		public array $meta,
 		public bool $icc,
 	) {
 	}
@@ -91,6 +95,7 @@ final readonly class Plan
 		$input    = $source->format();
 		$original = $source->size();
 		$output   = $options->format ?? $defaults->format ?? $input;
+		$meta     = $options->meta ?? $defaults->meta ?? Defaults::META;
 
 		[$crop, $size] = static::cut($options, $original);
 
@@ -110,7 +115,8 @@ final readonly class Plan
 			format:      $output,
 			quality:     $options->quality ?? $defaults->quality ?? Defaults::QUALITY,
 			interlace:   $options->interlace ?? $defaults->interlace ?? Defaults::INTERLACE,
-			icc:         $options->icc ?? $defaults->icc ?? Defaults::ICC
+			meta:        $meta,
+			icc:         in_array(Meta::Color, $meta, true)
 		);
 	}
 
@@ -146,49 +152,9 @@ final readonly class Plan
 	 * Names what the plan writes, without the format;
 	 * plans that write the same image from a source share it
 	 */
-	public function key(): string
+	public function key(): Key
 	{
-		$original = $this->source->size();
-		$options  = $this->options;
-		$crop     = $this->crop;
-		$parts    = [$this->size->width . 'x' . $this->size->height];
-
-		if (
-			$crop->width !== $original->width ||
-			$crop->height !== $original->height
-		) {
-			$parts[] = sprintf(
-				'crop%d-%d-%d-%d',
-				$crop->x,
-				$crop->y,
-				$crop->width,
-				$crop->height
-			);
-		}
-
-		if ($options->blur !== null) {
-			$parts[] = 'blur' . $options->blur;
-		}
-
-		if ($options->sharpen !== null) {
-			$parts[] = 'sharpen' . $options->sharpen;
-		}
-
-		if ($options->grayscale === true) {
-			$parts[] = 'grayscale';
-		}
-
-		$parts[] = 'q' . $this->quality;
-
-		if ($this->interlace === true) {
-			$parts[] = 'interlace';
-		}
-
-		if ($this->icc === false) {
-			$parts[] = 'noicc';
-		}
-
-		return implode('-', $parts);
+		return Key::for($this);
 	}
 
 	/**
@@ -280,7 +246,7 @@ final readonly class Plan
 			'quality'   => $this->quality,
 			'format'    => $this->format->extension(),
 			'interlace' => $this->interlace,
-			'icc'       => $this->icc,
+			'meta'      => array_column($this->meta, 'value'),
 			...$this->options->toArray(),
 		];
 	}

@@ -127,6 +127,23 @@ final class Source
 		return $transfer === 16 || $transfer === 18;
 	}
 
+	/**
+	 * The EXIF data the categories keep,
+	 * with the orientation unless `None`
+	 *
+	 * @internal
+	 * @param list<Meta> $meta
+	 */
+	public function keep(
+		array $meta,
+		Orientation $orientation = Orientation::None
+	): string {
+		$tags = Meta::exif($meta);
+		$tiff = $tags === [] ? '' : $this->tiff();
+
+		return Exif::filter($tiff, $tags, $orientation);
+	}
+
 	public function orientation(): Orientation
 	{
 		return $this->header()->orientation;

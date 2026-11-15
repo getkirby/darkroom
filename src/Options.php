@@ -16,7 +16,7 @@ final readonly class Options extends Defaults
 	 * @param $blur Gaussian sigma in output pixels, 1–100
 	 * @param $sharpen Amount, 1–100
 	 * @param $quality SSIMULACRA2 score, 1–100
-	 * @param $icc Keep the color profile
+	 * @param list<Meta>|null $meta What the thumb keeps of its source
 	 * @param $other Keys it doesn't know, such as a plugin's
 	 */
 	public function __construct(
@@ -29,14 +29,14 @@ final readonly class Options extends Defaults
 		int|null $quality = null,
 		Format|null $format = null,
 		bool|null $interlace = null,
-		bool|null $icc = null,
+		array|null $meta = null,
 		public array $other = [],
 	) {
 		parent::__construct(
 			quality:   $quality,
 			format:    $format,
 			interlace: $interlace,
-			icc:       $icc
+			meta:      $meta
 		);
 	}
 
@@ -50,11 +50,11 @@ final readonly class Options extends Defaults
 	}
 
 	/**
-	 * From an array, defaults or a plan's key
+	 * From an array, defaults or a plan's key, also as a string
 	 *
 	 * @throws InvalidArgumentException For an invalid option or key
 	 */
-	public static function from(Defaults|array|string $options): static
+	public static function from(Defaults|Key|array|string $options): static
 	{
 		if ($options instanceof static) {
 			return $options;
@@ -65,7 +65,11 @@ final readonly class Options extends Defaults
 		}
 
 		if (is_string($options) === true) {
-			$options = static::key($options);
+			$options = Key::from($options);
+		}
+
+		if ($options instanceof Key) {
+			return $options->toOptions();
 		}
 
 		$defaults  = Defaults::from($options);
@@ -87,49 +91,9 @@ final readonly class Options extends Defaults
 			quality:   $defaults->quality,
 			format:    $defaults->format,
 			interlace: $defaults->interlace,
-			icc:       $defaults->icc,
+			meta:      $defaults->meta,
 			other:     $other
 		);
-	}
-
-	/**
-	 * The options a plan's key names, all
-	 * set so that defaults change nothing
-	 *
-	 * @throws InvalidArgumentException For an invalid key
-	 */
-	protected static function key(string $key): array
-	{
-		$pattern = '/^(\d+)x(\d+)(?:-crop(\d+)-(\d+)-(\d+)-(\d+))?(?:-blur(\d+))?(?:-sharpen(\d+))?(-grayscale)?-q(\d+)(-interlace)?(-noicc)?$/';
-
-		if (preg_match($pattern, $key, $match, PREG_UNMATCHED_AS_NULL) !== 1) {
-			throw new InvalidArgumentException(
-				message: 'Invalid key: ' . $key
-			);
-		}
-
-		$crop = null;
-
-		if ($match[3] !== null) {
-			$crop = new Rect(
-				x:      (int)$match[3],
-				y:      (int)$match[4],
-				width:  (int)$match[5],
-				height: (int)$match[6]
-			);
-		}
-
-		return [
-			'width'     => $match[1],
-			'height'    => $match[2],
-			'crop'      => $crop,
-			'blur'      => $match[7],
-			'sharpen'   => $match[8],
-			'grayscale' => $match[9] !== null,
-			'quality'   => $match[10],
-			'interlace' => $match[11] !== null,
-			'icc'       => $match[12] === null,
-		];
 	}
 
 	/**

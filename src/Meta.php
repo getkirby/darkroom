@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types = 1);
+
+namespace Darkroom;
+
+/**
+ * What a thumb or a stripped image keeps of its source
+ */
+enum Meta: string
+{
+	case Camera      = 'camera';
+	case Color       = 'color';
+	case Description = 'description';
+	case Location    = 'location';
+	case Rights      = 'rights';
+	case Time        = 'time';
+
+	/**
+	 * The EXIF tags of the categories
+	 *
+	 * @param list<Meta> $meta
+	 * @return list<int>
+	 */
+	public static function exif(array $meta): array
+	{
+		$lists = array_map(fn (Meta $category) => $category->tags(), $meta);
+
+		return array_merge(...$lists);
+	}
+
+	/**
+	 * The EXIF tags, which are unique across IFDs;
+	 * the color profile has none
+	 *
+	 * @return list<int>
+	 */
+	public function tags(): array
+	{
+		return match ($this) {
+			// make and model; exposure, aperture, ISO, exposure program and bias,
+			// largest aperture, metering, flash, focal length, exposure mode,
+			// white balance, 35 mm focal length, lens range, make and model
+			self::Camera => [
+				0x010F, 0x0110, 0x829A, 0x829D, 0x8827, 0x8822, 0x9204, 0x9205, 0x9207,
+				0x9209, 0x920A, 0xA402, 0xA403, 0xA405, 0xA432, 0xA433, 0xA434
+			],
+			self::Color => [],
+			// the caption and title
+			self::Description => [0x010E, 0xA436],
+			// all of GPS
+			self::Location => range(0x00, 0x1F),
+			// artist, copyright and photographer
+			self::Rights => [0x013B, 0x8298, 0xA437],
+			// changed, taken and digitized, each with its offset
+			// from UTC and fractions of seconds
+			self::Time => [0x0132, 0x9003, 0x9004, 0x9010, 0x9011, 0x9012, 0x9290, 0x9291, 0x9292],
+		};
+	}
+}

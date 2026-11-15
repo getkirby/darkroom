@@ -8,8 +8,6 @@ use Darkroom\Driver;
 use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
 use Darkroom\Format;
-use Darkroom\Formats\Writer;
-use Darkroom\Meta\Blocks;
 use Darkroom\Orientation;
 use Darkroom\Plan;
 use Darkroom\Rect;
@@ -118,8 +116,11 @@ final class Gd extends Driver
 		return @imagecreatefromstring($riff) !== false;
 	}
 
-	protected function encode(GdImage $image, Plan $plan): string
-	{
+	protected function encode(
+		GdImage $image,
+		Plan $plan,
+		string $file
+	): void {
 		// encoders without alpha would keep the colors under it; JPEG
 		// decodes opaque, and no step after decoding adds transparency
 		if (
@@ -148,18 +149,11 @@ final class Gd extends Driver
 			default      => []
 		};
 
-		/** @var resource $stream */
-		$stream = fopen('php://memory', 'w+b');
-
-		if ($encoder($image, $stream, ...$options) !== true) {
+		if ($encoder($image, $file, ...$options) !== true) {
 			throw new ProcessException(
 				message: 'GD can\'t encode ' . $plan->format->extension()
 			);
 		}
-
-		rewind($stream);
-
-		return (string)stream_get_contents($stream);
 	}
 
 	protected static function encoder(Format $format): string
@@ -209,6 +203,16 @@ final class Gd extends Driver
 		imagecopy($flattened, $image, 0, 0, 0, 0, $width, $height);
 
 		return $flattened;
+	}
+
+	/**
+	 * Even without `icc`, as GD can't convert the colors to sRGB
+	 */
+	public function icc(Plan $plan): string|null
+	{
+		$profile = $plan->source->icc();
+
+		return static::isRgb($profile) === true ? $profile : null;
 	}
 
 	public function info(): array
@@ -303,10 +307,6 @@ final class Gd extends Driver
 	{
 		static::preflight($plan);
 
-		// first, as the handler below would
-		// throw on warnings readers silence
-		$profile = static::profile($plan);
-
 		// GD reports failures as warnings,
 		// except libpng's, which it recovers from
 		set_error_handler(static function (int $level, string $message): bool {
@@ -322,14 +322,8 @@ final class Gd extends Driver
 			$image = static::resample($image, $plan);
 			$image = static::orient($image, $plan->orientation);
 			$image = static::filter($image, $plan);
-			$data  = $this->encode($image, $plan);
 
-			if ($profile !== '') {
-				$blocks = new Blocks(icc: $profile);
-				$data   = Writer::embed($data, $plan->format, $blocks);
-			}
-
-			static::write($file, $data);
+			$this->encode($image, $plan, $file);
 		} catch (ErrorException|ValueError $exception) {
 			throw new ProcessException(
 				message: 'GD failed on ' . $plan->source->file . ': ' . $exception->getMessage(),
@@ -338,17 +332,6 @@ final class Gd extends Driver
 		} finally {
 			restore_error_handler();
 		}
-	}
-
-	/**
-	 * Even without `icc`, as GD can't convert the colors to sRGB
-	 */
-	protected static function profile(Plan $plan): string
-	{
-		$profile = $plan->source->icc();
-
-		// the color space in the header
-		return static::isRgb($profile) === true ? $profile : '';
 	}
 
 	protected function quality(Plan $plan): int
@@ -485,14 +468,5 @@ final class Gd extends Driver
 		// the first component's sampling factors, after the marker, length,
 		// precision, height, width, number of components and its id
 		return substr($data, $frame + 11, 1) === "\x11";
-	}
-
-	protected static function write(string $file, string $data): void
-	{
-		if (file_put_contents($file, $data) !== strlen($data)) {
-			throw new ProcessException(
-				message: 'GD can\'t write: ' . $file
-			);
-		}
 	}
 }

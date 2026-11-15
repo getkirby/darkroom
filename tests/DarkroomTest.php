@@ -12,13 +12,16 @@ use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
 use Darkroom\Exception\UnsupportedException;
 use Darkroom\Format;
+use Darkroom\Meta;
 use Darkroom\Options;
+use Darkroom\Orientation;
 use Darkroom\Settings;
 use Darkroom\Size;
 use Darkroom\Source;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresFunction;
 use stdClass;
 
 #[CoversClass(Darkroom::class)]
@@ -26,6 +29,7 @@ class DarkroomTest extends TestCase
 {
 	use Required;
 
+	protected const string EXIF = __DIR__ . '/fixtures/exif.jpg';
 	protected const string GIF  = __DIR__ . '/fixtures/gif/animated.gif';
 	protected const string HEIC = __DIR__ . '/fixtures/heif/plain.heic';
 	protected const string JPEG = __DIR__ . '/fixtures/orientation/Landscape_1.jpg';
@@ -76,9 +80,8 @@ class DarkroomTest extends TestCase
 			'quality'   => [['quality' => 'high'], 'Invalid quality: \'high\''],
 			'negative'  => [['quality' => -1], 'Invalid quality: -1'],
 			'interlace' => [['interlace' => 'flase'], 'Invalid interlace: \'flase\''],
-			'icc'       => [['icc' => 'flase'], 'Invalid icc: \'flase\''],
-			'icc 2'     => [['icc' => 2], 'Invalid icc: 2'],
-			'icc array' => [['icc' => []], 'Invalid icc: array'],
+			'meta'      => [['meta' => 'color'], 'Invalid meta: \'color\''],
+			'meta name' => [['meta' => ['icc']], 'Invalid meta: \'icc\''],
 		];
 	}
 
@@ -134,7 +137,7 @@ class DarkroomTest extends TestCase
 		$defaults = [
 			'quality'   => '80',
 			'interlace' => 'on',
-			'icc'       => 'no',
+			'meta'      => ['camera'],
 		];
 
 		$settings = [
@@ -405,13 +408,14 @@ class DarkroomTest extends TestCase
 	public function testPlanDefaults(): void
 	{
 		$driver   = new FakeDriver();
-		$defaults = ['quality' => '80', 'interlace' => 'on', 'icc' => 'off'];
+		$defaults = ['quality' => '80', 'interlace' => 'on', 'meta' => ['time']];
 		$darkroom = new Darkroom([$driver], $defaults);
 
 		$plan = $darkroom->plan(self::JPEG, []);
 
 		$this->assertSame(80, $plan->quality);
 		$this->assertTrue($plan->interlace);
+		$this->assertSame([Meta::Time], $plan->meta);
 		$this->assertFalse($plan->icc);
 	}
 
@@ -664,6 +668,28 @@ class DarkroomTest extends TestCase
 		} finally {
 			$this->assertSame([], $driver->runs);
 		}
+	}
+
+	#[RequiresFunction('exif_read_data')]
+	public function testProcessMeta(): void
+	{
+		$image    = file_get_contents(__DIR__ . '/fixtures/progressive.jpg');
+		$driver   = new FakeDriver(['image' => $image]);
+		$darkroom = new Darkroom([$driver]);
+		$dst      = $this->file('thumb.jpg');
+
+		$plan = $darkroom->process(self::EXIF, $dst, ['width' => 20, 'meta' => ['camera', 'color']]);
+
+		$source = $darkroom->open($dst);
+		$tags   = $source->exif();
+		$key    = $plan->key();
+
+		// without the orientation, which the driver applies
+		$this->assertStringEndsWith('-meta-camera-color', $key->toString());
+		$this->assertArrayHasKey('Make', $tags['IFD0']);
+		$this->assertArrayNotHasKey('Orientation', $tags['IFD0']);
+		$this->assertArrayNotHasKey('GPS', $tags);
+		$this->assertSame(['thumb.jpg'], $this->files());
 	}
 
 	public function testProcessNoLimit(): void

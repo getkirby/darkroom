@@ -4,9 +4,12 @@ declare(strict_types = 1);
 
 namespace Darkroom;
 
+use Closure;
 use Darkroom\Exception\Exception;
 use Darkroom\Exception\LimitException;
 use Darkroom\Exception\UnsupportedException;
+use Darkroom\Formats\Writer;
+use Darkroom\Meta\Blocks;
 use InvalidArgumentException;
 
 final class Darkroom
@@ -184,6 +187,36 @@ final class Darkroom
 		return new $class($this->settings->toArray());
 	}
 
+	/**
+	 * Writes the EXIF tags the plan keeps of its source and the
+	 * driver's profile into the thumb, where its format has a place
+	 */
+	protected function meta(
+		Plan $plan,
+		string $file,
+		string|null $icc
+	): void {
+		$exif = $plan->source->keep($plan->meta);
+
+		if ($exif === '' && $icc === null) {
+			return;
+		}
+
+		$blocks = new Blocks(icc: $icc, exif: $exif);
+
+		$thumb = @file_get_contents($file);
+
+		if ($thumb === false) {
+			throw new Exception(
+				message: 'Can\'t read the thumb: ' . $file
+			);
+		}
+
+		$data = Writer::embed($thumb, $plan->format, $blocks);
+
+		file_put_contents($file, $data);
+	}
+
 	public function open(string $file): Source
 	{
 		return new Source($file);
@@ -266,7 +299,13 @@ final class Darkroom
 		$options = Options::from([...$options->toArray(), 'format' => $output]);
 		$plan    = Plan::for($source, $options, $this->defaults, $driver);
 
-		$this->write($driver, $plan, $dst);
+		$this->write($dst, function (string $temp) use ($driver, $plan): void {
+			$driver->process($plan, $temp);
+
+			$icc = $driver->icc($plan);
+
+			$this->meta($plan, $temp, $icc);
+		});
 
 		return $plan;
 	}
@@ -282,11 +321,14 @@ final class Darkroom
 		}
 	}
 
-	protected function write(
-		Driver $driver,
-		Plan $plan,
-		string $file
-	): void {
+	/**
+	 * Writes the file through `$write`, into a
+	 * temporary file renamed once complete
+	 *
+	 * @param Closure(string): void $write
+	 */
+	protected function write(string $file, Closure $write): void
+	{
 		$dir  = dirname($file);
 		$temp = $dir . '/.' . basename($file) . '.tmp-' . bin2hex(random_bytes(6));
 
@@ -309,11 +351,11 @@ final class Darkroom
 		$this->temps[$temp] = true;
 
 		try {
-			$driver->process($plan, $temp);
+			$write($temp);
 
 			if (@rename($temp, $file) === false) {
 				throw new Exception(
-					message: 'Can\'t move the thumb to: ' . $file
+					message: 'Can\'t move the image to: ' . $file
 				);
 			}
 		} finally {
