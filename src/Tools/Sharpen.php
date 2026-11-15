@@ -13,9 +13,9 @@ namespace Darkroom\Tools;
 final class Sharpen
 {
 	/**
-	 * The kernel and the divisor that keeps its sum at 1
+	 * The kernel, its weights summing to 1
 	 *
-	 * @return array{list<list<float>>, float}
+	 * @return list<list<float>>
 	 */
 	public static function kernel(int $amount): array
 	{
@@ -23,12 +23,15 @@ final class Sharpen
 		$edge   = exp(-0.5 / ($sigma * $sigma));
 		$corner = $edge * $edge;
 		$sum    = 1.0 + 4.0 * ($edge + $corner);
-		$kernel = [
-			[-$corner, -$edge, -$corner],
-			[-$edge, 2.0 * $sum, -$edge],
-			[-$corner, -$edge, -$corner],
-		];
+		$scale  = 1.0 / ($sum + 1.0);
+		$edge   = -$edge * $scale;
+		$corner = -$corner * $scale;
+		$center = 2.0 * $sum * $scale;
 
-		return [$kernel, $sum + 1.0];
+		return [
+			[$corner, $edge, $corner],
+			[$edge, $center, $edge],
+			[$corner, $edge, $corner],
+		];
 	}
 }

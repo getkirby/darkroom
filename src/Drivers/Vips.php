@@ -514,12 +514,12 @@ final class Vips extends Driver
 
 	protected static function sharpen(Image $image, int $amount): Image
 	{
-		[$kernel, $divisor] = Sharpen::kernel($amount);
+		$kernel = Sharpen::kernel($amount);
 
 		$bands = $image->hasAlpha() === true ? $image->bands - 1 : $image->bands;
 
 		// the offset rounds, as casting truncates
-		$mask  = Image::newFromArray($kernel, $divisor, 0.5);
+		$mask  = Image::newFromArray($kernel, 1.0, 0.5);
 		$color = $image->extract_band(0, ['n' => $bands]);
 		$sharp = $color->conv($mask, ['precision' => 'float']);
 		$sharp = $sharp->cast($image->format);

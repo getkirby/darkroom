@@ -448,10 +448,10 @@ final class Gd extends Driver
 
 	protected static function sharpen(GdImage $image, int $amount): void
 	{
-		[$kernel, $divisor] = Sharpen::kernel($amount);
+		$kernel = Sharpen::kernel($amount);
 
 		// the offset rounds rather than truncates
-		imageconvolution($image, $kernel, $divisor, 0.5);
+		imageconvolution($image, $kernel, 1.0, 0.5);
 	}
 
 	protected static function smooth(GdImage $image, int $passes): void

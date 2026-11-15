@@ -14,8 +14,10 @@ use Darkroom\Settings;
 use Darkroom\Size;
 use Darkroom\Source;
 use Darkroom\Tools\Quality;
+use Darkroom\Tools\Sharpen;
 use Imagick as Image;
 use ImagickException;
+use ImagickKernel;
 
 final class Imagick extends Driver
 {
@@ -274,8 +276,12 @@ final class Imagick extends Driver
 			$frame->blurImage(0, $plan->options->blur);
 		}
 
+		// the kernel the other drivers use, which is faster too
 		if ($plan->options->sharpen !== null) {
-			$frame->sharpenImage(0, $plan->options->sharpen / 100);
+			$matrix = Sharpen::kernel($plan->options->sharpen);
+			$kernel = ImagickKernel::fromMatrix($matrix);
+
+			$frame->morphology(Image::MORPHOLOGY_CONVOLVE, 1, $kernel);
 		}
 	}
 
