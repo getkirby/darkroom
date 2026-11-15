@@ -14,16 +14,6 @@ use Darkroom\Format;
 final class Quality
 {
 	/**
-	 * The score from which whole chroma (4:4:4)
-	 * takes fewer bytes than half (4:2:0)
-	 */
-	protected const array FROM = [
-		'Avif' => 20,
-		'Heic' => 80,
-		'Jpeg' => 90,
-	];
-
-	/**
 	 * Encoder quality at the scores 0, 5, … 100, with chroma
 	 * at half resolution (4:2:0) where the format can choose
 	 */
@@ -42,12 +32,13 @@ final class Quality
 	protected const array LIBGD = [9, 11, 13, 15, 17, 19, 21, 24, 27, 30, 34, 38, 42, 47, 52, 58, 69, 82, 89, 98, 100];
 
 	/**
-	 * Encoder quality at the scores 0, 5, … 100 with whole chroma
+	 * Encoder quality with whole chroma (4:4:4) at the scores 0, 5, … 100,
+	 * from the score on at which it takes fewer bytes than half (4:2:0)
 	 */
 	protected const array WHOLE = [
-		'Avif' => [2, 6, 8, 9, 12, 15, 18, 20, 24, 28, 31, 35, 40, 44, 49, 55, 63, 74, 88, 100, 100],
-		'Heic' => [12, 13, 15, 16, 18, 20, 22, 23, 25, 28, 30, 33, 36, 39, 42, 46, 51, 57, 67, 100, 100],
-		'Jpeg' => [9, 10, 11, 12, 13, 14, 15, 17, 19, 21, 24, 28, 33, 39, 50, 64, 75, 85, 93, 100, 100],
+		'Avif' => [4 => 12, 15, 18, 20, 24, 28, 31, 35, 40, 44, 49, 55, 63, 74, 88, 100, 100],
+		'Heic' => [16 => 51, 57, 67, 100, 100],
+		'Jpeg' => [18 => 93, 100, 100],
 	];
 
 	/**
@@ -61,11 +52,8 @@ final class Quality
 		int $score,
 		bool $whole = true
 	): array {
-		$from  = static::FROM[$format->name] ?? null;
-		$whole =
-			$whole === true &&
-			$from !== null &&
-			$score >= $from;
+		$index = intdiv(min(max($score, 0), 100), 5);
+		$whole = $whole === true && isset(static::WHOLE[$format->name][$index]) === true;
 
 		$scales = $whole === true ? static::WHOLE : static::HALF;
 		$scale  = $scales[$format->name] ?? null;
@@ -86,7 +74,7 @@ final class Quality
 	/**
 	 * The quality at a score, between the two nearest
 	 *
-	 * @param list<int> $scale
+	 * @param array<int, int> $scale
 	 */
 	protected static function scale(array $scale, int $score): int
 	{
