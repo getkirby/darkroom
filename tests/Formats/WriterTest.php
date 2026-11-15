@@ -6,7 +6,6 @@ use Darkroom\Drivers\Vips;
 use Darkroom\Format;
 use Darkroom\Formats\Reader;
 use Darkroom\Formats\Writer;
-use Darkroom\Meta\Blocks;
 use Imagick;
 use Jcupitt\Vips\Image;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -101,8 +100,7 @@ class WriterTest extends FormatTestCase
 	public function testEmbed(string $data, string $profile): void
 	{
 		$format   = Format::detect($data);
-		$blocks   = new Blocks(icc: $profile);
-		$embedded = Writer::embed($data, $format, $blocks);
+		$embedded = Writer::embed($data, $format, icc: $profile);
 		$found    = self::embedded($embedded);
 		$expected = self::gd($data);
 		$actual   = self::gd($embedded);
@@ -119,8 +117,7 @@ class WriterTest extends FormatTestCase
 		}
 
 		$format   = Format::detect($data);
-		$blocks   = new Blocks(icc: $profile);
-		$embedded = Writer::embed($data, $format, $blocks);
+		$embedded = Writer::embed($data, $format, icc: $profile);
 		$image    = new Imagick();
 		$plain    = new Imagick();
 
@@ -136,8 +133,7 @@ class WriterTest extends FormatTestCase
 		$p3       = file_get_contents(self::FIXTURES . '/p3.icc');
 		$large    = self::pad($p3, 150_000);
 		$jpeg     = self::encode('imagejpeg');
-		$blocks   = new Blocks(icc: $large);
-		$embedded = Writer::embed($jpeg, Format::Jpeg, $blocks);
+		$embedded = Writer::embed($jpeg, Format::Jpeg, icc: $large);
 
 		$app0  = 2 + unpack('n', $jpeg, 4)[1];
 		$first = substr($embedded, 2 + $app0, 18);
@@ -151,10 +147,9 @@ class WriterTest extends FormatTestCase
 		$p3     = file_get_contents(self::FIXTURES . '/p3.icc');
 		$gif    = self::encode('imagegif');
 		$avif   = self::fixture('heif/plain.avif');
-		$blocks = new Blocks(icc: $p3);
 
-		$this->assertSame($gif, Writer::embed($gif, Format::Gif, $blocks));
-		$this->assertSame($avif, Writer::embed($avif, Format::Avif, $blocks));
+		$this->assertSame($gif, Writer::embed($gif, Format::Gif, icc: $p3));
+		$this->assertSame($avif, Writer::embed($avif, Format::Avif, icc: $p3));
 	}
 
 	#[DataProvider('embedProvider')]
@@ -162,13 +157,10 @@ class WriterTest extends FormatTestCase
 	{
 		$format   = Format::detect($data);
 		$other    = self::icc(200);
-		$first    = new Blocks(icc: $other);
-		$second   = new Blocks(icc: $profile);
-		$none     = new Blocks(icc: '');
-		$embedded = Writer::embed($data, $format, $first);
+		$embedded = Writer::embed($data, $format, icc: $other);
 
-		$replaced = Writer::embed($embedded, $format, $second);
-		$removed  = Writer::embed($embedded, $format, $none);
+		$replaced = Writer::embed($embedded, $format, icc: $profile);
+		$removed  = Writer::embed($embedded, $format, icc: '');
 
 		$this->assertSame($profile, self::embedded($replaced));
 		$this->assertSame('', self::embedded($removed));
@@ -185,8 +177,7 @@ class WriterTest extends FormatTestCase
 		}
 
 		$format   = Format::detect($data);
-		$blocks   = new Blocks(icc: $profile);
-		$embedded = Writer::embed($data, $format, $blocks);
+		$embedded = Writer::embed($data, $format, icc: $profile);
 		$image    = Image::newFromBuffer($embedded);
 		$plain    = Image::newFromBuffer($data);
 
@@ -200,8 +191,7 @@ class WriterTest extends FormatTestCase
 		$lossless = self::encode('imagewebp', true, IMG_WEBP_LOSSLESS);
 		$lossy    = self::encode('imagewebp');
 
-		$blocks   = new Blocks(icc: $p3);
-		$embedded = Writer::embed($lossless, Format::Webp, $blocks);
+		$embedded = Writer::embed($lossless, Format::Webp, icc: $p3);
 		$riff     = unpack('V', $embedded, 4)[1];
 
 		$this->assertSame('VP8L', substr($lossless, 12, 4));
@@ -210,7 +200,7 @@ class WriterTest extends FormatTestCase
 		$this->assertSame('ICCP', substr($embedded, 30, 4));
 		$this->assertSame(strlen($embedded) - 8, $riff);
 
-		$embedded = Writer::embed($lossy, Format::Webp, $blocks);
+		$embedded = Writer::embed($lossy, Format::Webp, icc: $p3);
 
 		$this->assertSame('VP8 ', substr($lossy, 12, 4));
 		$this->assertSame("\x20\0\0\0\x1D\0\0\x13\0\0", substr($embedded, 20, 10));

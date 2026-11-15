@@ -175,8 +175,10 @@ final class Gd extends Driver
 		return @$encoder($image, $stream) === true;
 	}
 
-	protected static function filter(GdImage $image, Plan $plan): GdImage
-	{
+	protected static function filter(
+		GdImage $image,
+		Plan $plan
+	): GdImage {
 		if ($plan->options->grayscale === true) {
 			imagefilter($image, IMG_FILTER_GRAYSCALE);
 		}
@@ -408,25 +410,28 @@ final class Gd extends Driver
 		return $resized;
 	}
 
-	protected static function sharpen(GdImage $image, int $amount): void
-	{
-		$kernel = Sharpen::kernel($amount);
-
-		// the offset rounds rather than truncates
-		imageconvolution($image, $kernel, 1.0, 0.5);
+	protected static function sharpen(
+		GdImage $image,
+		int $amount
+	): void {
+		imageconvolution(
+			image:   $image,
+			matrix:  Sharpen::kernel($amount),
+			divisor: 1.0,
+			offset:  0.5
+		);
 	}
 
 	protected static function smooth(GdImage $image, int $passes): void
 	{
-		$kernel = [
-			[1, 2, 1],
-			[2, 4, 2],
-			[1, 2, 1],
-		];
-
-		// the offset rounds, so many passes don't darken the image
 		for ($pass = 0; $pass < $passes; $pass++) {
-			imageconvolution($image, $kernel, 16, 0.5);
+			imageconvolution(
+				image:   $image,
+				matrix:  [[1, 2, 1], [2, 4, 2], [1, 2, 1]],
+				divisor: 16,
+				offset:  0.5
+			);
+
 		}
 	}
 

@@ -5,8 +5,7 @@ declare(strict_types = 1);
 namespace Darkroom\Containers;
 
 /**
- * The data of an ISO BMFF full box: a version and flags,
- * then fields read in order; those past the end are empty
+ * Reads the fields of an ISO BMFF full box
  *
  * @internal
  */
@@ -23,15 +22,14 @@ final class FullBox
 
 	public function bytes(int $length): string
 	{
-		$bytes           = substr($this->data, $this->position, $length);
+		$bytes = substr($this->data, $this->position, $length);
 		$this->position += $length;
 
 		return $bytes;
 	}
 
 	/**
-	 * The value in a field of 0, 2, 4 or 8 bytes;
-	 * none where it doesn't fit
+	 * Packs `$value` into `$size` big-endian bytes
 	 */
 	public static function field(int $value, int $size): string|null
 	{
@@ -47,7 +45,7 @@ final class FullBox
 
 	public function flags(): int
 	{
-		return Bytes::int(substr($this->data, 1, 3));
+		return Bytes::int(bytes: substr($this->data, 1, 3));
 	}
 
 	/**
@@ -55,12 +53,12 @@ final class FullBox
 	 */
 	public function id(): int
 	{
-		return $this->int($this->width());
+		return $this->int(length: $this->width());
 	}
 
 	public function int(int $length): int
 	{
-		$bytes           = substr($this->data, $this->position, $length);
+		$bytes = substr($this->data, $this->position, $length);
 		$this->position += $length;
 
 		return $length < 8 ? (int)hexdec(bin2hex($bytes)) : Bytes::int($bytes);
@@ -75,7 +73,8 @@ final class FullBox
 	}
 
 	/**
-	 * The length of an ID or count: 32 bits from version `$from` on, else 16
+	 * The length of an ID or count:
+	 * 32 bits from version `$from` on, else 16
 	 */
 	public function width(int $from = 1): int
 	{

@@ -5,8 +5,7 @@ declare(strict_types = 1);
 namespace Darkroom\Containers;
 
 /**
- * Copies spans of a stream and writes data in order,
- * adjacent spans in one go
+ * Copies spans of a stream and writes data in order
  *
  * @internal
  */

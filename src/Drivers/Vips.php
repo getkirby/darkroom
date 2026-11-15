@@ -33,7 +33,11 @@ final class Vips extends Driver
 		$strip = $pixel->embed(0, 0, 1, 2, ['extend' => 'black']);
 
 		// JPEG XL keeps frames as an animation only with their delays
-		$strip->setType(FFI::gtypes('VipsArrayInt'), 'delay', [100, 100]);
+		$strip->setType(
+			FFI::gtypes('VipsArrayInt'),
+			'delay',
+			[100, 100]
+		);
 
 		try {
 			$this->write($strip, $target, $format, ['page_height' => 1]);

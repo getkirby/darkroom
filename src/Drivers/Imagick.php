@@ -238,16 +238,25 @@ final class Imagick extends Driver
 
 	protected function frame(Image $frame, Plan $plan): void
 	{
-		$decoded  = new Size($frame->getImageWidth(), $frame->getImageHeight());
-		$region   = $plan->region($decoded);
 		$resample = $plan->resample();
+		$decoded  = new Size(
+			width:  $frame->getImageWidth(),
+			height: $frame->getImageHeight()
+		);
+
+		$region = $plan->region($decoded);
 
 		// cropping copies even the whole frame
 		if (
 			$region->width < $decoded->width ||
 			$region->height < $decoded->height
 		) {
-			$frame->cropImage($region->width, $region->height, $region->x, $region->y);
+			$frame->cropImage(
+				$region->width,
+				$region->height,
+				$region->x,
+				$region->y
+			);
 
 			// the crop would keep its offset into the frame
 			$frame->setImagePage(0, 0, 0, 0);
@@ -255,7 +264,12 @@ final class Imagick extends Driver
 
 		// ImageMagick's filter: Lanczos,
 		// Mitchell for alpha and palettes
-		$frame->resizeImage($resample->width, $resample->height, Image::FILTER_UNDEFINED, 1);
+		$frame->resizeImage(
+			$resample->width,
+			$resample->height,
+			Image::FILTER_UNDEFINED,
+			1
+		);
 
 		// web formats show no CMYK
 		if ($frame->getImageColorspace() === Image::COLORSPACE_CMYK) {
@@ -344,7 +358,11 @@ final class Imagick extends Driver
 
 		// libheif decodes the coded image, larger than the clean
 		// aperture, within the square of the shorter side limit
-		$side = max($source->width, $source->height, (int)sqrt($limit));
+		$side = max(
+			$source->width,
+			$source->height,
+			(int)sqrt($limit)
+		);
 
 		return $limits + [
 			Image::RESOURCETYPE_WIDTH      => $side,

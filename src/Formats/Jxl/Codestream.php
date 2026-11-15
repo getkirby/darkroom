@@ -9,7 +9,7 @@ use Darkroom\Orientation;
 use Darkroom\Size;
 
 /**
- * The headers of a JPEG XL codestream, bit by bit
+ * Headers of a JPEG XL codestream, bit by bit
  *
  * @internal
  */
@@ -26,8 +26,7 @@ final class Codestream
 	public const string SIGNATURE = "\xFF\x0A";
 
 	/**
-	 * Up to 32 bits from `$position` on, lowest first,
-	 * from data padded for a read of 8 bytes
+	 * Up to 32 bits from `$position` on, lowest first
 	 */
 	public static function bits(
 		string $data,
@@ -44,7 +43,6 @@ final class Codestream
 
 	/**
 	 * Size, orientation and animation from the headers
-	 * at the start of the codestream
 	 *
 	 * @return array{Header, bool}
 	 */
@@ -56,7 +54,7 @@ final class Codestream
 			return [new Header(), false];
 		}
 
-		// zeros past the end, for a read of 8 bytes at the last
+		// room for a read of 8 bytes at the end
 		$data     = str_pad($data, self::LENGTH + 8, "\0");
 		$position = 16;
 		$size     = self::size($data, $position);
@@ -94,8 +92,7 @@ final class Codestream
 	}
 
 	/**
-	 * Skips a preview header: in multiples of 8 or not,
-	 * the height, a ratio, the width without one
+	 * Skips a preview header
 	 */
 	public static function preview(string $data, int &$position): void
 	{
@@ -109,8 +106,7 @@ final class Codestream
 	}
 
 	/**
-	 * Height or width: for small images 5 bits of multiples of 8,
-	 * else 2 bits for how many follow
+	 * A height or width
 	 */
 	public static function side(
 		string $data,
@@ -126,8 +122,7 @@ final class Codestream
 	}
 
 	/**
-	 * A size header: whether it is small, the height,
-	 * then the width or its ratio to the height
+	 * A size header
 	 */
 	public static function size(string $data, int &$position): Size
 	{

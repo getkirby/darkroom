@@ -10,14 +10,14 @@ use Darkroom\Rect;
 use Darkroom\Size;
 
 /**
- * The clean aperture within the coded image
+ * Clean aperture within the coded image
  *
  * @internal
  */
 final class Aperture
 {
 	/**
-	 * The coded size and the clean aperture within it
+	 * Coded size and the clean aperture within it
 	 *
 	 * @param list<array{string, string}> $properties
 	 * @return array{Size, Rect}
@@ -58,9 +58,8 @@ final class Aperture
 	}
 
 	/**
-	 * First and last pixel of the clean aperture on one axis,
-	 * clamped to the image; rounded as libheif does:
-	 * horizontally down, vertically to the nearest
+	 * First and last pixel of the clean aperture
+	 * on one axis, rounded as libheif does
 	 *
 	 * @return array{int, int}
 	 */
@@ -69,9 +68,7 @@ final class Aperture
 		int $image,
 		bool $horizontal
 	): array {
-		// width or height a / b,
-		// the centre's offset c / d:
-		// signed numerators, denominators ≥ 1
+		// the size a / b and the centre's offset c / d
 		$axis   = $horizontal === true ? 0 : 8;
 		$length = Bytes::int(substr($clap, $axis, 8));
 		$offset = Bytes::int(substr($clap, 16 + $axis, 8));
@@ -80,7 +77,7 @@ final class Aperture
 		$c      = $offset >> 32;
 		$d      = max(1, $offset & 0xFFFFFFFF);
 
-		// in one division, so that halves and thirds stay exact
+		// one division keeps halves and thirds exact
 		$start = fdiv(2 * $c * $b + ($image * $b - $a) * $d, 2 * $d * $b);
 		$first = (int)($horizontal === true ? $start : $start + 0.5);
 		$last  = $first + (int)floor(fdiv($a, $b) - 0.5);

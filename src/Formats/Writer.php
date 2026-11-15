@@ -5,11 +5,9 @@ declare(strict_types = 1);
 namespace Darkroom\Formats;
 
 use Darkroom\Format;
-use Darkroom\Meta\Blocks;
 
 /**
- * Copies a container format without meta, but with
- * what it keeps: the color profile, the orientation, blocks
+ * Copies an image file without its meta
  *
  * @internal
  */
@@ -23,12 +21,13 @@ abstract class Writer
 	public const bool ORIENTS = false;
 
 	/**
-	 * The encoded image with the blocks
+	 * The encoded image with the EXIF data and profile
 	 */
 	public static function embed(
 		string $data,
 		Format $format,
-		Blocks $blocks
+		string $exif = '',
+		string|null $icc = null
 	): string {
 		$writer = self::for($format);
 		$in     = fopen('php://memory', 'w+b');
@@ -41,7 +40,7 @@ abstract class Writer
 		fwrite($in, $data);
 		rewind($in);
 
-		$writer::write($in, $out, $blocks);
+		$writer::write($in, $out, $exif, $icc);
 
 		rewind($out);
 
@@ -56,25 +55,27 @@ abstract class Writer
 		return match ($format) {
 			Format::Avif,
 			Format::Heic => Heif\Writer::class,
-			Format::Gif => Gif\Writer::class,
+			Format::Gif  => Gif\Writer::class,
 			Format::Jpeg => Jpeg\Writer::class,
-			Format::Jxl => Jxl\Writer::class,
-			Format::Png => Png\Writer::class,
+			Format::Jxl  => Jxl\Writer::class,
+			Format::Png  => Png\Writer::class,
 			Format::Webp => Webp\Writer::class,
 		};
 	}
 
 	/**
-	 * Copies the image from the start of `$handle` to `$out` without
-	 * meta, but with its color profile and orientation unless the
-	 * blocks have them, and with the blocks where the format has a place
+	 * Copies the image without meta, but with the EXIF data,
+	 * and with the profile or else the image's own
 	 *
 	 * @param resource $handle
 	 * @param resource $out
+	 * @param $exif TIFF data
+	 * @param $icc A profile instead of the image's own, `''` for none
 	 */
 	abstract public static function write(
 		$handle,
 		$out,
-		Blocks $blocks
+		string $exif = '',
+		string|null $icc = null
 	): void;
 }

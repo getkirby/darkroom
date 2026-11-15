@@ -10,10 +10,7 @@ use Darkroom\Containers\Layout;
 use Generator;
 
 /**
- * The boxes in the `meta` box, by the first of each type: `pitm` names
- * the primary item, `iinf` each item's type, `iref` which item describes
- * which, `iloc` where each item's data is, `iprp` the properties and
- * which item has which, `idat` the data of some items
+ * First box of each type in the `meta` box
  *
  * @internal
  */
@@ -30,10 +27,12 @@ final readonly class Meta
 	}
 
 	/**
-	 * The data of the box as a full box, at most `$length` bytes; empty without one
+	 * Data of the box, at most `$length` bytes
 	 */
-	public function box(string $type, int $length = Bytes::LIMIT): FullBox
-	{
+	public function box(
+		string $type,
+		int $length = Bytes::LIMIT
+	): FullBox {
 		$box = $this->boxes[$type] ?? null;
 
 		if ($box === null) {
@@ -41,15 +40,12 @@ final readonly class Meta
 		}
 
 		Bytes::seek($this->handle, $box[0]);
-
 		$data = Bytes::bytes($this->handle, min($box[1], $length));
-
 		return new FullBox($data);
 	}
 
 	/**
-	 * Type and data length of each box in the box,
-	 * after `$skip` bytes of its own fields; none without one
+	 * Type and data length of each box in the box, after `$skip` bytes
 	 *
 	 * @return Generator<string, int>
 	 */
@@ -62,7 +58,6 @@ final readonly class Meta
 		}
 
 		Bytes::seek($this->handle, $box[0] + $skip);
-
 		yield from Layout::Box->walk($this->handle, $box[1] - $skip);
 	}
 
@@ -81,8 +76,7 @@ final readonly class Meta
 	}
 
 	/**
-	 * Type and data length of each box in the `meta` box,
-	 * after its version and flags
+	 * Type and data length of each box in the `meta` box
 	 *
 	 * @param resource $handle
 	 * @return Generator<string, int>

@@ -28,8 +28,9 @@ final class Exif
 	protected const array SIZES = [1 => 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8, 4, 129 => 1];
 
 	/**
-	 * Type, count and value of the entries of the tags in `$keep` in the
-	 * IFD at the offset, without those of no type or with a value cut off
+	 * Type, count and value of the entries of the tags
+	 * in `$keep` in the IFD at the offset, without those
+	 * of no type or with a value cut off
 	 *
 	 * @param array<int, mixed> $keep Tags as keys
 	 * @return array<int, array{int, int, string}>

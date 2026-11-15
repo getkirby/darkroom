@@ -9,7 +9,6 @@ use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
 use Darkroom\Format;
 use Darkroom\Formats\Writer;
-use Darkroom\Meta\Blocks;
 use Darkroom\Options;
 use Darkroom\Orientation;
 use Darkroom\Plan;
@@ -263,8 +262,7 @@ class GdTest extends DriverTestCase
 		$length = pack('N', strlen($p3) + 1_000_000);
 		$icc    = substr_replace($p3 . str_repeat("\0", 1_000_000), $length, 0, 4);
 		$jpeg   = static::jpeg(6000, 4000, Orientation::None);
-		$blocks = new Blocks(icc: $icc);
-		$jpeg   = Writer::embed($jpeg, Format::Jpeg, $blocks);
+		$jpeg   = Writer::embed($jpeg, Format::Jpeg, icc: $icc);
 		$source = $this->file('large.jpg', $jpeg);
 		$file   = $this->file('thumb.jpg');
 
@@ -320,8 +318,7 @@ class GdTest extends DriverTestCase
 		$p3       = file_get_contents(static::FIXTURES . '/p3.icc');
 		$icc      = substr_replace($p3, 'GRAY', 16, 4);
 		$jpeg     = static::grey(30, 20, 'imagejpeg');
-		$blocks   = new Blocks(icc: $icc);
-		$jpeg     = Writer::embed($jpeg, Format::Jpeg, $blocks);
+		$jpeg     = Writer::embed($jpeg, Format::Jpeg, icc: $icc);
 		$source   = $this->file('gray.jpg', $jpeg);
 		$file     = $this->file('thumb.jpg');
 		$darkroom = new Darkroom([$this->driver]);

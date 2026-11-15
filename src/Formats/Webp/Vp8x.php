@@ -9,8 +9,7 @@ use Darkroom\Containers\Layout;
 use Darkroom\Size;
 
 /**
- * The extended header that the first chunk of any file
- * states: its flags and canvas, and the `VP8X` chunk of them
+ * The flags and canvas of a file's first chunk
  *
  * @internal
  */
@@ -28,7 +27,7 @@ final class Vp8x
 	];
 
 	/**
-	 * The `VP8X` chunk of the first chunk's canvas with the flags
+	 * A `VP8X` chunk with the first chunk's canvas and the flags
 	 */
 	public static function create(string $chunk, int $flags): string
 	{
@@ -40,8 +39,7 @@ final class Vp8x
 	}
 
 	/**
-	 * Those of an extended file, the alpha flag of a lossless one:
-	 * the bit after 14 bits each for width − 1 and height − 1
+	 * The flags of an extended file, the alpha flag of a lossless one
 	 */
 	public static function flags(string $chunk): int
 	{
@@ -61,8 +59,7 @@ final class Vp8x
 		$length = Bytes::int(substr($chunk, 4, 4), little: true);
 		$data   = substr($chunk, 8, $length);
 
-		// lossy: frame tag, start code,
-		// then width and height in 14 bits of 16 each
+		// lossy: frame tag, start code, then 14 of 16 bits per side
 		if (
 			$type === 'VP8 ' &&
 			substr($data, 3, 3) === "\x9D\x01\x2A" &&
@@ -73,8 +70,7 @@ final class Vp8x
 			return new Size($bits & 0x3FFF, $bits >> 16 & 0x3FFF);
 		}
 
-		// lossless: signature, then 14 bits
-		// each for width − 1 and height − 1
+		// lossless: signature, then 14 bits per side − 1
 		if (
 			$type === 'VP8L' &&
 			str_starts_with($data, "\x2F") === true &&
@@ -88,8 +84,7 @@ final class Vp8x
 			);
 		}
 
-		// extended: flags, reserved bytes,
-		// then 24 bits each for canvas width − 1 and height − 1
+		// extended: flags, reserved bytes, then 24 bits per side − 1
 		if ($type === 'VP8X' && strlen($data) === 10) {
 			$bits = Bytes::int(substr($data, 4), little: true);
 

@@ -7,8 +7,9 @@ namespace Darkroom\Containers;
 use Generator;
 
 /**
- * How a container frames its chunks: ISO BMFF boxes with a size
- * that counts the header, PNG chunks with a checksum after the data,
+ * How a container frames its chunks:
+ * ISO BMFF boxes with a size that counts the header,
+ * PNG chunks with a checksum after the data,
  * RIFF chunks with a little-endian size, padded to an even length
  *
  * @internal
@@ -49,8 +50,7 @@ enum Layout
 
 	/**
 	 * Type, start and end of each chunk, from its header
-	 * to the end of what follows its data, of all of them;
-	 * the walk goes on from the end, like a copy leaves the handle
+	 * to the end of what follows its data, of all of them
 	 *
 	 * @param resource $handle
 	 * @return Generator<string, array{int, int}>
@@ -82,8 +82,7 @@ enum Layout
 	}
 
 	/**
-	 * Type and data length of each chunk, at most `$steps`;
-	 * the caller may read the data, the walk goes on after it
+	 * Type and data length of each chunk, at most `$steps`
 	 *
 	 * @param resource $handle
 	 * @return Generator<string, int>

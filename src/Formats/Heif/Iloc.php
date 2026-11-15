@@ -8,16 +8,12 @@ use Darkroom\Containers\Bytes;
 use Darkroom\Containers\FullBox;
 
 /**
- * The item locations of an `iloc` box, by the widths of its fields
+ * Item locations of an `iloc` box
  *
  * @internal
  */
 final readonly class Iloc
 {
-	/**
-	 * Widths of the base offsets, the item IDs, the extents'
-	 * indexes, lengths and offsets, and the construction methods
-	 */
 	public int $base;
 	public int $id;
 	public int $index;
@@ -39,25 +35,22 @@ final readonly class Iloc
 		$this->length = $sizes >> 8 & 15;
 		$this->base   = $sizes >> 4 & 15;
 
-		// extent indexes and construction methods from version 1, 32-bit IDs from 2
+		// indexes and methods from version 1, 32-bit IDs from 2
 		$this->index  = $iloc->version > 0 ? $sizes & 15 : 0;
 		$this->method = $iloc->version > 0 ? 2 : 0;
 		$this->id     = $iloc->width(2);
 	}
 
 	/**
-	 * A cursor past the widths and the number of entries, and that number
+	 * A cursor at the first entry, and the number of entries
 	 *
 	 * @return array{FullBox, int}
 	 */
 	protected function entries(): array
 	{
 		$cursor = new FullBox($this->data);
-
 		$cursor->position = 6;
-
 		$count = $cursor->int($this->id);
-
 		return [$cursor, $count];
 	}
 
@@ -79,8 +72,7 @@ final readonly class Iloc
 	}
 
 	/**
-	 * Offset and length in the file of the items' extents, at most
-	 * `STEPS` in all; those in the `idat` box from its data
+	 * Offset and length in the file of each item's extents
 	 *
 	 * @param array<int, string> $items
 	 * @return array<int, list<array{int, int}>>
@@ -112,7 +104,7 @@ final readonly class Iloc
 				continue;
 			}
 
-			// at most those in the data; those without fields are all the same
+			// no more than the data holds, one without fields
 			$count = match ($fields) {
 				0       => min($count, 1),
 				default => min($count, intdiv($cursor->left(), $fields))
@@ -131,7 +123,7 @@ final readonly class Iloc
 				$from = $origin + $start + $cursor->int($this->offset);
 				$size = $cursor->int($this->length);
 
-				// none for an item before the start of the file or beyond integers
+				// before the start of the file or overflowed
 				if ($from < 0 || is_int($from) === false) {
 					$valid = false;
 				} else {
@@ -148,12 +140,11 @@ final readonly class Iloc
 	}
 
 	/**
-	 * The `iloc` box of the `meta` box, with where the `idat` data starts
+	 * `iloc` box of the `meta` box
 	 */
 	public static function from(Meta $meta): static
 	{
 		$box = $meta->box('iloc');
-
 		return new static($box->data, $meta->boxes['idat'][0] ?? null);
 	}
 }

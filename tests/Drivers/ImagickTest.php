@@ -9,7 +9,6 @@ use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
 use Darkroom\Format;
 use Darkroom\Formats\Writer;
-use Darkroom\Meta\Blocks;
 use Darkroom\Options;
 use Darkroom\Orientation;
 use Darkroom\Plan;
@@ -192,8 +191,7 @@ class ImagickTest extends DriverTestCase
 
 		$jpeg     = file_get_contents(static::FIXTURES . '/cmyk.jpg');
 		$cmyk     = static::cmyk();
-		$blocks   = new Blocks(icc: $cmyk);
-		$tagged   = Writer::embed($jpeg, Format::Jpeg, $blocks);
+		$tagged   = Writer::embed($jpeg, Format::Jpeg, icc: $cmyk);
 		$source   = $this->file('cmyk.jpg', $tagged);
 		$file     = $this->file('thumb.jpg');
 		$darkroom = new Darkroom([$this->driver]);

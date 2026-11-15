@@ -7,7 +7,6 @@ namespace Darkroom\Formats\Jxl;
 use Darkroom\Containers\Layout;
 use Darkroom\Containers\Splice;
 use Darkroom\Formats\Writer as Base;
-use Darkroom\Meta\Blocks;
 
 /**
  * @internal
@@ -15,16 +14,13 @@ use Darkroom\Meta\Blocks;
 final class Writer extends Base
 {
 	/**
-	 * The boxes of the image: signature, file type, level,
-	 * the codestream, whole or in parts, and its frame index
+	 * The boxes of the image
 	 */
 	protected const array KEEP = ['JXL ', 'ftyp', 'jxlc', 'jxli', 'jxll', 'jxlp'];
 
 	/**
-	 * Keeps the boxes in `KEEP` and adds the blocks' `Exif` box after the
-	 * file type, in a container for a bare codestream; not the data to
-	 * rebuild a JPEG, which holds that JPEG's meta; the codestream
-	 * holds orientation and color profile
+	 * Keeps the boxes in `KEEP`, an `Exif` box after
+	 * the file type, wrapping a bare codestream for it
 	 *
 	 * @param resource $handle
 	 * @param resource $out
@@ -32,9 +28,10 @@ final class Writer extends Base
 	public static function write(
 		$handle,
 		$out,
-		Blocks $blocks
+		string $exif = '',
+		string|null $icc = null
 	): void {
-		$exif   = $blocks->exif === '' ? '' : Layout::Box->chunk('Exif', pack('N', 0) . $blocks->exif);
+		$box    = $exif === '' ? '' : Layout::Box->chunk('Exif', pack('N', 0) . $exif);
 		$splice = new Splice($handle, $out);
 
 		rewind($handle);
@@ -50,7 +47,7 @@ final class Writer extends Base
 				}
 
 				if ($type === 'ftyp') {
-					$splice->write($exif);
+					$splice->write($box);
 				}
 			}
 
@@ -58,12 +55,10 @@ final class Writer extends Base
 			return;
 		}
 
-		// a bare codestream in a container, after the EXIF data,
-		// in a last box without a size, to the end of the file
-		if ($exif !== '' && str_starts_with($head, Codestream::SIGNATURE) === true) {
+		// a bare codestream in a last box of size 0, to the end
+		if ($box !== '' && str_starts_with($head, Codestream::SIGNATURE) === true) {
 			$ftyp = Layout::Box->chunk('ftyp', 'jxl ' . pack('N', 0) . 'jxl ');
-
-			fwrite($out, Reader::SIGNATURE . $ftyp . $exif . pack('N', 0) . 'jxlc');
+			fwrite($out, Reader::SIGNATURE . $ftyp . $box . pack('N', 0) . 'jxlc');
 		}
 
 		stream_copy_to_stream($handle, $out);

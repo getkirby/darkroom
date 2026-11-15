@@ -13,15 +13,15 @@ use Darkroom\Rect;
 use Darkroom\Size;
 
 /**
- * HEIF files (HEIC, AVIF) describe their images
- * as items with properties in the `meta` box
+ * HEIC and AVIF files
  *
  * @internal
  */
 final class Reader extends Base
 {
 	/**
-	 * By a horizontal flip or none, then by clockwise quarter turns
+	 * By a horizontal flip or none,
+	 * then by clockwise quarter turns
 	 */
 	protected const array ORIENTATIONS = [
 		[
@@ -39,8 +39,7 @@ final class Reader extends Base
 	];
 
 	/**
-	 * The clean aperture within the coded image,
-	 * which some decoders return whole
+	 * The clean aperture, which some decoders ignore
 	 */
 	public function canvas(): Rect|null
 	{
@@ -63,10 +62,12 @@ final class Reader extends Base
 	{
 		$properties = Properties::of($this->handle, ['colr']);
 
-		// the color type, three 16-bit codes,
-		// then the range flag in the top bit
+		// the type, three 16-bit codes, the range in the top bit
 		foreach ($properties as [, $data]) {
-			if (str_starts_with($data, 'nclx') === true && strlen($data) >= 11) {
+			if (
+				str_starts_with($data, 'nclx') === true &&
+				strlen($data) >= 11
+			) {
 				/** @var array{code1: int, code2: int, code3: int, range: int} $codes */
 				$codes = unpack('n3code/Crange', $data, 4);
 
@@ -137,8 +138,7 @@ final class Reader extends Base
 	}
 
 	/**
-	 * The profile of the primary item's `colr` property
-	 * with an ICC profile, unrestricted or restricted
+	 * The ICC profile of the primary item's `colr` property
 	 */
 	public function icc(): string
 	{

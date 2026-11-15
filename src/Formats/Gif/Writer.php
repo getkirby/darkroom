@@ -6,7 +6,6 @@ namespace Darkroom\Formats\Gif;
 
 use Darkroom\Containers\Splice;
 use Darkroom\Formats\Writer as Base;
-use Darkroom\Meta\Blocks;
 
 /**
  * @internal
@@ -14,15 +13,17 @@ use Darkroom\Meta\Blocks;
 final class Writer extends Base
 {
 	/**
-	 * The application extensions of the image:
-	 * loops and the color profile
+	 * The application extensions for loops and the color profile
 	 */
-	protected const array KEEP = ['ANIMEXTS1.0', 'ICCRGBG1012', 'NETSCAPE2.0'];
+	protected const array KEEP = [
+		'ANIMEXTS1.0',
+		'ICCRGBG1012',
+		'NETSCAPE2.0'
+	];
 
 	/**
-	 * Keeps the header, images, graphic controls, plain text and
-	 * the application extensions in `KEEP`, no comments;
-	 * ends with the trailer, also where the file ends early
+	 * Keeps the header, images, graphic controls,
+	 * plain text and the extensions in `KEEP`
 	 *
 	 * @param resource $handle
 	 * @param resource $out
@@ -30,21 +31,26 @@ final class Writer extends Base
 	public static function write(
 		$handle,
 		$out,
-		Blocks $blocks
+		string $exif = '',
+		string|null $icc = null
 	): void {
 		$splice = new Splice($handle, $out);
 		$from   = null;
+		$blocks = Reader::blocks($handle);
 
 		// each part kept up to the start of the next
-		foreach (Reader::blocks($handle) as $kind => [$start, $head]) {
+		foreach ($blocks as $kind => [$start, $head]) {
 			if ($from !== null) {
 				$splice->copy($from, $start);
 			}
 
 			$from = match ($kind) {
-				'GIF', ',', "!\x01", "!\xF9" => $start,
-				"!\xFF"                     => in_array($head, self::KEEP, true) === true ? $start : null,
-				default                     => null
+				'GIF',
+				',',
+				"!\x01",
+				"!\xF9" => $start,
+				"!\xFF" => in_array($head, self::KEEP, true) === true ? $start : null,
+				default => null
 			};
 		}
 

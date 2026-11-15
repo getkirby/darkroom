@@ -9,7 +9,6 @@ use Darkroom\Exception\Exception;
 use Darkroom\Exception\LimitException;
 use Darkroom\Exception\UnsupportedException;
 use Darkroom\Formats\Writer;
-use Darkroom\Meta\Blocks;
 use InvalidArgumentException;
 
 final class Darkroom
@@ -203,8 +202,6 @@ final class Darkroom
 			return;
 		}
 
-		$blocks = new Blocks(icc: $icc, exif: $exif);
-
 		$thumb = @file_get_contents($file);
 
 		if ($thumb === false) {
@@ -213,7 +210,7 @@ final class Darkroom
 			);
 		}
 
-		$data = Writer::embed($thumb, $plan->format, $blocks);
+		$data = Writer::embed($thumb, $plan->format, $exif, $icc);
 
 		file_put_contents($file, $data);
 	}
@@ -322,7 +319,7 @@ final class Darkroom
 		string $writer,
 		$in,
 		string $file,
-		Blocks $blocks
+		string $exif
 	): void {
 		$out = @fopen($file, 'wb');
 
@@ -333,7 +330,7 @@ final class Darkroom
 		}
 
 		try {
-			$writer::write($in, $out, $blocks);
+			$writer::write($in, $out, $exif);
 		} finally {
 			fclose($out);
 		}
@@ -361,9 +358,8 @@ final class Darkroom
 		$kept        = Meta::kept($options->strip ?? $this->defaults->strip ?? Defaults::STRIP);
 		$orientation = $writer::ORIENTS === true ? $source->orientation() : Orientation::None;
 		$exif        = $source->keep($kept, $orientation);
-		$blocks      = new Blocks(exif: $exif);
 
-		$this->write($dst, function (string $temp) use ($source, $writer, $blocks): void {
+		$this->write($dst, function (string $temp) use ($source, $writer, $exif): void {
 			$in = @fopen($source->file, 'rb');
 
 			if ($in === false) {
@@ -373,7 +369,7 @@ final class Darkroom
 			}
 
 			try {
-				$this->rewrite($writer, $in, $temp, $blocks);
+				$this->rewrite($writer, $in, $temp, $exif);
 			} finally {
 				fclose($in);
 			}

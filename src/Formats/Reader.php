@@ -16,8 +16,7 @@ use Darkroom\Rect;
 abstract class Reader
 {
 	/**
-	 * The color signal of a file without one, as libheif's:
-	 * unspecified primaries, transfer and matrix, full range
+	 * The color signal libheif gives a file without one
 	 */
 	public const array UNSPECIFIED = [2, 2, 2, 1];
 
@@ -41,7 +40,8 @@ abstract class Reader
 	}
 
 	/**
-	 * The color signal: primaries, transfer, matrix and full range (H.273)
+	 * The color signal: primaries, transfer,
+	 * matrix and full range (H.273)
 	 *
 	 * @return array{int, int, int, int}
 	 */
@@ -63,10 +63,10 @@ abstract class Reader
 		return match ($format) {
 			Format::Avif,
 			Format::Heic => Heif\Reader::class,
-			Format::Gif => Gif\Reader::class,
+			Format::Gif  => Gif\Reader::class,
 			Format::Jpeg => Jpeg\Reader::class,
-			Format::Jxl => Jxl\Reader::class,
-			Format::Png => Png\Reader::class,
+			Format::Jxl  => Jxl\Reader::class,
+			Format::Png  => Png\Reader::class,
 			Format::Webp => Webp\Reader::class,
 		};
 	}
@@ -84,7 +84,7 @@ abstract class Reader
 	}
 
 	/**
-	 * The reader of the file's format; none for others
+	 * The reader for the file's format
 	 */
 	public static function open(string $file): self|null
 	{
@@ -109,14 +109,13 @@ abstract class Reader
 	}
 
 	/**
-	 * The profile at the start of the data, without what follows it
+	 * The ICC profile at the start of the data, cut to its length
 	 */
 	public static function profile(string $data): string
 	{
 		$length = Bytes::int(substr($data, 0, 4));
 
-		// at least the header and the number of tags,
-		// and the header's signature
+		// the header and tag count, and its signature
 		if (
 			$length < 132 ||
 			$length > strlen($data) ||

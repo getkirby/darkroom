@@ -9,14 +9,14 @@ use Darkroom\Containers\FullBox;
 use Darkroom\Containers\Layout;
 
 /**
- * The properties of the primary item
+ * Properties of the primary item
  *
  * @internal
  */
 final class Properties
 {
 	/**
-	 * The item's property indexes from an `ipma` box
+	 * Item's property indexes from an `ipma` box
 	 *
 	 * @param resource $handle
 	 * @return list<int>|null
@@ -39,7 +39,11 @@ final class Properties
 		$mask = $size === 2 ? 0x7FFF : 0x7F;
 
 		// ID, number of indexes, indexes
-		for ($step = 0; $step < $entries && $position < $end; $step++) {
+		for (
+			$step = 0;
+			$step < $entries && $position < $end;
+			$step++
+		) {
 			/** @var array{item: int, count: int} $fields */
 			$fields    = unpack($entry, $data, $position);
 			$position += $id + 1;
@@ -51,7 +55,10 @@ final class Properties
 				$indexes = unpack($size === 2 ? 'n*' : 'C*', $list);
 
 				// without the top bit, which marks essential properties
-				$masked = array_map(fn (int $index) => $index & $mask, $indexes);
+				$masked = array_map(
+					fn (int $index) => $index & $mask,
+					$indexes
+				);
 
 				return array_values($masked);
 			}
@@ -63,12 +70,11 @@ final class Properties
 	}
 
 	/**
-	 * Type and data of the primary item's properties
-	 * of the types, in the order they apply
+	 * Primary item's properties of the types, in the order they apply
 	 *
 	 * @param resource $handle
 	 * @param list<string> $types
-	 * @param $bytes Read of each, enough for those but a profile
+	 * @param $bytes Read of each
 	 * @return list<array{string, string}>
 	 */
 	public static function of(
@@ -79,7 +85,6 @@ final class Properties
 		$primary = 0;
 		$iprp    = null;
 
-		// `iprp` once the primary item is known, usually right away,
 		// in one walk, as this runs for every header
 		foreach (Meta::walk($handle) as $type => $length) {
 			match ($type) {
@@ -129,8 +134,7 @@ final class Properties
 	}
 
 	/**
-	 * Type and up to `$bytes` of the data of the properties
-	 * of the types in an `ipco` box by index, counted from 1
+	 * Properties of the types in an `ipco` box, by index from 1
 	 *
 	 * @param resource $handle
 	 * @param list<string> $types

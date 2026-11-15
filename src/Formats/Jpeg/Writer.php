@@ -6,7 +6,6 @@ namespace Darkroom\Formats\Jpeg;
 
 use Darkroom\Containers\Bytes;
 use Darkroom\Formats\Writer as Base;
-use Darkroom\Meta\Blocks;
 
 /**
  * @internal
@@ -20,8 +19,7 @@ final class Writer extends Base
 	public const bool ORIENTS = true;
 
 	/**
-	 * `ICC_PROFILE` APP2 segments of the profile,
-	 * numbered from 1; none for none
+	 * `ICC_PROFILE` APP2 segments of the profile
 	 */
 	protected static function profile(string $profile): string
 	{
@@ -29,7 +27,7 @@ final class Writer extends Base
 			return '';
 		}
 
-		// after the 12 bytes of its marker, the sequence number and count
+		// room after the marker, the sequence number and count
 		$parts    = str_split($profile, self::DATA - 14);
 		$count    = chr(count($parts));
 		$segments = '';
@@ -43,8 +41,7 @@ final class Writer extends Base
 	}
 
 	/**
-	 * Copies the bytes up to the next marker, or skips them without `$out`,
-	 * past stuffed zeros, restart markers and fill bytes
+	 * Copies the bytes up to the next marker, or skips them without `$out`
 	 *
 	 * @param resource $handle
 	 * @param resource|null $out
@@ -86,10 +83,8 @@ final class Writer extends Base
 	}
 
 	/**
-	 * Of the application segments, keeps JFIF without its thumbnail,
-	 * the color profile unless the blocks have one, and Adobe's color
-	 * transform; no comments, nothing after the end of image;
-	 * the blocks after JFIF
+	 * Keeps JFIF without its thumbnail, the color profile
+	 * and Adobe's color transform; the meta after JFIF
 	 *
 	 * @param resource $handle
 	 * @param resource $out
@@ -97,15 +92,14 @@ final class Writer extends Base
 	public static function write(
 		$handle,
 		$out,
-		Blocks $blocks
+		string $exif = '',
+		string|null $icc = null
 	): void {
-		$tiff  = $blocks->exif;
-		$own   = $blocks->icc === null;
-		$app1  = $tiff === '' ? '' : self::segment(0xE1, "Exif\0\0" . $tiff);
-		$after = $app1 . self::profile($blocks->icc ?? '');
+		$own   = $icc === null;
+		$app1  = $exif === '' ? '' : self::segment(0xE1, "Exif\0\0" . $exif);
+		$after = $app1 . self::profile($icc ?? '');
 		$scan  = false;
 
-		// past the start of image
 		Bytes::seek($handle, 2);
 		fwrite($out, Reader::SIGNATURE);
 
@@ -113,7 +107,7 @@ final class Writer extends Base
 			// the entropy-coded data after a start of scan, else stray bytes
 			self::scan($handle, $scan === true ? $out : null);
 
-			// the end of the file ends the image;
+			// the end of the file as end of image;
 			// the length counts its own two bytes
 			$head   = (string)fread($handle, 4);
 			$marker = ord($head[1] ?? "\xD9");
@@ -144,8 +138,7 @@ final class Writer extends Base
 				continue;
 			}
 
-			// JFIF with a thumbnail of 0 × 0 pixels;
-			// the blocks after it, as JFIF comes first
+			// JFIF with a 0 × 0 thumbnail, the meta after it
 			if ($marker === 0xE0) {
 				$data = substr($data, 0, 12) . "\0\0";
 			} else {

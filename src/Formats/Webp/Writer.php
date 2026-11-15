@@ -8,7 +8,6 @@ use Darkroom\Containers\Bytes;
 use Darkroom\Containers\Layout;
 use Darkroom\Containers\Splice;
 use Darkroom\Formats\Writer as Base;
-use Darkroom\Meta\Blocks;
 
 /**
  * @internal
@@ -22,9 +21,8 @@ final class Writer extends Base
 	public const bool ORIENTS = true;
 
 	/**
-	 * Keeps the chunks in `KEEP`, the profile unless the blocks have one,
-	 * nothing after the RIFF chunk; a `VP8X` chunk for an extended file
-	 * or the blocks, the profile after it, EXIF last
+	 * Keeps the chunks in `KEEP`, with a `VP8X` chunk
+	 * where needed and the EXIF data last
 	 *
 	 * @param resource $handle
 	 * @param resource $out
@@ -32,13 +30,13 @@ final class Writer extends Base
 	public static function write(
 		$handle,
 		$out,
-		Blocks $blocks
+		string $exif = '',
+		string|null $icc = null
 	): void {
-		$tiff    = $blocks->exif;
-		$own     = $blocks->icc === null;
-		$profile = $blocks->icc ?? '';
+		$own     = $icc === null;
+		$profile = $icc ?? '';
 		$iccp    = $profile === '' ? '' : Layout::Riff->chunk('ICCP', $profile);
-		$exif    = $tiff === '' ? '' : Layout::Riff->chunk('EXIF', $tiff);
+		$chunk   = $exif === '' ? '' : Layout::Riff->chunk('EXIF', $exif);
 
 		// the RIFF chunk's length counts `WEBP` and the chunks after it
 		rewind($handle);
@@ -46,7 +44,7 @@ final class Writer extends Base
 		$length = Bytes::int(substr($head, 4, 4), little: true) - 4;
 		$first  = substr($head, 12);
 
-		// the flags of the meta off, those of the blocks on
+		// the flags of the old meta off, those of the new on
 		$clear  = Vp8x::FLAGS['EXIF'] | Vp8x::FLAGS['XMP '];
 		$clear |= $own === true ? 0 : Vp8x::FLAGS['ICCP'];
 		$set    = $exif === '' ? 0 : Vp8x::FLAGS['EXIF'];
@@ -55,7 +53,10 @@ final class Writer extends Base
 
 		fwrite($out, "RIFF\0\0\0\0WEBP");
 
-		if ($set !== 0 || str_starts_with($first, 'VP8X') === true) {
+		if (
+			$set !== 0 ||
+			str_starts_with($first, 'VP8X') === true
+		) {
 			$vp8x = Vp8x::create($first, $flags);
 			fwrite($out, $vp8x . $iccp);
 		}
@@ -75,7 +76,7 @@ final class Writer extends Base
 			}
 		}
 
-		$splice->write($exif);
+		$splice->write($chunk);
 		$splice->flush();
 
 		$length = (int)ftell($out) - 8;

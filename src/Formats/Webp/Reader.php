@@ -17,7 +17,6 @@ final class Reader extends Base
 {
 	/**
 	 * Header and first 10 data bytes of the first chunk
-	 * (`VP8 `, `VP8L` or `VP8X`); `''` for no WebP file
 	 */
 	protected function chunk(): string
 	{
@@ -83,9 +82,8 @@ final class Reader extends Base
 	}
 
 	/**
-	 * Data length of the `EXIF` or `ICCP` chunk,
-	 * with the handle at its data;
-	 * libwebp needs the flag for it
+	 * Data length of the chunk, with the handle at
+	 * its data; libwebp needs the flag for it
 	 *
 	 * @param key-of<Vp8x::FLAGS> $type
 	 */

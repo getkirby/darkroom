@@ -8,15 +8,15 @@ use Darkroom\Containers\Bytes;
 use Darkroom\Containers\FullBox;
 
 /**
- * The item tables: types and references
+ * Item tables: types and references
  *
  * @internal
  */
 final class Items
 {
 	/**
-	 * The items of the list that describe only auxiliary
-	 * images, such as depth or gain maps, from the `iref` box
+	 * Items that describe only auxiliary images,
+	 * such as gain maps
 	 *
 	 * @param array<int, string> $items
 	 * @return list<int>
@@ -38,23 +38,27 @@ final class Items
 				$auxiliary[] = $from;
 			}
 
-			if ($type === 'cdsc' && isset($items[$from]) === true) {
-				$targets          = Bytes::bytes($meta->handle, min($count * $id, $size - $id - 2));
+			if (
+				$type === 'cdsc' &&
+				isset($items[$from]) === true
+			) {
+				$targets = Bytes::bytes($meta->handle, min($count * $id, $size - $id - 2));
 				$described[$from] = (array)unpack($id === 2 ? 'n*' : 'N*', $targets);
 			}
 		}
 
 		$only = array_filter(
 			$described,
-			fn (array $targets) => $targets !== [] && array_diff($targets, $auxiliary) === []
+			fn (array $targets) =>
+				$targets !== [] &&
+				array_diff($targets, $auxiliary) === []
 		);
 
 		return array_keys($only);
 	}
 
 	/**
-	 * Whether the list holds the entry, at a multiple of its length;
-	 * searched as a string, as a list of IDs can be long
+	 * Whether the list holds the entry at a multiple of its length
 	 */
 	public static function contains(string $list, string $entry): bool
 	{
@@ -70,8 +74,10 @@ final class Items
 	/**
 	 * The item of the type that describes the primary item
 	 */
-	public static function describing(Meta $meta, string $type): int|null
-	{
+	public static function describing(
+		Meta $meta,
+		string $type
+	): int|null {
 		$types   = self::types($meta);
 		$items   = array_keys($types, $type, true);
 		$pitm    = $meta->box('pitm', 8);
@@ -94,8 +100,7 @@ final class Items
 	}
 
 	/**
-	 * The first of the items with a content description
-	 * reference to the item, from the `iref` box
+	 * The first of the items with a `cdsc` reference to the item
 	 *
 	 * @param list<int> $items
 	 */
@@ -139,8 +144,7 @@ final class Items
 	}
 
 	/**
-	 * The type of each item by ID, from the `iinf` box;
-	 * `''` for entries before version 2, which have none
+	 * Type of each item by ID, from the `iinf` box
 	 *
 	 * @return array<int, string>
 	 */
@@ -162,9 +166,7 @@ final class Items
 			// 32-bit IDs from version 3; then the protection
 			// index, and from version 2 the item type
 			$item = $infe->int($infe->width(3));
-
 			$infe->position += 2;
-
 			$items[$item] = $infe->version >= 2 ? $infe->bytes(4) : '';
 		}
 

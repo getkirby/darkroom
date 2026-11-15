@@ -4,7 +4,6 @@ namespace Darkroom\Tests\Formats\Jpeg;
 
 use Darkroom\Formats\Jpeg\Writer;
 use Darkroom\Meta;
-use Darkroom\Meta\Blocks;
 use Darkroom\Meta\Exif;
 use Darkroom\Orientation;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -104,7 +103,7 @@ class WriterTest extends JpegTestCase
 		memory_reset_peak_usage();
 		$memory = memory_get_usage();
 
-		Writer::write($handle, $out, new Blocks());
+		Writer::write($handle, $out);
 
 		$peak = memory_get_peak_usage();
 
@@ -193,15 +192,14 @@ class WriterTest extends JpegTestCase
 		$this->assertSame($expected, $stripped);
 	}
 
-	public function testWriteBlocks(): void
+	public function testWriteMeta(): void
 	{
 		$data    = self::fixture('progressive.jpg');
 		$tiff    = self::tiff([[0x0100, 4, 30]]);
 		$icc     = self::icc(200);
-		$blocks  = new Blocks(icc: $icc, exif: $tiff);
 		$markers = ["\xFF\xE0", "Exif\0\0", 'ICC_PROFILE'];
 
-		$written = self::write($data, $blocks);
+		$written = self::write($data, $tiff, $icc);
 
 		$this->assertSame($tiff, self::exif($written));
 		$this->assertSame($icc, self::profile($written));
@@ -220,9 +218,8 @@ class WriterTest extends JpegTestCase
 		$data   = self::fixture('progressive.jpg');
 		$value  = str_repeat('a', 70_000);
 		$tiff   = "MM\0*" . pack('NnnnNNN', 8, 1, 0x010E, 2, 70_000, 26, 0) . $value;
-		$blocks = new Blocks(exif: $tiff);
 
-		$written = self::write($data, $blocks);
+		$written = self::write($data, $tiff);
 
 		$this->assertSame(self::strip($data), $written);
 	}

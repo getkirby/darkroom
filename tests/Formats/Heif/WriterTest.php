@@ -6,7 +6,6 @@ use Darkroom\Formats\Heif\Iloc;
 use Darkroom\Formats\Heif\Items;
 use Darkroom\Formats\Heif\Meta;
 use Darkroom\Formats\Heif\Writer;
-use Darkroom\Meta\Blocks;
 use Darkroom\Meta\Exif;
 use Darkroom\Orientation;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -219,9 +218,8 @@ class WriterTest extends HeifTestCase
 	{
 		$data   = self::fixture('heif/plain.heic');
 		$tiff   = self::tiff([[0x0100, 4, 30]]);
-		$blocks = new Blocks(exif: $tiff);
 
-		$written = self::write($data, $blocks);
+		$written = self::write($data, $tiff);
 
 		// without an item of its own, as for a thumb
 		$this->assertSame($data, $written);

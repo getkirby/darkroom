@@ -5,7 +5,6 @@ namespace Darkroom\Tests\Formats;
 use Darkroom\Formats\Header;
 use Darkroom\Formats\Reader;
 use Darkroom\Formats\Writer;
-use Darkroom\Meta\Blocks;
 use Darkroom\Meta\Exif;
 use Darkroom\Orientation;
 use Darkroom\Rect;
@@ -201,17 +200,19 @@ abstract class FormatTestCase extends TestCase
 		$orients     = $exif === null && (static::WRITER)::ORIENTS === true;
 		$orientation = $orients === true ? $header->orientation : Orientation::None;
 		$kept        = Exif::filter($tiff, $tags, $orientation);
-		$blocks      = new Blocks(exif: $kept);
 
-		return static::write($data, $blocks);
+		return static::write($data, $kept);
 	}
 
-	protected static function write(string $data, Blocks $blocks): string
-	{
+	protected static function write(
+		string $data,
+		string $exif = '',
+		string|null $icc = null
+	): string {
 		$handle = static::handle($data);
 		$out    = fopen('php://memory', 'w+b');
 
-		(static::WRITER)::write($handle, $out, $blocks);
+		(static::WRITER)::write($handle, $out, $exif, $icc);
 		rewind($out);
 
 		return stream_get_contents($out);

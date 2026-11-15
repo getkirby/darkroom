@@ -16,16 +16,11 @@ use Generator;
  */
 final class Reader extends Base
 {
-	/**
-	 * Of the two versions
-	 */
 	public const array SIGNATURES = ['GIF87a', 'GIF89a'];
 
 	/**
-	 * Each part by its introducer, with its start and head: `GIF` for the
-	 * header, `,` for an image with its descriptor, `!` and the label for an
-	 * extension with its first sub-block, `;` where the parts end; past at
-	 * most `LIMIT` blocks and sub-blocks
+	 * Start and head of each part by its introducer: `GIF` header,
+	 * `,` image, `!` extension with its label, `;` trailer
 	 *
 	 * @param resource $handle
 	 * @return Generator<string, array{int, string}>
@@ -34,7 +29,7 @@ final class Reader extends Base
 	{
 		rewind($handle);
 
-		// the signature and logical screen, then its color table
+		// the signature and logical screen
 		$head = (string)fread($handle, 13);
 
 		if (in_array(substr($head, 0, 6), self::SIGNATURES, true) === false) {
@@ -52,12 +47,11 @@ final class Reader extends Base
 			$kind  = (string)fread($handle, 1);
 			$head  = '';
 
-			// an image's descriptor, then its color table and code size;
-			// an extension's label
+			// an image's descriptor,
+			// then its color table and code size
 			if ($kind === ',') {
 				$head  = (string)fread($handle, 9);
 				$table = self::table(ord($head[8] ?? "\0"));
-
 				fseek($handle, $table + 1, SEEK_CUR);
 			} elseif ($kind === '!') {
 				$kind .= (string)fread($handle, 1);
@@ -65,8 +59,8 @@ final class Reader extends Base
 				break;
 			}
 
-			// data sub-blocks, each read with the length of the next;
-			// an extension's first, which names an application
+			// sub-blocks, each read with the next one's length;
+			// an extension's first is its head
 			$length = Bytes::int((string)fread($handle, 1));
 
 			if ($kind !== ',' && $length > 0) {
@@ -92,8 +86,8 @@ final class Reader extends Base
 	}
 
 	/**
-	 * The logical screen around the first image,
-	 * which some decoders return on its own
+	 * The logical screen,
+	 * which some decoders crop to the first image
 	 */
 	public function canvas(): Rect|null
 	{
@@ -109,7 +103,12 @@ final class Reader extends Base
 		/** @var array{1: int, 2: int, 3: int, 4: int} $frame */
 		$frame  = unpack('v4', $image);
 		$size   = self::size($screen);
-		$canvas = new Rect(-$frame[1], -$frame[2], $size->width, $size->height);
+		$canvas = new Rect(
+			-$frame[1],
+			-$frame[2],
+			$size->width,
+			$size->height
+		);
 
 		if ($canvas == new Rect(0, 0, $frame[3], $frame[4])) {
 			return null;
@@ -135,13 +134,15 @@ final class Reader extends Base
 	}
 
 	/**
-	 * The descriptor of each image: its position, size and flags
+	 * The descriptor of each image
 	 *
 	 * @return Generator<int, string>
 	 */
 	protected function images(): Generator
 	{
-		foreach (self::blocks($this->handle) as $kind => [, $head]) {
+		$blocks = self::blocks($this->handle);
+
+		foreach ($blocks as $kind => [, $head]) {
 			if ($kind === ',') {
 				yield $head;
 			}
@@ -154,16 +155,12 @@ final class Reader extends Base
 	public function isAnimated(): bool
 	{
 		$images = $this->images();
-
-		// to the second one
 		$images->next();
-
 		return $images->valid();
 	}
 
 	/**
-	 * The logical screen's width, height,
-	 * flags and more; `''` for no GIF
+	 * The logical screen descriptor
 	 */
 	protected function screen(): string
 	{

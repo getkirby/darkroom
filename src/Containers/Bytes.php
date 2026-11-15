@@ -5,7 +5,9 @@ declare(strict_types = 1);
 namespace Darkroom\Containers;
 
 /**
- * Integers and bytes from a stream, within limits
+ * Reads bytes and integers from image files,
+ * with caps that keep a broken file from
+ * exhausting memory or looping forever
  *
  * @internal
  */
@@ -23,11 +25,13 @@ final class Bytes
 			return '';
 		}
 
-		return (string)stream_get_contents($handle, min($length, self::LIMIT));
+		$length = min($length, self::LIMIT);
+
+		return (string)stream_get_contents($handle, $length);
 	}
 
 	/**
-	 * Copies from `$start` to `$end`, or to the end of the file
+	 * Copies from `$start` to `$end` (or to end of file)
 	 *
 	 * @param resource $handle
 	 * @param resource $out
@@ -42,8 +46,10 @@ final class Bytes
 		stream_copy_to_stream($handle, $out, $end - $start);
 	}
 
-	public static function int(string $bytes, bool $little = false): int
-	{
+	public static function int(
+		string $bytes,
+		bool $little = false
+	): int {
 		if (strlen($bytes) === 1) {
 			return ord($bytes);
 		}

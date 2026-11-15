@@ -123,7 +123,7 @@ readonly class Defaults
 
 		foreach ($strip as $category) {
 			$list[] = match (true) {
-				$category instanceof Meta => $category,
+				$category instanceof Meta     => $category,
 				is_string($category) === true => Meta::tryFrom($category) ?? static::error('strip', $category),
 				default                       => static::error('strip', $category)
 			};

@@ -8,9 +8,8 @@ use InvalidArgumentException;
 use Stringable;
 
 /**
- * Names what a plan writes, without the format, and the options
- * that plan the same again; plans that write the same image
- * from a source share it
+ * String representation of a plan,
+ * e.g. `300x200-blur5-sharpen25-grayscale-q90`
  */
 final readonly class Key implements Stringable
 {
@@ -63,7 +62,8 @@ final readonly class Key implements Stringable
 			$parts[] = 'interlace';
 		}
 
-		// the EXIF categories it keeps: none, all as `exif`, else by code
+		// the EXIF categories it keeps:
+		// none, all as `exif`, else by code
 		$kept  = Meta::kept($plan->strip);
 		$codes = array_map(fn (Meta $category) => $category->code(), $kept);
 

@@ -39,7 +39,10 @@ final class Reader extends Base
 			}
 
 			// libpng ignores EXIF data with JPEG's marker
-			if ($type === 'eXIf' && Exif::marker($this->handle) === true) {
+			if (
+				$type === 'eXIf' &&
+				Exif::marker($this->handle) === true
+			) {
 				continue;
 			}
 
@@ -48,8 +51,7 @@ final class Reader extends Base
 	}
 
 	/**
-	 * The color signal of the `cICP` chunk: primaries,
-	 * transfer, matrix and full range, a byte each
+	 * The color signal of the `cICP` chunk
 	 *
 	 * @return array{int, int, int, int}
 	 */
@@ -88,7 +90,6 @@ final class Reader extends Base
 		$orientation = null;
 
 		foreach ($this->chunks() as $type => $length) {
-			// width and height, then bit depth, color type, …
 			if ($type === 'IHDR' && $size === null) {
 				$data = Bytes::bytes($this->handle, min($length, 8));
 				$size = new Size(0, 0);
@@ -117,8 +118,8 @@ final class Reader extends Base
 	}
 
 	/**
-	 * The profile of the first `iCCP` chunk: a name, a null byte,
-	 * the compression method and the profile in zlib's format
+	 * The profile of the first `iCCP` chunk,
+	 * after its name and compression method
 	 */
 	public function icc(): string
 	{
@@ -138,8 +139,7 @@ final class Reader extends Base
 	}
 
 	/**
-	 * Data in zlib's format, inflated up to about `LIMIT`
-	 * however far it would go; none without zlib
+	 * Inflates zlib data up to about `LIMIT` bytes
 	 */
 	protected static function inflate(string $data): string
 	{

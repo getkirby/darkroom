@@ -5,7 +5,6 @@ namespace Darkroom\Tests\Formats\Webp;
 use Darkroom\Formats\Jpeg\Reader as Jpeg;
 use Darkroom\Formats\Webp\Vp8x;
 use Darkroom\Formats\Webp\Writer;
-use Darkroom\Meta\Blocks;
 use Darkroom\Meta\Exif;
 use Darkroom\Orientation;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -149,11 +148,9 @@ class WriterTest extends WebpTestCase
 		$iccp     = self::riff('ICCP', $icc);
 		$pixels   = self::lossy();
 		$data     = self::webp($extended, $own, $pixels);
-		$other    = new Blocks(icc: $icc);
-		$none     = new Blocks(icc: '');
 
-		$replaced = self::write($data, $other);
-		$removed  = self::write($data, $none);
+		$replaced = self::write($data, icc: $icc);
+		$removed  = self::write($data, icc: '');
 
 		$this->assertSame(self::webp($extended, $iccp, $pixels), $replaced);
 		$this->assertSame(self::webp($plain, $pixels), $removed);
@@ -169,10 +166,6 @@ class WriterTest extends WebpTestCase
 		$exif     = self::riff('EXIF', $six);
 		$icc      = self::icc(200);
 		$iccp     = self::riff('ICCP', $icc);
-		$blocks   = new Blocks(
-			icc: $icc,
-			exif: $six
-		);
 
 		$transparent = self::webp($lossless);
 		$opaque      = self::webp($lossy);
@@ -183,8 +176,8 @@ class WriterTest extends WebpTestCase
 		$extended = self::extended(0x28);
 		$other    = self::webp($extended, $iccp, $lossy, $exif);
 
-		$alpha = self::write($transparent, $blocks);
-		$plain = self::write($opaque, $blocks);
+		$alpha = self::write($transparent, $six, $icc);
+		$plain = self::write($opaque, $six, $icc);
 
 		$this->assertSame($expected, $alpha);
 		$this->assertSame($other, $plain);

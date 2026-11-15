@@ -6,7 +6,6 @@ namespace Darkroom\Formats\Heif;
 
 use Darkroom\Containers\Layout;
 use Darkroom\Formats\Writer as Base;
-use Darkroom\Meta\Blocks;
 
 /**
  * @internal
@@ -14,9 +13,7 @@ use Darkroom\Meta\Blocks;
 final class Writer extends Base
 {
 	/**
-	 * What overwrites the data of each type of meta item, then
-	 * what pads it: EXIF data without tags after its offset of 0,
-	 * an empty XMP packet, nothing
+	 * Data and padding that overwrite each type of meta item
 	 */
 	protected const array BLANKS = [
 		'Exif' => ["\0\0\0\0MM\0*\0\0\0\x08\0\0\0\0\0\0", "\0"],
@@ -30,8 +27,8 @@ final class Writer extends Base
 	protected const array KEEP = ['ftyp', 'mdat', 'meta', 'moov'];
 
 	/**
-	 * Overwrites `$length` bytes at `$offset` with `$data`,
-	 * or with nothing where it doesn't fit, then with `$pad`
+	 * Overwrites `$length` bytes at `$offset`
+	 * with `$data`, then `$pad`
 	 *
 	 * @param resource $out
 	 */
@@ -53,18 +50,18 @@ final class Writer extends Base
 		fseek($out, $offset);
 		fwrite($out, $data);
 
-		for ($left = $length - strlen($data); $left > 0; $left -= 8192) {
+		for (
+			$left = $length - strlen($data);
+			$left > 0;
+			$left -= 8192
+		) {
 			fwrite($out, str_repeat($pad, min($left, 8192)));
 		}
 	}
 
 	/**
-	 * Copies up to the end of the last top-level box in `KEEP`, others
-	 * before it as `free` boxes of zeros; overwrites the meta items
-	 * in place with `BLANKS`, as offsets point past them, the image's own
-	 * EXIF item with `$exif`, but not those of auxiliary images only; false,
-	 * without copying, where it doesn't fit; orientation and color profile
-	 * are properties
+	 * Copies the image with its meta blanked in place, as offsets
+	 * point past it; false where `$exif` doesn't fit
 	 *
 	 * @param resource $out
 	 */
@@ -112,7 +109,7 @@ final class Writer extends Base
 				continue;
 			}
 
-			// the type after the size, the data after the header
+			// as a `free` box of zeros
 			$from     = (int)ftell($handle);
 			$blanks[] = [$start + 4, 4, 'free', ''];
 			$blanks[] = [$from, $end - $from, '', "\0"];
@@ -130,8 +127,8 @@ final class Writer extends Base
 	}
 
 	/**
-	 * Copies the image without meta, but with the blocks'
-	 * EXIF data in its own item where it fits, else without
+	 * Copies the image without meta,
+	 * with the EXIF data where it fits
 	 *
 	 * @param resource $handle
 	 * @param resource $out
@@ -139,15 +136,16 @@ final class Writer extends Base
 	public static function write(
 		$handle,
 		$out,
-		Blocks $blocks
+		string $exif = '',
+		string|null $icc = null
 	): void {
-		$exif = $blocks->exif === '' ? '' : pack('N', 0) . $blocks->exif;
+		$data = $exif === '' ? '' : pack('N', 0) . $exif;
 
 		rewind($handle);
 
 		$meta = Meta::index($handle);
 
-		if (self::clean($meta, $out, $exif) === false) {
+		if (self::clean($meta, $out, $data) === false) {
 			self::clean($meta, $out);
 		}
 	}

@@ -8,7 +8,6 @@ use Darkroom\Containers\Bytes;
 use Darkroom\Containers\Layout;
 use Darkroom\Containers\Splice;
 use Darkroom\Formats\Writer as Base;
-use Darkroom\Meta\Blocks;
 
 /**
  * @internal
@@ -16,8 +15,7 @@ use Darkroom\Meta\Blocks;
 final class Writer extends Base
 {
 	/**
-	 * The ancillary chunks that change how the image looks or prints:
-	 * transparency, color, HDR display, animation and resolution
+	 * The ancillary chunks that change how the image looks or prints
 	 */
 	protected const array KEEP = [
 		'acTL', 'cHRM', 'cICP', 'cLLI', 'fcTL', 'fdAT',
@@ -26,24 +24,24 @@ final class Writer extends Base
 	public const bool ORIENTS = true;
 
 	/**
-	 * An `iCCP` chunk of the profile: a name, a null byte, the compression
-	 * method, deflate, and the profile in zlib's format; none without zlib
+	 * An `iCCP` chunk of the profile
 	 */
 	protected static function profile(string $profile): string
 	{
-		if ($profile === '' || function_exists('gzcompress') === false) {
+		if (
+			$profile === '' ||
+			function_exists('gzcompress') === false
+		) {
 			return '';
 		}
 
 		$data = "icc\0\0" . (string)gzcompress($profile);
-
 		return Layout::Png->chunk('iCCP', $data);
 	}
 
 	/**
-	 * Keeps the critical chunks and those in `KEEP`, the profile unless
-	 * the blocks have one, nothing after the end of the image;
-	 * the blocks after the header
+	 * Keeps the critical chunks and those
+	 * in `KEEP`; the meta after the header
 	 *
 	 * @param resource $handle
 	 * @param resource $out
@@ -51,14 +49,14 @@ final class Writer extends Base
 	public static function write(
 		$handle,
 		$out,
-		Blocks $blocks
+		string $exif = '',
+		string|null $icc = null
 	): void {
-		$own    = $blocks->icc === null;
-		$exif   = $blocks->exif === '' ? '' : Layout::Png->chunk('eXIf', $blocks->exif);
-		$after  = $exif . self::profile($blocks->icc ?? '');
+		$own    = $icc === null;
+		$chunk  = $exif === '' ? '' : Layout::Png->chunk('eXIf', $exif);
+		$after  = $chunk . self::profile($icc ?? '');
 		$splice = new Splice($handle, $out);
 
-		// the signature, then the chunks
 		$splice->copy(0, 8);
 		Bytes::seek($handle, 8);
 

@@ -28,12 +28,15 @@ final class Reader extends Base
 	public const string SIGNATURE = "\xFF\xD8";
 
 	/**
-	 * The EXIF block of the first `Exif` APP1 segment
+	 * The first `Exif` APP1 segment
 	 */
 	public function exif(): string
 	{
 		foreach ($this->segments() as $marker => $length) {
-			if ($marker === 0xE1 && Exif::marker($this->handle) === true) {
+			if (
+				$marker === 0xE1 &&
+				Exif::marker($this->handle) === true
+			) {
 				return Bytes::bytes($this->handle, $length - 6);
 			}
 		}
@@ -69,7 +72,6 @@ final class Reader extends Base
 				$frame = Bytes::bytes($this->handle, min($length, 5));
 				$size  = new Size(0, 0);
 
-				// not from a frame header that is cut off
 				if (strlen($frame) === 5) {
 					$width  = Bytes::int(substr($frame, 3, 2));
 					$height = Bytes::int(substr($frame, 1, 2));
@@ -89,8 +91,7 @@ final class Reader extends Base
 	}
 
 	/**
-	 * The profile of the `ICC_PROFILE` APP2 segments,
-	 * joined by their sequence numbers
+	 * The profile joined from the `ICC_PROFILE` APP2 segments
 	 */
 	public function icc(): string
 	{
@@ -108,7 +109,7 @@ final class Reader extends Base
 				continue;
 			}
 
-			// the sequence number from 1, then the number of segments
+			// the sequence number, from 1
 			$number = ord($head[12] ?? "\0");
 			$total += $length - 14;
 
@@ -127,9 +128,8 @@ final class Reader extends Base
 	}
 
 	/**
-	 * Marker and data length of each segment before the scan, at most `STEPS`,
-	 * past at most `LIMIT` fill and stray bytes in all, as decoders read on;
-	 * the caller may read the data, the walk goes on after it
+	 * Marker and data length of each segment before
+	 * the scan, past stray bytes, as decoders read on
 	 *
 	 * @return Generator<int, int>
 	 */
@@ -149,7 +149,7 @@ final class Reader extends Base
 			$head  = (string)fread($this->handle, 4);
 			$next += 4;
 
-			// on past bytes before it: more 0xFF, 0x00 after one, others
+			// past fill and stray bytes
 			while (
 				strlen($head) === 4 &&
 				($head[0] !== "\xFF" || $head[1] === "\xFF" || $head[1] === "\0") &&

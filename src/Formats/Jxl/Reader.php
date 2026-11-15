@@ -12,8 +12,7 @@ use Darkroom\Meta\Exif;
 use Generator;
 
 /**
- * JPEG XL files: a bare codestream,
- * or one in an ISO BMFF container
+ * JPEG XL files, bare or in an ISO BMFF container
  *
  * @internal
  */
@@ -36,8 +35,7 @@ final class Reader extends Base
 	}
 
 	/**
-	 * The codestream's headers, bare
-	 * or from `jxlc` or `jxlp` boxes
+	 * The codestream's headers
 	 */
 	protected function codestream(): string
 	{
@@ -45,7 +43,7 @@ final class Reader extends Base
 
 		$data = (string)fread($this->handle, 12);
 
-		// a bare codestream, or none, which its header check rejects
+		// a bare codestream, or none
 		if ($data !== self::SIGNATURE) {
 			return $data . (string)fread($this->handle, Codestream::LENGTH - 12);
 		}
@@ -72,7 +70,7 @@ final class Reader extends Base
 	}
 
 	/**
-	 * The `Exif` box; not one compressed in a `brob` box
+	 * The `Exif` box
 	 */
 	public function exif(): string
 	{
@@ -87,14 +85,12 @@ final class Reader extends Base
 	public function header(): Header
 	{
 		$data = $this->codestream();
-
 		return Codestream::header($data)[0];
 	}
 
 	public function isAnimated(): bool
 	{
 		$data = $this->codestream();
-
 		return Codestream::header($data)[1];
 	}
 }
