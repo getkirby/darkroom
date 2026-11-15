@@ -55,14 +55,6 @@ class ImagickTest extends DriverTestCase
 		return new Imagick();
 	}
 
-	protected function hdr(): bool
-	{
-		$image = new Image();
-		$image->pingImage('AVIF:' . static::FIXTURES . '/heif/hdr.avif');
-
-		return $image->getImageProperties('heic:cicp', false) !== [];
-	}
-
 	protected static function limits(): array
 	{
 		$types = [
@@ -156,7 +148,7 @@ class ImagickTest extends DriverTestCase
 			$this->skip('Can\'t read avif', $this->driver, Format::Avif);
 		}
 
-		$this->assertTrue($this->driver->canRead($source));
+		$this->assertFalse($this->driver->canRead($source));
 	}
 
 	#[DataProvider('canReadProvider')]

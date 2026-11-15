@@ -30,11 +30,6 @@ class GdTest extends DriverTestCase
 		return new Gd();
 	}
 
-	protected function hdr(): bool
-	{
-		return false;
-	}
-
 	protected static function iccp(int $type, string $data): string
 	{
 		$pixels = str_repeat("\x80", $type === 0 ? 30 : 90);

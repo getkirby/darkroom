@@ -75,38 +75,12 @@ abstract class DriverTestCase extends TestCase
 		return $file;
 	}
 
-	protected static function cicp(string $file): array|null
-	{
-		$data = file_get_contents($file);
-		$box  = strpos($data, 'colrnclx');
-
-		if ($box === false) {
-			return null;
-		}
-
-		return array_values(unpack('n3', $data, $box + 8));
-	}
-
 	/**
 	 * Whether the driver converts colors between profiles
 	 */
 	protected function converts(): bool
 	{
 		return true;
-	}
-
-	protected static function depth(string $file): array
-	{
-		$data = file_get_contents($file);
-		$box  = strpos($data, 'pixi');
-
-		if ($box === false) {
-			return [];
-		}
-
-		$channels = unpack('C', $data, $box + 8)[1];
-
-		return array_values(unpack('C' . $channels, $data, $box + 9));
 	}
 
 	protected function detail(string $file): float
@@ -195,11 +169,6 @@ abstract class DriverTestCase extends TestCase
 		rewind($stream);
 
 		return stream_get_contents($stream);
-	}
-
-	protected function hdr(): bool
-	{
-		return true;
 	}
 
 	protected function icc(string $file): string
@@ -828,71 +797,6 @@ abstract class DriverTestCase extends TestCase
 		$output = new Source($file);
 
 		$this->assertEquals($plan->size(), $output->size());
-	}
-
-	public static function processHdrProvider(): array
-	{
-		return [
-			'avif' => ['avif'],
-			'heic' => ['heic'],
-		];
-	}
-
-	/**
-	 * `magick -size 30x20 gradient:'#c08040-#4080c0'
-	 * -depth 10 -set heic:cicp 9/16/9/1 hdr.avif`
-	 */
-	#[DataProvider('processHdrProvider')]
-	public function testProcessHdr(string $extension): void
-	{
-		$file = $this->file('thumb.' . $extension);
-
-		$this->process('heif/hdr.avif', $file, static::OPTIONS);
-
-		// BT.2020 primaries and matrix, PQ transfer
-		$cicp = static::cicp($file);
-
-		$this->assertSame($this->hdr(), $cicp === [9, 16, 9]);
-	}
-
-	#[DataProvider('processHdrProvider')]
-	public function testProcessHdrDepth(string $extension): void
-	{
-		if ($this->hdr() === false) {
-			$this->markTestSkipped('Keeps no HDR');
-		}
-
-		$file = $this->file('thumb.' . $extension);
-
-		$this->process('heif/hdr.avif', $file, static::OPTIONS);
-
-		$this->assertSame([10, 10, 10], static::depth($file));
-	}
-
-	public static function processHdrToneProvider(): array
-	{
-		return [
-			'jpeg' => ['jpg', false],
-			'webp' => ['webp', false],
-			'avif' => ['avif', true],
-			'heic' => ['heic', true],
-		];
-	}
-
-	#[DataProvider('processHdrToneProvider')]
-	public function testProcessHdrTone(string $extension, bool $hdr): void
-	{
-		$file = $this->file('thumb.' . $extension);
-
-		$this->process('heif/hdr.avif', $file, static::OPTIONS);
-
-		if ($hdr === true && $this->hdr() === true) {
-			$this->markTestSkipped('Keeps HDR in ' . $extension);
-		}
-
-		$png = $this->strip($file);
-
-		$this->assertReference('heif/hdr.avif', $png);
 	}
 
 	public static function processInterlaceProvider(): array

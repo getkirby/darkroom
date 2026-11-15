@@ -4,7 +4,6 @@ declare(strict_types = 1);
 
 namespace Darkroom\Drivers;
 
-use Closure;
 use Darkroom\Driver;
 use Darkroom\Exception\LimitException;
 use Darkroom\Exception\ProcessException;
@@ -14,21 +13,12 @@ use Darkroom\Plan;
 use Darkroom\Settings;
 use Darkroom\Size;
 use Darkroom\Source;
-use Darkroom\Tools\Hdr;
 use Darkroom\Tools\Quality;
 use Imagick as Image;
 use ImagickException;
 
 final class Imagick extends Driver
 {
-	/**
-	 * Properties the encoders of the formats read:
-	 * the HDR signal of AVIF and HEIC
-	 */
-	protected const array KEEP = [
-		'heic:cicp' => [Format::Avif, Format::Heic],
-	];
-
 	/**
 	 * ImageMagick's codes for a resource limit error
 	 * and for a pixel cache it can't allocate
@@ -80,6 +70,11 @@ final class Imagick extends Driver
 
 	public function canRead(Format|Source $input): bool
 	{
+		// ImageMagick maps no PQ or HLG to sRGB
+		if ($input instanceof Source && $input->isHdr() === true) {
+			return false;
+		}
+
 		$format = $input instanceof Source ? $input->format() : $input;
 
 		return $this->cache(
@@ -310,8 +305,6 @@ final class Imagick extends Driver
 			static::cmyk($frame);
 		}
 
-		$this->tone($frame, $plan);
-
 		static::orient($frame, $plan->orientation);
 		static::filter($frame, $plan);
 		$this->strip($frame, $plan);
@@ -330,15 +323,6 @@ final class Imagick extends Driver
 		]);
 
 		$frame->transformImageColorspace(Image::COLORSPACE_GRAY);
-
-		// gray is written without chroma, which the identity
-		// matrix (0) doesn't allow; 2 leaves it unspecified
-		$cicp = explode('/', $frame->getImageProperty('heic:cicp') ?: '');
-
-		if (count($cicp) === 4 && $cicp[2] === '0') {
-			$cicp[2] = '2';
-			$frame->setImageProperty('heic:cicp', implode('/', $cicp));
-		}
 	}
 
 	public function info(): array
@@ -532,78 +516,7 @@ final class Imagick extends Driver
 		}
 
 		foreach ($frame->getImageProperties('*', false) as $name) {
-			if (in_array($plan->format, self::KEEP[$name] ?? [], true) === false) {
-				$frame->deleteImageProperty($name);
-			}
+			$frame->deleteImageProperty($name);
 		}
-	}
-
-	/**
-	 * @param Closure(float): float $function
-	 */
-	protected static function table(
-		int $length,
-		Closure $function
-	): Image {
-		$values = [];
-		$table  = new Image();
-
-		for ($step = 0; $step < $length; $step++) {
-			$value    = $function($step / ($length - 1));
-			$values[] = (int)round(65535.0 * $value);
-		}
-
-		// a 16-bit PGM
-		$table->readImageBlob(
-			'P5 ' . $length . ' 1 65535 ' . pack('n*', ...$values)
-		);
-
-		return $table;
-	}
-
-	protected function tone(Image $frame, Plan $plan): void
-	{
-		// AVIF and HEIC keep the signal
-		// where ImageMagick read it, and so writes it
-		$keep =
-			in_array($plan->format, self::KEEP['heic:cicp'], true) === true &&
-			$frame->getImageProperties('heic:cicp', false) !== [];
-
-		if ($plan->source->isHdr() === false || $keep === true) {
-			return;
-		}
-
-		[$primaries, $transfer] = $plan->source->cicp();
-
-		$channels = Image::CHANNEL_RED | Image::CHANNEL_GREEN | Image::CHANNEL_BLUE;
-		$matrix   = Hdr::matrix($primaries);
-
-		// a step per 10-bit signal; linear light needs more,
-		// as sRGB bends near black
-		$light = $this->cache(
-			'light ' . $transfer,
-			fn (): Image => static::table(
-				length:   1024,
-				function: fn (float $signal): float => Hdr::light($transfer, $signal)
-			)
-		);
-
-		$srgb = $this->cache(
-			'srgb',
-			fn (): Image => static::table(4096, Hdr::srgb(...))
-		);
-
-		$frame->clutImage($light, $channels);
-		$frame->colorMatrixImage([
-			...$matrix[0], 0.0, 0.0,
-			...$matrix[1], 0.0, 0.0,
-			...$matrix[2], 0.0, 0.0,
-			0.0, 0.0, 0.0, 1.0, 0.0,
-			0.0, 0.0, 0.0, 0.0, 1.0,
-		]);
-		$frame->clutImage($srgb, $channels);
-
-		// a profile would describe the HDR signal
-		$frame->profileImage('icc', null);
 	}
 }

@@ -8,7 +8,6 @@ use Darkroom\Exception\UnsupportedException;
 use Darkroom\Readers\Header;
 use Darkroom\Readers\Reader;
 use Darkroom\Tools\Exif;
-use Darkroom\Tools\Hdr;
 
 /**
  * An image's facts, read lazily from its header
@@ -149,7 +148,8 @@ final class Source
 	{
 		$transfer = $this->cicp()[1];
 
-		return $transfer === Hdr::PQ || $transfer === Hdr::HLG;
+		// PQ or HLG (H.273)
+		return $transfer === 16 || $transfer === 18;
 	}
 
 	public function orientation(): Orientation
