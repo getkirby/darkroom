@@ -379,16 +379,15 @@ final class Imagick extends Driver
 		Image $frame,
 		Orientation $orientation
 	): void {
-		match ($orientation) {
-			Orientation::None           => true,
-			Orientation::FlipHorizontal => $frame->flopImage(),
-			Orientation::Rotate180      => $frame->rotateImage('none', 180),
-			Orientation::FlipVertical   => $frame->flipImage(),
-			Orientation::Transpose      => $frame->transposeImage(),
-			Orientation::Rotate90       => $frame->rotateImage('none', 90),
-			Orientation::Transverse     => $frame->transverseImage(),
-			Orientation::Rotate270      => $frame->rotateImage('none', 270),
-		};
+		$turns = $orientation->turns();
+
+		if ($turns > 0) {
+			$frame->rotateImage('none', 90 * $turns);
+		}
+
+		if ($orientation->isFlipped() === true) {
+			$frame->flopImage();
+		}
 
 		$frame->setImageOrientation(Image::ORIENTATION_TOPLEFT);
 	}

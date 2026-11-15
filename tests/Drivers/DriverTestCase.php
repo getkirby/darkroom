@@ -957,6 +957,9 @@ abstract class DriverTestCase extends TestCase
 			'jpeg to avif' => ['orientation/Landscape_6.jpg', 'avif'],
 			'jpeg to heic' => ['orientation/Landscape_6.jpg', 'heic'],
 			'jpeg to jxl'  => ['orientation/Landscape_6.jpg', 'jxl'],
+			// GIF's screen as large as the turned frame
+			'transpose'    => ['orientation/Landscape_5.jpg', 'gif'],
+			'transverse'   => ['orientation/Landscape_7.jpg', 'gif'],
 		];
 	}
 
