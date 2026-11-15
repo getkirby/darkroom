@@ -118,6 +118,29 @@ final readonly class Plan
 	}
 
 	/**
+	 * Whether it writes the source's pixels as they are,
+	 * so that `Darkroom::strip()` only changes the meta
+	 */
+	public function isCopy(): bool
+	{
+		$original = $this->source->size();
+		$input    = $this->source->format();
+		$options  = $this->options;
+
+		// nothing scales up, so the full size leaves nothing cut
+		return
+			$this->size->width === $original->width &&
+			$this->size->height === $original->height &&
+			$this->format === $input &&
+			$options->blur === null &&
+			$options->sharpen === null &&
+			$options->grayscale === false &&
+			$options->quality === null &&
+			$options->interlace === null &&
+			$options->other === [];
+	}
+
+	/**
 	 * What to ask a JPEG decoder for, so it loads
 	 * the smallest M/8 that covers 1.5 × `::scale()`
 	 */

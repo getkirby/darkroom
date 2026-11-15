@@ -470,6 +470,77 @@ class PlanTest extends TestCase
 		Plan::for($source, $options);
 	}
 
+	public static function isCopyProvider(): array
+	{
+		return [
+			'plain'       => [[], true],
+			'larger'      => [['width' => 2000], true],
+			'whole crop'  => [['width' => 1200, 'height' => 800, 'crop' => 'center'], true],
+			'whole part'  => [['crop' => new Rect(0, 0, 1200, 800)], true],
+			'same format' => [['format' => 'jpg'], true],
+			'strip'       => [['strip' => false], true],
+			'smaller'     => [['width' => 600], false],
+			'cut'         => [['width' => 2400, 'height' => 1200, 'crop' => 'center'], false],
+			'part'        => [['crop' => new Rect(0, 0, 600, 800)], false],
+			'format'      => [['format' => 'webp'], false],
+			'blur'        => [['blur' => 10], false],
+			'sharpen'     => [['sharpen' => 50], false],
+			'grayscale'   => [['grayscale' => true], false],
+			'quality'     => [['quality' => 85], false],
+			'interlace'   => [['interlace' => false], false],
+			'other'       => [['watermark' => 'logo.png'], false],
+		];
+	}
+
+	#[DataProvider('isCopyProvider')]
+	public function testIsCopy(array $options, bool $copy): void
+	{
+		$source  = $this->source(1200, 800);
+		$options = Options::from($options);
+		$plan    = Plan::for($source, $options);
+
+		$this->assertSame($copy, $plan->isCopy());
+	}
+
+	public function testIsCopyDefaults(): void
+	{
+		$source   = $this->source(1200, 800);
+		$options  = new Options();
+		$defaults = new Defaults(quality: 50, interlace: true, strip: [Meta::Location]);
+		$webp     = new Defaults(format: Format::Webp);
+
+		$copy      = Plan::for($source, $options, $defaults);
+		$converted = Plan::for($source, $options, $webp);
+
+		$this->assertTrue($copy->isCopy());
+		$this->assertFalse($converted->isCopy());
+	}
+
+	public function testIsCopyFrames(): void
+	{
+		$source  = new Source(self::FIXTURES . '/gif/animated.gif');
+		$options = new Options();
+		$driver  = new FakeDriver(['animate' => Format::cases()]);
+
+		$plan = Plan::for($source, $options, driver: $driver);
+
+		$this->assertTrue($plan->frames);
+		$this->assertTrue($plan->isCopy());
+	}
+
+	public function testIsCopyOrientation(): void
+	{
+		$source = $this->source(1200, 800, Orientation::Rotate90);
+		$wide   = new Options(width: 1200);
+		$narrow = new Options(width: 800);
+
+		$copy    = Plan::for($source, $wide);
+		$resized = Plan::for($source, $narrow);
+
+		$this->assertTrue($copy->isCopy());
+		$this->assertFalse($resized->isCopy());
+	}
+
 	public static function jpegSizeProvider(): array
 	{
 		$none    = Orientation::None;

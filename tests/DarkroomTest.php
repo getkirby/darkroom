@@ -405,6 +405,17 @@ class DarkroomTest extends TestCase
 		$this->assertSame([], $driver->plans);
 	}
 
+	public function testPlanCopy(): void
+	{
+		$driver   = new FakeDriver();
+		$defaults = ['quality' => 50, 'interlace' => true];
+		$darkroom = new Darkroom([$driver], $defaults);
+
+		$plan = $darkroom->plan(self::JPEG, ['width' => 2000]);
+
+		$this->assertTrue($plan->isCopy());
+	}
+
 	public function testPlanDefaults(): void
 	{
 		$driver   = new FakeDriver();
