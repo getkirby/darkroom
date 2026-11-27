@@ -20,6 +20,13 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 #[CoversClass(Gd::class)]
 class GdTest extends DriverTestCase
 {
+	protected function tearDown(): void
+	{
+		ini_restore('memory_limit');
+
+		parent::tearDown();
+	}
+
 	protected function driver(): Driver
 	{
 		return new Gd();
@@ -91,13 +98,6 @@ class GdTest extends DriverTestCase
 		imagejpeg($image, $file, 90);
 
 		return static::sampling($file) === '2x2,1x1,1x1';
-	}
-
-	protected function tearDown(): void
-	{
-		ini_restore('memory_limit');
-
-		parent::tearDown();
 	}
 
 	public function testCanAnimate(): void

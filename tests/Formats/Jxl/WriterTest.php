@@ -19,7 +19,7 @@ class WriterTest extends JxlTestCase
 		$exif       = self::box('Exif', pack('N', 0) . $tiff);
 		$xmp        = self::box('xml ', '<x:xmpmeta/>');
 		$c2pa       = self::box('jumb', 'manifest');
-		$brotli     = self::box('brob', 'Exif' . 'compressed');
+		$brotli     = self::box('brob', 'Exifcompressed');
 		$jpeg       = self::box('jbrd', 'reconstruction');
 		$first      = self::jxlp(0, substr($codestream, 0, 10));
 		$last       = self::jxlp(0x80000001, substr($codestream, 10));

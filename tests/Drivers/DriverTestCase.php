@@ -38,6 +38,15 @@ abstract class DriverTestCase extends TestCase
 
 	protected Driver $driver;
 
+	protected function setUp(): void
+	{
+		$this->driver = $this->driver();
+
+		if ($this->driver->isAvailable() === false) {
+			$this->skip('Driver not available', $this->driver);
+		}
+	}
+
 	protected function assertReference(
 		string $name,
 		string $file,
@@ -311,15 +320,6 @@ abstract class DriverTestCase extends TestCase
 		}
 
 		return implode(',', $factors);
-	}
-
-	protected function setUp(): void
-	{
-		$this->driver = $this->driver();
-
-		if ($this->driver->isAvailable() === false) {
-			$this->skip('Driver not available', $this->driver);
-		}
 	}
 
 	protected function strip(string $file): string
@@ -1073,7 +1073,7 @@ abstract class DriverTestCase extends TestCase
 
 		try {
 			$darkroom->process($source, $file, ['width' => 2]);
-		} catch (LimitException | ProcessException | UnsupportedException $exception) {
+		} catch (LimitException|ProcessException|UnsupportedException $exception) {
 			$this->assertFileDoesNotExist($file, $exception->getMessage());
 
 			return;

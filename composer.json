@@ -53,20 +53,20 @@
 			"@analyze:psalm"
 		],
 		"analyze:composer": "composer validate --strict --no-check-version --no-check-all",
-		"analyze:psalm": "cpx vimeo/psalm:6.20.11",
-		"bench": "cpx phpbench/phpbench:1.7.0 run --report=aggregate",
+		"analyze:psalm": "cpx vimeo/psalm:7.22.1",
+		"bench": "cpx phpbench/phpbench:1.7.1 run --report=aggregate",
 		"ci": [
 			"@fix",
 			"@analyze",
 			"@test"
 		],
-		"fix": "cpx getkirby/php-cs:0.2.2 fix",
+		"fix": "cpx getkirby/php-cs:0.3.0 fix",
 		"playground": [
 			"Composer\\Config::disableProcessTimeout",
 			"@putenv PHP_CLI_SERVER_WORKERS=8",
 			"(sleep 1; open http://127.0.0.1:8080 || xdg-open http://127.0.0.1:8080) > /dev/null 2>&1 &",
 			"@php -d ffi.enable=1 -S 127.0.0.1:8080 -t playground playground/index.php"
 		],
-		"test": "cpx brianium/paratest:7.29.0"
+		"test": "cpx brianium/paratest:7.30.0"
 	}
 }

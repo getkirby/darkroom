@@ -30,13 +30,13 @@ class ImagickTest extends DriverTestCase
 		$gray     = pack('n3', 0x7F80, 0x8000, 0x8000);
 
 		$lut =
-			'mft2' . "\0\0\0\0" . "\x04\x03\x02\0" . $identity . pack('n2', 2, 2) .
+			'mft2' . "\0\0\0\0\x04\x03\x02\0" . $identity . pack('n2', 2, 2) .
 			str_repeat($ramp, 4) . str_repeat($gray, 16) . str_repeat($ramp, 3);
 
 		$tags = pack('N', 1) . 'A2B0' . pack('N2', 144, strlen($lut));
 
 		$header =
-			pack('N', 144 + strlen($lut)) . "\0\0\0\0" . "\x02\x10\0\0" . 'scnrCMYKLab ' .
+			pack('N', 144 + strlen($lut)) . "\0\0\0\0\x02\x10\0\0" . 'scnrCMYKLab ' .
 			str_repeat("\0", 12) . 'acsp' . str_repeat("\0", 28) .
 			pack('N3', 0xF6D6, 0x10000, 0xD32D) . str_repeat("\0", 48);
 

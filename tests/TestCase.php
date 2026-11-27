@@ -15,6 +15,24 @@ abstract class TestCase extends BaseTestCase
 {
 	protected string|null $tmp = null;
 
+	protected function tearDown(): void
+	{
+		if ($this->tmp === null) {
+			return;
+		}
+
+		$files = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator($this->tmp, FilesystemIterator::SKIP_DOTS),
+			RecursiveIteratorIterator::CHILD_FIRST
+		);
+
+		foreach ($files as $file) {
+			$file->isDir() === true ? rmdir($file) : unlink($file);
+		}
+
+		rmdir($this->tmp);
+	}
+
 	protected static function app1(int $orientation): string
 	{
 		$tiff = self::tiff($orientation);
@@ -121,24 +139,6 @@ abstract class TestCase extends BaseTestCase
 		$file   = $this->file($name, $data);
 
 		return new Source($file);
-	}
-
-	protected function tearDown(): void
-	{
-		if ($this->tmp === null) {
-			return;
-		}
-
-		$files = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($this->tmp, FilesystemIterator::SKIP_DOTS),
-			RecursiveIteratorIterator::CHILD_FIRST
-		);
-
-		foreach ($files as $file) {
-			$file->isDir() === true ? rmdir($file) : unlink($file);
-		}
-
-		rmdir($this->tmp);
 	}
 
 	protected static function tiff(int|array $entries, bool $little = false): string
