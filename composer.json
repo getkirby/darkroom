@@ -18,16 +18,19 @@
 		"source": "https://github.com/getkirby/darkroom"
 	},
 	"require": {
-		"php": "^8.4"
+		"php": "^8.4",
+		"ext-filter": "*"
 	},
 	"require-dev": {
 		"jcupitt/vips": "^2.6"
 	},
 	"suggest": {
 		"ext-exif": "To read the raw EXIF tags with Source::exif()",
+		"ext-ffi": "For the vips driver",
 		"ext-gd": "For the gd driver",
 		"ext-imagick": "For the imagick driver",
-		"jcupitt/vips": "For the vips driver (needs ext-ffi and libvips)"
+		"ext-zlib": "To read and write PNG color profiles",
+		"jcupitt/vips": "For the vips driver (needs libvips)"
 	},
 	"autoload": {
 		"psr-4": {
