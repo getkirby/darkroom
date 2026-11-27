@@ -20,6 +20,6 @@ jobs:
       # libde265 and x265 for HEIC, aom for AVIF (aomdec is a dependency); ubuntu-24.04 ships libvips 8.15
       apt: libvips42t64 libheif-plugin-libde265 libheif-plugin-x265 libheif-plugin-aomenc
       # tests for these drivers and formats fail instead of skipping
-      env: DARKROOM_REQUIRE=gd:avif,webp imagick:avif,heic,jp2,webp vips:avif,heic,jp2,jxl,webp
+      env: DARKROOM_REQUIRE=gd:avif,webp imagick:avif,heic,webp vips:avif,heic,jxl,webp
       extensions: exif, ffi, gd, imagick
       phpunit-args: --display-skipped
