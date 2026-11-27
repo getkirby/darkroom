@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   php:
-    uses: getkirby/actions/.github/workflows/php.yml@5a2291a578b5304133b7e3106f3bb92f9385bea0 # 0.1.0
+    uses: getkirby/actions/.github/workflows/php.yml@e27f4dff8102d3f51e08f0608f27decf59a90ce8 # 0.3.1
     with:
       # ImageMagick and libvips read HEIC and AVIF through libheif, whose codecs are plugins:
       # libde265 and x265 for HEIC, aom for AVIF (aomdec is a dependency); ubuntu-24.04 ships libvips 8.15
