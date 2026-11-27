@@ -1036,4 +1036,39 @@ class DarkroomTest extends TestCase
 		$this->assertNull($limited->tryPlan(self::JPEG));
 		$this->assertNull($driverless->tryPlan(self::JPEG));
 	}
+
+	public function testTryStrip(): void
+	{
+		$darkroom = new Darkroom([]);
+		$dst      = $this->file('photo.jpg');
+
+		$stripped = $darkroom->tryStrip(self::EXIF, $dst);
+
+		$this->assertTrue($stripped);
+		$this->assertFileExists($dst);
+		$this->assertLessThan(filesize(self::EXIF), filesize($dst));
+	}
+
+	public function testTryStripInvalid(): void
+	{
+		$darkroom = new Darkroom([]);
+		$dst      = $this->file('photo.jpg');
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Invalid strip: \'color\'');
+
+		$darkroom->tryStrip(self::EXIF, $dst, ['color']);
+	}
+
+	public function testTryStripUnrecognised(): void
+	{
+		$darkroom = new Darkroom([]);
+		$src      = $this->file('text.jpg', 'text');
+		$dst      = $this->file('photo.jpg');
+
+		$stripped = $darkroom->tryStrip($src, $dst);
+
+		$this->assertFalse($stripped);
+		$this->assertSame(['text.jpg'], $this->files());
+	}
 }

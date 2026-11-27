@@ -388,6 +388,26 @@ final class Darkroom
 	}
 
 	/**
+	 * Like `::strip()`, but `false` for an unreadable source
+	 *
+	 * @param bool|list<Meta|string>|null $strip
+	 *
+	 * @throws InvalidArgumentException For an invalid strip
+	 */
+	public function tryStrip(
+		Source|string $src,
+		string $dst,
+		bool|array|null $strip = null
+	): bool {
+		try {
+			$this->strip($src, $dst, $strip);
+			return true;
+		} catch (UnsupportedException) {
+			return false;
+		}
+	}
+
+	/**
 	 * Writes the file through `$write`, into a
 	 * temporary file renamed once complete
 	 *

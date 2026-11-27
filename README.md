@@ -49,6 +49,7 @@ $darkroom->process($plan, $file);
 | `tryPlan($source, $options)` | The same, or `null` for a source that is unreadable or above the limit |
 | `process($source, $file, $options)` | Writes the thumb in the format of the file's extension, creating directories; returns the `Plan`; takes a `Plan` instead of source and options |
 | `strip($source, $file, $strip)` | Copies the image without decoding it and removes its EXIF tags based on `$strip` (`true`, `false` or a list of [categories](#meta); default: `true`). It always keeps the color profile and orientation |
+| `tryStrip($source, $file, $strip)` | The same and `true`, or `false` for an unreadable source |
 | `format($source, $format, $allowed)` | The format a plan gets: `$format` if a driver writes it, else the source's if allowed, else the first allowed one a driver writes; `$allowed` defaults to [`Format::VIEWABLE`](src/Format.php): WebP, JPEG, PNG, GIF, AVIF |
 | `info()` | Each driver's library, version and the formats it reads and writes |
 
